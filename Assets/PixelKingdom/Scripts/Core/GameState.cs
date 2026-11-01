@@ -8,7 +8,8 @@ namespace PixelKingdom
     [Serializable]
     public class GameState
     {
-        public int version = 1;
+        public const int CurrentVersion = 2;   // 2 = größere Welt (400x280)
+        public int version = CurrentVersion;
         public int seed;
         public int day;
         public float dayProgress;
@@ -145,6 +146,11 @@ namespace PixelKingdom
         public bool chapterIntroShown;
         public bool emperorDefeated;
         public int emperorWarDay = -1;
+        public float pressure;          // Druck des Kaiserreichs 0..100
+        public int peaceUntil;          // bis zu diesem Tag greift niemand den Spieler an
+        public int nextPunish;          // nächste mögliche Strafexpedition
+        public int loyalistsId = -1;    // Fraktion "Malriks Getreue"
+        public int exileId = -1;        // Siedlung "Malriks Exilfestung"
         public List<string> flags = new List<string>();
         public bool Has(string f) => flags.Contains(f);
         public void Set(string f) { if (!flags.Contains(f)) flags.Add(f); }

@@ -34,7 +34,7 @@ namespace PixelKingdom
         public const float SecondsPerDay = 5f;
 
         public int SelSettlement = -1, SelArmy = -1;
-        public enum Mode { None, PlaceSettlers }
+        public enum Mode { None, PlaceSettlers, TargetArmy }
         public Mode CurrentMode;
         public int ModeSource = -1;
 
@@ -263,6 +263,7 @@ namespace PixelKingdom
                 else UI.OpenWindow(GameUI.Window.Menu);
             }
             if (PKInput.KeyDown(PKKey.G)) UI.ToggleWindow(GameUI.Window.Diplomacy);
+            if (PKInput.KeyDown(PKKey.M)) UI.ToggleWindow(GameUI.Window.Armies);
             if (PKInput.KeyDown(PKKey.R)) UI.ToggleWindow(GameUI.Window.Realm);
             if (PKInput.KeyDown(PKKey.L)) UI.ToggleWindow(GameUI.Window.Log);
             if (PKInput.KeyDown(PKKey.F1)) UI.ToggleWindow(GameUI.Window.Help);
@@ -347,6 +348,7 @@ namespace PixelKingdom
         {
             if (!SetHover(screen)) return;
             var sel = Game.A(SelArmy);
+            if (CurrentMode == Mode.TargetArmy) { CurrentMode = Mode.None; if (sel != null) RightClick(); return; }
             if (CurrentMode == Mode.None && sel != null && sel.faction == Game.PlayerId)
             {
                 // Tippen auf ein anderes eigenes Heer wählt dieses; Tippen auf das gewählte Heer wählt ab
@@ -380,6 +382,12 @@ namespace PixelKingdom
         void LeftClick()
         {
             var g = Game;
+            if (CurrentMode == Mode.TargetArmy)
+            {
+                CurrentMode = Mode.None;
+                if (g.A(SelArmy) != null) RightClick();
+                return;
+            }
             if (CurrentMode == Mode.PlaceSettlers)
             {
                 var src = g.St(ModeSource);

@@ -5,7 +5,7 @@ using UnityEngine.InputSystem;
 
 namespace PixelKingdom
 {
-    public enum PKKey { W, A, S, D, Q, E, Up, Down, Left, Right, Space, Escape, Tab, Alpha1, Alpha2, Alpha3, B, R, L, H, P, G, F1, F5, F9, Shift, Delete, Plus, Minus }
+    public enum PKKey { W, A, S, D, Q, E, Up, Down, Left, Right, Space, Escape, Tab, Alpha1, Alpha2, Alpha3, B, R, L, H, P, G, M, F1, F5, F9, Shift, Delete, Plus, Minus }
 
     /// <summary>
     /// Kapselt die Eingabe, damit das Spiel sowohl mit dem alten Input Manager
@@ -40,6 +40,7 @@ namespace PixelKingdom
                 case PKKey.H: return KeyCode.H;
                 case PKKey.P: return KeyCode.P;
                 case PKKey.G: return KeyCode.G;
+                case PKKey.M: return KeyCode.M;
                 case PKKey.F1: return KeyCode.F1;
                 case PKKey.F5: return KeyCode.F5;
                 case PKKey.F9: return KeyCode.F9;
@@ -87,6 +88,7 @@ namespace PixelKingdom
                 case PKKey.H: return kb.hKey;
                 case PKKey.P: return kb.pKey;
                 case PKKey.G: return kb.gKey;
+                case PKKey.M: return kb.mKey;
                 case PKKey.F1: return kb.f1Key;
                 case PKKey.F5: return kb.f5Key;
                 case PKKey.F9: return kb.f9Key;

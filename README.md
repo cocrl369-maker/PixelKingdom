@@ -74,7 +74,7 @@ Das Spiel ist für Android ausgelegt und bleibt am PC mit Tastatur und Maus spie
 | Heer befehligen | Rechtsklick auf Gelände, eigene Stadt (Garnison) oder Feind (Angriff) |
 | Überfall statt Eroberung | Shift + Rechtsklick auf eine feindliche Stadt |
 | Pause / Tempo | Leertaste / 1, 2, 3 |
-| Reich / Diplomatie / Chronik / Hilfe | R / G / L / F1 |
+| Reich / Heerführung / Diplomatie / Chronik / Hilfe | R / M / G / L / F1 |
 | Nächste Siedlung / Hauptstadt | Tab / H |
 | Farbpalette wechseln | P |
 | Speichern | F5 (zusätzlich automatisch alle 90 s und beim Beenden) |
@@ -97,9 +97,9 @@ Das Spiel ist für Android ausgelegt und bleibt am PC mit Tastatur und Maus spie
 - **Drei Farbpaletten**: Retro, Herbst und Terrakotta.
 
 ### Welt
-- **Prozedural und groß**: 320 × 224 Felder, aus einem Seed erzeugt. Dazu gehören:
+- **Prozedural und groß**: 400 × 280 Felder, aus einem Seed erzeugt. Dazu gehören:
   - der Heimatkontinent **Mittland**, die kalten **Nordlande**, das heiße **Südreich** und der Archipel **Inselbund**,
-  - **Gebirgszüge** (Ridged Noise) mit Schneegipfeln,
+  - zusammenhängende **Gebirgszüge** mit großen, mehrgipfligen Massiven und Schneegipfeln,
   - **Flüsse**, die bergab ins Meer fließen, sowie **Seen**, **Inseln**, Strände und Flachwasser,
   - **Klimazonen** mit Laub- und Nadelwald, Steppe, Wüste und fruchtbarem Schwemmland an Flüssen.
 - **Bodenschätze**: Eisen-, Gold- und Steinvorkommen liegen als Felsen auf der Karte.
@@ -122,6 +122,11 @@ Das Spiel ist für Android ausgelegt und bleibt am PC mit Tastatur und Maus spie
 - **6 Einheiten**: Miliz, Speerträger, Bogenschützen, Ritter, Rammen und Späher.
 - **Konter-System**: Speer schlägt Ritter, Ritter schlagen Bogen, Bogen schlagen Speer. Bogenschützen schießen zuerst, Rammen brechen Mauern.
 - **Heere ziehen über die Karte**: Die Wegsuche (A*) berücksichtigt Wald, Hügel, Furten und Gebirge.
+- **Heerführung (M)**:
+  - alle Heere und Garnisonen auf einen Blick
+  - Ziele aus einer Liste wählen, mit Entfernung und Status: Erobern, Überfall, Hinziehen, Einrücken
+  - Heere teilen und vereinen, Truppen mit der Garnison tauschen
+- **Befehlsvorschau**: Ist ein Heer gewählt, steht am Mauszeiger, was ein Rechtsklick bewirkt.
 - **Kampfarten**: Feldschlachten, Belagerungen mit Mauern, Burg, Geländebonus und Bürgeraufgebot sowie **Überfälle** zum Plündern.
 - Moral, Sold, Desertion bei leeren Kassen und Schlachtberichte.
 
@@ -138,18 +143,26 @@ Das Spiel ist für Android ausgelegt und bleibt am PC mit Tastatur und Maus spie
 - Die **KI-Fürsten** bauen, rekrutieren, siedeln, erklären einander Krieg, schließen Frieden, stellen Gebietsforderungen, bieten Bündnisse an, bitten um Hilfe und verheiraten ihre Häuser.
 - **Über 25 Ereignisse mit Entscheidungen**, zum Beispiel Flüchtlinge, Räuber, Seuchen, Feste, der kaiserliche Zehnt, Kartographen, Aufstände im Kaiserreich und Heiratsangebote.
 
-### Geschichte (9 Kapitel)
+### Geschichte (13 Kapitel) – ihr bestimmt das Tempo
 1. **Ein bescheidener Anfang**: die ersten Gebäude
 2. **Vom Dorf zur Gemeinde**: Wachstum und erster Aufstieg
-3. **Fremde Banner**: Nachbarn kennenlernen, zweite Siedlung, erster Vertrag
-4. **Das Joch des Kaisers**: Grafschaft, Burg, erste Siege
-5. **Der Bund der Freien**: Fürstentum, Verbündete und ein Heer. Danach erklärt der Kaiser den Krieg.
-6. **Krone des Volkes**: Königreich werden und kaiserliche Städte befreien
-7. **Sturm auf Valdoran**: die Hauptstadt des Tyrannen erobern
-8. **Neue Ufer**: Hafen bauen, über das Meer segeln, in Übersee Fuß fassen
-9. **Herrscher der Welt**: alle Kontinente durch Bündnis oder Eroberung einen
+3. **Vorräte für den Winter**: Lagerhaus, Brunnen, volle Speicher
+4. **Fremde Banner**: Nachbarn kennenlernen, zweite Siedlung, erster Vertrag
+5. **Gilden und Handwerk**: Mine, Schmiede, Markt und die ersten Waffen
+6. **Das Joch des Kaisers**: Grafschaft, Burg, erste Siege
+7. **Der Bund der Freien**: Fürstentum, Verbündete, ein Heer – und euer Aufstand gegen den Kaiser
+8. **Krone des Volkes**: Königreich werden und kaiserliche Städte befreien
+9. **Sturm auf Valdoran**: die Hauptstadt des Tyrannen erobern
+10. **Der Thronstreit**: General Kael und „Malriks Getreue“ – besiegen oder Frieden schließen
+11. **Neue Ufer**: Hafen bauen, über das Meer segeln, in Übersee Fuß fassen
+12. **Der Kaiser im Exil**: Malriks Festung im Südreich einnehmen
+13. **Herrscher der Welt**: alle Kontinente durch Bündnis oder Eroberung einen
 
-Wer dem Kaiser den Zehnt dreimal verweigert, löst den Krieg schon früher aus.
+**Tempo und Druck**:
+- **Friedenszeit** zu Spielbeginn (150 Tage) und nach jedem Kapitel (45 Tage, im Krieg gegen den Kaiser 20). In dieser Zeit greift euch niemand an, ihr könnt euch ganz um eure Dörfer kümmern.
+- **Druck des Kaiserreichs** (Leiste unter den Aufgaben): Er steigt langsam mit eurem Wachstum und wenn ihr den Zehnt verweigert. Zahlen und Geschenke senken ihn.
+  - Ab 50 drohen Strafexpeditionen. Ihr könnt Buße zahlen, plündern lassen oder kämpfen.
+  - Ab Kapitel 7 bestimmt ihr selbst, wann ihr euch erhebt (Knopf „Gegen den Kaiser erheben“). Wartet ihr zu lange, erklärt der Kaiser bei 100 von sich aus den Krieg.
 
 ### Einstieg
 - **Einführung beim ersten Spiel**: Die Oberfläche wird Schritt für Schritt hervorgehoben und kurz erklärt – Vorräte, Rang, Tempo, Schnellzugriff, Aufgaben, Weltkarte, Dorf und Bauen. Sie lässt sich überspringen und über die Hilfe (F1) erneut aufrufen.
@@ -198,5 +211,5 @@ Die Simulation (`World/`, `Sim/`, `Data/`) und die Pixelkunst (`Art/`) sind **ko
 ## Hinweise
 
 - Die Unity-Teile wurden gegen die Unity-Referenzassemblies kompiliert. Die Simulation wurde ohne Unity mit Bot-Spielern über tausende Tage getestet, darunter Story, Kaiser-Sturz und Seefahrt. Gebäude, Icons und Kartenausschnitte wurden außerhalb von Unity als Vorschaubilder gerendert und geprüft.
-- Alte Spielstände bleiben ladbar. Die Abholzung beginnt dann beim Ursprungswald.
+- Spielstände aus Versionen vor der größeren Welt werden nicht mehr geladen. Sie werden als `.alt-v1` gesichert, und es beginnt ein neues Spiel.
 - Der Spielstand liegt unter `Application.persistentDataPath/pixelkingdom_save.json`, eine Sicherung unter `.bak`.

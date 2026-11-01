@@ -39,6 +39,14 @@ namespace PixelKingdom
                 {
                     if (!File.Exists(path)) continue;
                     var s = JsonUtility.FromJson<GameState>(File.ReadAllText(path));
+                    if (s != null && s.version < GameState.CurrentVersion)
+                    {
+                        // Spielstand einer älteren Version (andere Kartengröße): beiseitelegen statt kaputt zu laden
+                        File.Copy(path, path + ".alt-v" + s.version, true);
+                        File.Delete(path);
+                        Debug.Log("PixelKingdom: Alter Spielstand (Version " + s.version + ") wurde gesichert und wird nicht mehr geladen.");
+                        continue;
+                    }
                     if (s != null && s.factions != null && s.factions.Count > 0) return s;
                 }
                 catch (Exception e)

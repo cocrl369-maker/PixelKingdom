@@ -184,7 +184,7 @@ namespace PixelKingdom
         bool IsSeenByPlayer(ArmyData a)
         {
             foreach (var s in game.SettlementsOf(game.PlayerId))
-                if ((s.x - a.x) * (s.x - a.x) + (s.y - a.y) * (s.y - a.y) < 15 * 15) return true;
+                if ((s.x - a.x) * (s.x - a.x) + (s.y - a.y) * (s.y - a.y) < 18 * 18) return true;
             foreach (var o in game.ArmiesOf(game.PlayerId))
                 if ((o.x - a.x) * (o.x - a.x) + (o.y - a.y) * (o.y - a.y) < 8 * 8) return true;
             return game.Status(game.PlayerId, a.faction) == DipStatus.Alliance;

@@ -166,7 +166,7 @@ namespace PixelKingdom
                 {
                     var s1 = list[i]; var s2 = list[j];
                     if (s1.faction == s2.faction) continue;
-                    if (Dist(s1.x, s1.y, s2.x, s2.y) < 22) neighbours.Add(Key(s1.faction, s2.faction));
+                    if (Dist(s1.x, s1.y, s2.x, s2.y) < 27) neighbours.Add(Key(s1.faction, s2.faction));
                 }
         }
 
@@ -276,6 +276,7 @@ namespace PixelKingdom
                     p.res[(int)Res.Gold] -= e.Cost;
                     f.res[(int)Res.Gold] += e.Cost;
                     ModRel(p.id, f.id, 8 + f.greed * 10);
+                    if (f.isEmperor) { ChangePressure(-12); return "Der Kaiser nimmt das Geschenk an. Der Druck aus Valdoran lässt etwas nach."; }
                     return $"{f.leader} nimmt das Geschenk dankend an.";
                 case DipAction.Trade:
                     if (!yes) { ModRel(p.id, f.id, -2); return $"{f.leader} lehnt ab: 'Wir brauchen eure Waren nicht.'"; }
@@ -355,6 +356,8 @@ namespace PixelKingdom
                 }
             }
             if (fa.isPlayer || fb.isPlayer) Notify($"KRIEG: {fa.name} gegen {fb.name}!", 3);
+            // Wer dem Kaiser selbst den Krieg erklärt, hat sich erhoben
+            if (fa.isPlayer && fb.isEmperor && !S.story.Has("emperor_war")) StartEmperorWar();
             else if (fa.knownToPlayer != 0 || fb.knownToPlayer != 0) Notify($"{fa.name} erklärt {fb.name} den Krieg.", 0);
         }
 

@@ -309,8 +309,10 @@ namespace PixelKingdom
                 "KARTE: WASD/Pfeile oder rechte Maustaste ziehen zum Bewegen. Mausrad (oder Q/E) zoomt in Pixelstufen.\n" +
                 "AUSWAHL: Linksklick auf Siedlung oder Heer. Rechtsklick gibt einem Heer ein Ziel. Shift+Rechtsklick auf eine feindliche Stadt: Überfall statt Eroberung.\n" +
                 "TABLET: Tippen wählt aus. Ist ein Heer gewählt, gibt Tippen ihm ein Ziel (Tippen auf das Heer selbst wählt ab). Ein Finger verschiebt die Karte, zwei Finger zoomen. Lange drücken zeigt Geländeinfos oder befiehlt einen Überfall. Wichtige Aktionen (Bauen, Diplomatie) bestätigt ihr durch zweimaliges Tippen. Zurück-Taste = Esc. Am PC simuliert F9 die Touch-Steuerung.\n" +
+                "HEERE: Truppen in einer Siedlung ausbilden (Reiter 'Truppen'), dann 'Heer aufstellen' und 'Ausrücken'. Heer anklicken: Am Mauszeiger steht, was ein Rechtsklick bewirkt (marschieren, einrücken, erobern). Die Heerführung (M) listet alle Heere, Ziele mit Entfernung, Teilen, Vereinen und Truppentausch mit der Garnison.\n" +
+                "STORY: Ihr bestimmt das Tempo. Nach jedem Kapitel gibt es eine Friedenszeit. Der Druck des Kaiserreichs steigt langsam – zahlt den Zehnt, um ihn zu senken, oder erhebt euch, wenn ihr bereit seid.\n" +
                 "ZEIT: Leertaste Pause, 1/2/3 Tempo. Tab: nächste Siedlung, H: Hauptstadt.\n" +
-                "FENSTER: R Reich, G Diplomatie, L Chronik, F1 Hilfe, P Farbpalette, F5 Speichern.\n\n" +
+                "FENSTER: R Reich, M Heerführung, G Diplomatie, L Chronik, F1 Hilfe, P Farbpalette, F5 Speichern.\n\n" +
                 "WIRTSCHAFT: Gebäude brauchen Arbeiter (60% der Bewohner). Bauernhöfe brauchen fruchtbares Land, Steinbrüche Hügel. Holzfäller fällen sichtbar Bäume – der Wald wächst nur langsam nach. Eisen- und Goldminen brauchen Erzvorkommen (rostrote bzw. funkelnde Felsen) im Stadtgebiet. Im Winter wächst wenig – legt Vorräte an!\n" +
                 "ZUFRIEDENHEIT: Steuern und Hunger senken sie, Tavernen, Kapellen und Feste heben sie. Unter 25 wandern Leute ab, unter 15 drohen Aufstände.\n" +
                 "MILITÄR: Rekruten kommen aus der Bevölkerung. Speere schlagen Ritter, Ritter schlagen Bogenschützen, Bogenschützen schlagen Speere. Rammen brechen Mauern.\n" +

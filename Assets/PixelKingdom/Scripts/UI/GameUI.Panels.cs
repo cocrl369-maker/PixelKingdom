@@ -372,6 +372,7 @@ namespace PixelKingdom
             if (CloseButton(r)) gm.SelArmy = -1;
             var f = G.F(a.faction);
             bool mine = f.isPlayer;
+            if (mine && Button(new Rect(r.xMax - 104, r.y + 3, 84, 13), "Befehle (M)", true, "Ziel aus einer Liste wählen, Heer teilen, Truppen tauschen", "army")) { armyWinSel = a.id; OpenWindow(Window.Armies); }
             Fill(new Rect(r.x + 8, r.y + 7, 8, 8), Palette.FactionColor(f.color));
             Text(r.x + 20, r.y + 7, a.name);
             if (!mine) Text(r.x + 26 + PixelFont.Width(a.name), r.y + 7, "- " + f.name, Palette.UITextDim);
@@ -391,24 +392,10 @@ namespace PixelKingdom
                 Text(x + 14, y + 2, a.settlers + " Siedler");
             }
             y += 16;
-            string mission = ((ArmyMission)a.mission) switch
-            {
-                ArmyMission.Move => "Marschiert",
-                ArmyMission.Attack => "Greift an: " + (G.St(a.target)?.name ?? "?"),
-                ArmyMission.Raid => "Überfall auf: " + (G.St(a.target)?.name ?? "?"),
-                ArmyMission.Return => "Kehrt heim nach " + (G.St(a.target)?.name ?? "?"),
-                ArmyMission.Found => "Zieht aus, um zu siedeln",
-                ArmyMission.Explore => "Erkundet die Gegend",
-                _ => "Wartet auf Befehle",
-            };
-            if (a.path.Count > 0 && a.pathIndex < a.path.Count)
-            {
-                float remaining = 0;
-                for (int k = a.pathIndex; k < a.path.Count; k++) remaining += G.Map.MoveCost(a.path[k], true);
-                float days = remaining / Mathf.Max(0.1f, G.ArmySpeed(a));
-                mission += $" (~{Mathf.CeilToInt(days)} Tage)";
-            }
-            Text(r.x + 8, y, mission, Palette.UITextDim);
+            string mission = mine ? "__Befehl__: " + MissionLong(a) : MissionShort(a);
+            if (mine && a.mission == (int)ArmyMission.Idle)
+                mission = PKInput.UsingTouch ? "__Befehl__: keiner – tippt auf ein Ziel oder 'Befehle'" : "__Befehl__: keiner – Rechtsklick auf ein Ziel oder 'Befehle'";
+            Text(r.x + 8, y, mission, mine ? Palette.UIGood : Palette.UITextDim);
             Text(r.x + 8, y + 11, $"Moral {(int)(a.morale * 100)}%   Stärke {(int)Game.Strength(a.units)}", Palette.UITextDim);
             if (!mine) return;
             float bx = r.xMax - 8 - 4 * 62;
@@ -418,7 +405,7 @@ namespace PixelKingdom
             var other = G.ArmiesOf(G.PlayerId).FirstOrDefault(o => o.id != a.id && Mathf.Abs(o.x - a.x) < 1.5f && Mathf.Abs(o.y - a.y) < 1.5f);
             if (Button(new Rect(bx + 124, by, 60, 14), "Vereinen", other != null, "Mit einem eigenen Heer in der Nähe zusammenlegen.")) G.Merge(a, other);
             if (Button(new Rect(bx + 186, by, 60, 14), "Auflösen", true, "Soldaten kehren als Bürger heim (Entf).", null, false, 1, true)) { G.Disband(a); gm.SelArmy = -1; }
-            if (a.units.Sum() > 0 && Button(new Rect(bx + 124, by - 17, 122, 14), gm.RaidMode ? "Angriffsart: Überfall" : "Angriffsart: Erobern", true,
+            if (a.units.Sum() > 0 && Button(new Rect(bx + 124, by - 17, 122, 14), gm.RaidMode ? "Bei Angriff: Überfall" : "Bei Angriff: Erobern", true,
                 "Erobern: die Stadt einnehmen. Überfall: plündern und heimkehren (am PC auch mit Shift).", "sword", gm.RaidMode)) gm.RaidMode = !gm.RaidMode;
             if (a.settlers > 0 && a.units.Sum() == 0 && a.path.Count == 0)
             {

@@ -43,9 +43,11 @@ namespace PixelKingdom
                 for (int x = 0; x < W; x++)
                 {
                     int i = WorldMap.Idx(x, y);
+                    // Planungskoordinaten (die Kontinentformen sind für 320x224 entworfen und werden skaliert)
+                    float fx = x / WorldMap.Scale, fy = y / WorldMap.Scale;
                     // Domain warp für organische Küsten
-                    float wx = x + (n2.Fbm(x * 0.02f + ox, y * 0.02f, 3) - 0.5f) * 34f;
-                    float wy = y + (n2.Fbm(x * 0.02f, y * 0.02f + oy, 3) - 0.5f) * 34f;
+                    float wx = fx + (n2.Fbm(fx * 0.02f + ox, fy * 0.02f, 3) - 0.5f) * 34f;
+                    float wy = fy + (n2.Fbm(fx * 0.02f, fy * 0.02f + oy, 3) - 0.5f) * 34f;
 
                     float mask = -1f; byte bestCont = 0;
                     foreach (var b in blobs)
@@ -58,13 +60,13 @@ namespace PixelKingdom
                     float edge = Math.Min(Math.Min(x, W - 1 - x), Math.Min(y, H - 1 - y)) / 10f;
                     if (edge < 1f) mask -= (1f - edge) * 0.8f;
 
-                    float baseN = n1.Fbm(x * 0.035f + ox, y * 0.035f + oy, 5);
+                    float baseN = n1.Fbm(fx * 0.035f + ox, fy * 0.035f + oy, 5);
                     float e = 0.37f + Clamp01(mask) * 0.17f + (baseN - 0.5f) * 0.32f + Math.Min(0, mask) * 0.6f;
 
-                    // Gebirgszüge (ridged noise), nur im Landesinneren
-                    float ridge = n3.Ridged(x * 0.028f + ox * 0.5f, y * 0.028f, 4);
+                    // Gebirgszüge (ridged noise), nur im Landesinneren – breite, zusammenhängende Massive
+                    float ridge = n3.Ridged(fx * 0.021f + ox * 0.5f, fy * 0.021f, 4);
                     float inland = Clamp01(mask * 2.2f);
-                    e += (float)Math.Pow(ridge, 3.2) * 0.62f * inland;
+                    e += (float)Math.Pow(ridge, 3.6) * 0.66f * inland;
 
                     map.h[i] = e;
                     map.cont[i] = bestCont;
@@ -95,7 +97,7 @@ namespace PixelKingdom
 
             // --- Flüsse --------------------------------------------------------------
             int rivers = 0;
-            for (int attempt = 0; attempt < 600 && rivers < 46; attempt++)
+            for (int attempt = 0; attempt < 600 && rivers < 72; attempt++)
             {
                 int sx = rnd.Next(4, W - 4), sy = rnd.Next(4, H - 4);
                 int si = WorldMap.Idx(sx, sy);

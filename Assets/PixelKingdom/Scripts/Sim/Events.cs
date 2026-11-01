@@ -40,13 +40,14 @@ namespace PixelKingdom
             if (emp != null && emp.alive && p.rank >= 1 && !S.story.Has("emperor_war") && S.day >= S.nextTaxDay && p.continent == 0)
             {
                 S.nextTaxDay = S.day + 45;
-                QueueEvent(new PendingEvent { id = "tax", a = emp.id, v = (float)Math.Round(20 + p.res[(int)Res.Gold] * 0.15f + TotalPop(p.id) * 0.2f) });
+                float amount = (20 + p.res[(int)Res.Gold] * 0.15f + TotalPop(p.id) * 0.2f) * (1f + S.story.pressure / 100f);
+                QueueEvent(new PendingEvent { id = "tax", a = emp.id, v = (float)Math.Round(amount) });
             }
             // Aufstände im Kaiserreich, sobald der Spieler gegen den Kaiser kämpft
             if (emp != null && emp.alive && S.story.Has("emperor_war") && Rng.NextDouble() < 0.025)
             {
                 var cand = SettlementsOf(emp.id).Where(s => !s.isCapitalOfEmperor && s.garrison.Sum() < 25 &&
-                    SettlementsOf(p.id).Any(ps => Dist(ps.x, ps.y, s.x, s.y) < 30)).OrderBy(s => s.happiness).FirstOrDefault();
+                    SettlementsOf(p.id).Any(ps => Dist(ps.x, ps.y, s.x, s.y) < 38)).OrderBy(s => s.happiness).FirstOrDefault();
                 if (cand != null) QueueEvent(new PendingEvent { id = "uprising", a = cand.id });
             }
 
@@ -161,6 +162,13 @@ namespace PixelKingdom
                     v.Text = $"Ein Steuereintreiber in schwarzem Samt verliest ein Dekret: 'Seine Majestät Kaiser Malrik fordert den Zehnt: {(int)e.v} Gold.'";
                     v.Opt($"Zahlen ({(int)e.v} Gold)", gold >= e.v);
                     v.Opt("Verweigern (Kaiser erzürnt, Volk jubelt)");
+                    break;
+                case "punish":
+                    v.Title = "Kaiserliche Strafexpedition"; v.Icon = "eagle";
+                    v.Text = $"Reiter mit dem eisernen Adler stehen vor {sn}: 'Seine Majestät ist unzufrieden mit euch. Zahlt {(int)e.v} Gold Buße – oder wir nehmen uns, was wir finden.'";
+                    v.Opt($"Buße zahlen ({(int)e.v} Gold, senkt den Druck)", gold >= e.v);
+                    v.Opt("Plündern lassen (Nahrung und Holz gehen verloren)");
+                    v.Opt("Mit der Garnison vertreiben (riskant, erhöht den Druck)", s != null && s.garrison.Sum() > 0);
                     break;
                 case "uprising":
                     v.Title = "Aufstand in " + sn; v.Icon = "fist";
@@ -289,21 +297,35 @@ namespace PixelKingdom
                     if (option == 0 && res[4] >= 15) res[4] -= 15; else res[0] = Math.Max(0, res[0] - 20);
                     break;
                 case "tax":
-                    if (option == 0 && res[4] >= e.v) { res[4] -= e.v; if (f != null) { ModRel(p.id, f.id, 6); f.res[4] += e.v; } }
+                    if (option == 0 && res[4] >= e.v) { res[4] -= e.v; ChangePressure(-15); if (f != null) { ModRel(p.id, f.id, 6); f.res[4] += e.v; } }
                     else
                     {
                         if (f != null) ModRel(p.id, f.id, -18);
                         AllHappy(6); p.prestige += 8;
+                        ChangePressure(15);
                         S.story.Set("tax_refused");
-                        int refused = S.story.flags.Count(x => x == "tax_refused_count") + 1;
-                        S.story.flags.Add("tax_refused_count");
-                        Notify("Ihr habt dem Kaiser die Stirn geboten. Das Volk spricht von euch.", 1);
-                        if (refused >= 3 && !S.story.Has("emperor_war") && f != null)
+                        Notify("Ihr habt dem Kaiser die Stirn geboten. Das Volk spricht von euch – und Valdoran auch.", 1);
+                    }
+                    break;
+                case "punish":
+                    if (s == null) break;
+                    if (option == 0 && res[4] >= e.v) { res[4] -= e.v; ChangePressure(-20); }
+                    else if (option == 2)
+                    {
+                        float str = Strength(s.garrison);
+                        if (str > 60 || Rng.NextDouble() < str / 80f)
                         {
-                            Notify("Der Kaiser schickt Truppen, um euch Gehorsam zu lehren!", 3);
-                            StartEmperorWar();
+                            p.prestige += 12; ChangePressure(8); S.battlesWon++;
+                            Notify($"Die kaiserlichen Reiter wurden vor {s.name} zurückgeschlagen!", 1);
+                        }
+                        else
+                        {
+                            for (int u = 0; u < Units.Count; u++) s.garrison[u] = s.garrison[u] * 3 / 4;
+                            res[0] *= 0.7f; res[1] *= 0.8f; s.happiness -= 10;
+                            Notify($"Die Strafexpedition hat {s.name} geplündert.", 2);
                         }
                     }
+                    else { res[0] *= 0.75f; res[1] *= 0.8f; s.happiness -= 12; p.prestige += 3; ChangePressure(-5); Notify($"Die Strafexpedition hat {s.name} geplündert.", 2); }
                     break;
                 case "uprising":
                     if (option == 0 && res[4] >= 120 && s != null && Emperor != null && s.faction == Emperor.id)

@@ -75,7 +75,7 @@ namespace PixelKingdom
                     var of = F(o.faction);
                     if (of.isEmperor && f.loyalty > 0.4f) continue;
                     float d = Dist(mine.x, mine.y, o.x, o.y);
-                    if (d > 26) continue;
+                    if (d > 32) continue;
                     float score = o.pop * 0.5f - d * 2f - DefenseStrength(o) * 0.1f + (of.isFree ? 10 : 0) - RelValue(f.id, o.faction) * 0.3f;
                     if (score > bestScore) { bestScore = score; best = o; }
                 }
@@ -93,7 +93,7 @@ namespace PixelKingdom
             if (src == null || src.pop < 60) return;
             for (int t = 0; t < 30; t++)
             {
-                double ang = Rng.NextDouble() * Math.PI * 2; int r = 8 + Rng.Next(9);
+                double ang = Rng.NextDouble() * Math.PI * 2; int r = 9 + Rng.Next(11);
                 int tx = src.x + (int)(Math.Cos(ang) * r), ty = src.y + (int)(Math.Sin(ang) * r);
                 if (!CanFoundAt(f.id, tx, ty, out _)) continue;
                 if (Map.cont[WorldMap.Idx(tx, ty)] != Map.cont[WorldMap.Idx(src.x, src.y)]) continue;
@@ -119,6 +119,7 @@ namespace PixelKingdom
                 if (st == DipStatus.Pact && f.honor > 0.35f) continue;
                 if (o.isPlayer)
                 {
+                    if (InPeace) continue;
                     // Schonfrist für neue Spieler
                     if (o.rank < 1 || S.day < 80) continue;
                     if (f.isEmperor && !S.story.Has("emperor_war")) continue;
@@ -184,9 +185,10 @@ namespace PixelKingdom
             {
                 if (o.faction == f.id || !AtWar(f.id, o.faction)) continue;
                 if (o.isCapitalOfEmperor) continue;
+                if (o.faction == PlayerId && InPeace) continue; // Friedenszeit
                 if (S.day - o.lastBattleDay < 25) continue; // Atempause nach einem Kampf
                 float d = Dist(src.x, src.y, o.x, o.y);
-                if (d > 55) continue;
+                if (d > 68) continue;
                 if (Map.cont[WorldMap.Idx(o.x, o.y)] != Map.cont[WorldMap.Idx(src.x, src.y)]) continue;
                 float def = DefenseStrength(o);
                 if (def > avail * 0.9f && !(f.aggression > 0.7f && def < avail * 1.6f)) continue;
@@ -223,7 +225,7 @@ namespace PixelKingdom
                 QueueEvent(new PendingEvent { id = "alliance_offer", a = f.id });
             else if (rel.value > 10 && !rel.trade && f.greed > 0.4f && r < 0.4 && HasMarket(p.id))
                 QueueEvent(new PendingEvent { id = "trade_offer", a = f.id });
-            else if (rel.value < -10 && f.aggression > 0.55f && !f.isFree && MilitaryStrength(f.id) > MilitaryStrength(p.id) * 2.2f && p.rank >= 1 && r < 0.4)
+            else if (!InPeace && rel.value < -10 && f.aggression > 0.55f && !f.isFree && MilitaryStrength(f.id) > MilitaryStrength(p.id) * 2.2f && p.rank >= 1 && r < 0.4)
                 QueueEvent(new PendingEvent { id = "tribute_demand", a = f.id, v = (float)Math.Round(30 + TotalPop(p.id) * 0.3f) });
             else if (rel.value > 25)
             {

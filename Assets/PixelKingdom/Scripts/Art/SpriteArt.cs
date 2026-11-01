@@ -801,6 +801,26 @@ namespace PixelKingdom
                     if (c.Opaque(x, y) && PixelCanvas.Rnd(x, y, seed) < 0.6f) c.Set(x, y, p.Hills.Mul(0.85f));
         }
 
+        /// <summary>Gebirgsmassiv: mehrere Gipfel, hintere zuerst – wirkt wie eine echte Gebirgskette.</summary>
+        static void Massif(PixelCanvas c, int cx, int gy, int w, int h, bool snowy, ArtPalette p, int seed, int peaks)
+        {
+            // hintere Gipfel (etwas höher, versetzt nach oben)
+            for (int k = 0; k < peaks - 1; k++)
+            {
+                float t = peaks == 2 ? (k == 0 ? -0.28f : 0.28f) : (k - (peaks - 2) / 2f) * 0.42f;
+                int bw = (int)(w * 0.62f), bh = (int)(h * (0.82f + PixelCanvas.Rnd(seed, k, 21) * 0.18f));
+                Mountain(c, cx + (int)(t * w), gy - (int)(h * 0.18f), bw, bh, snowy, p, seed * 7 + k);
+            }
+            // vorderer Hauptgipfel
+            Mountain(c, cx, gy, w, (int)(h * 0.78f), snowy, p, seed * 13 + 5);
+            // Geröll am Fuß
+            for (int k = 0; k < 6; k++)
+            {
+                int x = cx - w / 2 + 3 + (int)(PixelCanvas.Rnd(seed, k, 30) * (w - 6));
+                if (c.Opaque(x, gy - 1)) c.Set(x, gy - 1, p.RockDark);
+            }
+        }
+
         static void Hill(PixelCanvas c, int cx, int gy, ArtPalette p, int seed)
         {
             c.Ellipse(cx, gy, 10, 6, p.Hills.Mul(0.82f));
@@ -1014,6 +1034,12 @@ namespace PixelKingdom
             Add("m_rock1", 48, (c, x, y) => Mountain(c, x, y, 24, 17, false, pal, 7));
             Add("m_snow0", 48, (c, x, y) => Mountain(c, x, y, 32, 26, true, pal, 5));
             Add("m_snow1", 48, (c, x, y) => Mountain(c, x, y, 26, 20, true, pal, 9));
+            // Große Massive für Gebirgszüge
+            Add("m_mid", 80, (c, x, y) => Massif(c, x, y, 54, 40, false, pal, 11, 2));
+            Add("m_big", 112, (c, x, y) => Massif(c, x, y, 80, 60, false, pal, 12, 3));
+            Add("m_huge", 128, (c, x, y) => Massif(c, x, y, 100, 76, true, pal, 13, 3));
+            Add("m_mid_s", 80, (c, x, y) => Massif(c, x, y, 54, 42, true, pal, 14, 2));
+            Add("m_big_s", 112, (c, x, y) => Massif(c, x, y, 82, 64, true, pal, 15, 3));
             Add("h_hill0", 32, (c, x, y) => Hill(c, x, y, pal, 1), false, true, pal.Hills.Dark(0.5f));
             Add("r_rock", 24, (c, x, y) => Rocks(c, x, y, pal.Rock, pal.RockLight, pal.RockDark, pal.RockLight, pal.Rock, 4));
             Add("d_iron", 24, (c, x, y) => Rocks(c, x, y, H("#8C7F74"), H("#B0A396"), H("#5E544C"), Rust, RustL, 5));

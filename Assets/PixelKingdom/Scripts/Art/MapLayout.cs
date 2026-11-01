@@ -35,13 +35,25 @@ namespace PixelKingdom
             }
             if (b == Biome.Mountain || b == Biome.Snow)
             {
-                bool snowy = b == Biome.Snow || map.h[i] > 0.86f;
-                if (((x + y * 3) % 2) == 0 || R(x, y, 1) < 0.25f)
+                // Wenige, große Massive auf einem lockeren Raster statt eines Berges pro Kachel
+                int ox = (y / 4) % 2 == 0 ? 0 : 3;
+                if ((x + ox) % 6 == 0 && y % 4 == 0)
                 {
-                    string n = (snowy ? "m_snow" : "m_rock") + (R(x, y, 2) < 0.5f ? "0" : "1");
-                    outList.Add(new Placed(n, cx + (R(x, y, 3) - 0.5f) * 0.6f, y + 0.15f + R(x, y, 4) * 0.3f, false, false, R(x, y, 5) < 0.5f));
+                    int dens = 0; bool snowy = b == Biome.Snow || map.h[i] > 0.88f;
+                    for (int dy = -2; dy <= 2; dy++)
+                        for (int dx = -2; dx <= 2; dx++)
+                        {
+                            int nx = x + dx, ny = y + dy;
+                            if (!WorldMap.In(nx, ny)) continue;
+                            var nb = map.biome[WorldMap.Idx(nx, ny)];
+                            if (nb == Biome.Mountain || nb == Biome.Snow) dens++;
+                            if (nb == Biome.Snow) snowy = true;
+                        }
+                    string n = dens >= 14 ? (snowy ? "m_huge" : "m_big") : dens >= 7 ? (snowy ? "m_big_s" : "m_big") : (snowy ? "m_mid_s" : "m_mid");
+                    if (dens < 3) n = snowy ? "m_snow0" : "m_rock0";
+                    outList.Add(new Placed(n, cx + (R(x, y, 3) - 0.5f) * 0.8f, y + 0.1f + R(x, y, 4) * 0.4f, false, false, R(x, y, 5) < 0.5f));
                 }
-                else if (R(x, y, 6) < 0.4f) outList.Add(new Placed("r_rock", cx, y + 0.4f));
+                else if (R(x, y, 6) < 0.12f) outList.Add(new Placed("r_rock", cx, y + 0.4f));
             }
             else if (b == Biome.Hills && map.trees[i] == 0 && R(x, y, 7) < 0.18f)
                 outList.Add(new Placed("h_hill0", cx + (R(x, y, 8) - 0.5f) * 0.4f, y + 0.35f, false, false, R(x, y, 9) < 0.5f));
@@ -91,6 +103,19 @@ namespace PixelKingdom
             const int WR = 3;
 
             void Use(int x, int y) { if (WorldMap.In(x, y)) { int i = WorldMap.Idx(x, y); used.Add(i); occupied?.Add(i); } }
+            // Kleine Dörfer: Gebäude mit Abstand (lockerer Dorfcharakter); Städte bleiben dicht bebaut
+            var bld = new HashSet<int>();
+            bool sparse = s.pop < 90 && s.buildings[(int)BType.Mauer] == 0;
+            bool Spaced(int x, int y)
+            {
+                if (!sparse) return true;
+                for (int k = 0; k < 4; k++)
+                {
+                    int nx = x + WorldMap.DX4[k], ny = y + WorldMap.DY4[k];
+                    if (WorldMap.In(nx, ny) && bld.Contains(WorldMap.Idx(nx, ny))) return false;
+                }
+                return true;
+            }
             bool Free(int x, int y)
             {
                 if (!WorldMap.In(x, y)) return false;
@@ -116,6 +141,7 @@ namespace PixelKingdom
 
             // Zentrum (3x2 Kacheln)
             for (int dy = 0; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++) Use(cx + dx, cy + dy);
+            if (WorldMap.In(cx, cy)) bld.Add(WorldMap.Idx(cx, cy));
             int lvl = CenterLevel(g, s);
             string center = s.buildings[(int)BType.Burg] > 0 && !s.isCapitalOfEmperor ? "b_Burg"
                 : lvl >= 4 ? "c_palace" : lvl >= 2 ? "c_keep" : lvl == 1 ? "c_rathaus" : "c_dorf";
@@ -149,9 +175,13 @@ namespace PixelKingdom
 
             (int x, int y) Find(Func<int, int, bool> pred, bool preferInside, float minD = 0)
             {
-                if (preferInside)
-                    foreach (var t in tiles) if (t.d >= minD && Free(t.x, t.y) && !OnWallLine(t.x, t.y) && Inside(t.x, t.y) && pred(t.x, t.y)) return (t.x, t.y);
-                foreach (var t in tiles) if (t.d >= minD && Free(t.x, t.y) && !OnWallLine(t.x, t.y) && pred(t.x, t.y)) return (t.x, t.y);
+                for (int pass = 0; pass < 2; pass++)
+                {
+                    bool needSpace = pass == 0;
+                    if (preferInside)
+                        foreach (var t in tiles) if (t.d >= minD && Free(t.x, t.y) && !OnWallLine(t.x, t.y) && Inside(t.x, t.y) && pred(t.x, t.y) && (!needSpace || Spaced(t.x, t.y))) return (t.x, t.y);
+                    foreach (var t in tiles) if (t.d >= minD && Free(t.x, t.y) && !OnWallLine(t.x, t.y) && pred(t.x, t.y) && (!needSpace || Spaced(t.x, t.y))) return (t.x, t.y);
+                }
                 return (-1, -1);
             }
 
@@ -168,7 +198,7 @@ namespace PixelKingdom
             void Put(string name, (int x, int y) t, bool tinted = false)
             {
                 if (t.x < 0) return;
-                Use(t.x, t.y);
+                Use(t.x, t.y); bld.Add(WorldMap.Idx(t.x, t.y));
                 res.Add(new Placed(name, t.x + 0.5f, t.y + 0.28f, false, tinted));
             }
 
@@ -222,7 +252,7 @@ namespace PixelKingdom
             {
                 var t = Find((x, y) => true, true);
                 if (t.x < 0) break;
-                Use(t.x, t.y);
+                Use(t.x, t.y); bld.Add(WorldMap.Idx(t.x, t.y));
                 uint hh = (uint)(t.x * 73856093 ^ t.y * 19349663);
                 res.Add(new Placed("b_Wohnhaus" + (hh % 3), t.x + 0.5f + ((hh >> 6) % 3 - 1) * 0.08f, t.y + 0.28f));
             }

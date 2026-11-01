@@ -124,6 +124,51 @@ namespace PixelKingdom
             RemoveArmy(other);
         }
 
+        /// <summary>Teilt ein Heer: die Hälfte jeder Truppenart bildet ein neues Heer.</summary>
+        public ArmyData SplitArmy(ArmyData a)
+        {
+            int total = 0;
+            var half = new int[Units.Count];
+            for (int u = 0; u < Units.Count; u++) { half[u] = a.units[u] / 2; total += half[u]; }
+            if (total == 0) return null;
+            var b = new ArmyData { id = NewId(), faction = a.faction, x = a.x + 0.3f, y = a.y - 0.3f, home = a.home, morale = a.morale, name = a.name + " (geteilt)" };
+            for (int u = 0; u < Units.Count; u++) { b.units[u] = half[u]; a.units[u] -= half[u]; }
+            AddArmy(b);
+            return b;
+        }
+
+        /// <summary>Eigene Siedlung, in der das Heer gerade steht (oder null).</summary>
+        public SettlementData SettlementUnder(ArmyData a)
+        {
+            foreach (var s in SettlementsOf(a.faction))
+                if (Math.Abs(s.x + 0.5f - a.x) <= 1.6f && Math.Abs(s.y + 0.5f - a.y) <= 1.6f) return s;
+            return null;
+        }
+
+        /// <summary>Truppen zwischen Heer und Garnison verschieben (n > 0: aus der Garnison ins Heer).</summary>
+        public void ExchangeTroops(ArmyData a, SettlementData s, int unit, int n)
+        {
+            if (n > 0) { n = Math.Min(n, s.garrison[unit]); s.garrison[unit] -= n; a.units[unit] += n; }
+            else { n = Math.Min(-n, a.units[unit]); a.units[unit] -= n; s.garrison[unit] += n; }
+        }
+
+        /// <summary>Was würde ein Befehl an diesen Ort bewirken? (Vorschau für die Oberfläche)</summary>
+        public string OrderPreview(ArmyData a, int tx, int ty, SettlementData target, bool raid)
+        {
+            if (a.settlers > 0 && a.units.Sum() == 0)
+                return CanFoundAt(a.faction, tx, ty, out string why) ? "Hier eine Siedlung gründen" : "Gründen nicht möglich: " + why;
+            if (target != null)
+            {
+                if (target.faction == a.faction) return "In " + target.name + " einrücken (Garnison)";
+                var f = F(target.faction);
+                if (!AtWar(a.faction, target.faction)) return (raid ? "Überfall auf " : "Angriff auf ") + target.name + " – erst Krieg erklären!";
+                return (raid ? "Überfall auf " : "Erobern: ") + target.name + " (" + f.name + ")";
+            }
+            if (!WorldMap.In(tx, ty)) return null;
+            if (Map.MoveCost(WorldMap.Idx(tx, ty), CanSail(a.faction)) == float.MaxValue) return "Dort kann das Heer nicht hin";
+            return "Hierher marschieren";
+        }
+
         public bool CanSendSettlers(SettlementData s, out string why)
         {
             var f = F(s.faction);
@@ -145,7 +190,7 @@ namespace PixelKingdom
             if (fid == S.playerFaction && !Map.disc[i]) { why = "Unerforschtes Gebiet"; return false; }
             if (!Map.Buildable(i)) { why = "Hier kann man nicht siedeln"; return false; }
             if (Map.owner[i] >= 0 && Map.owner[i] != fid) { why = "Gebiet gehört bereits jemandem"; return false; }
-            foreach (var s in S.settlements) if (Dist(s.x, s.y, x, y) < 6.5f) { why = "Zu nah an " + s.name; return false; }
+            foreach (var s in S.settlements) if (Dist(s.x, s.y, x, y) < 8f) { why = "Zu nah an " + s.name; return false; }
             return true;
         }
 

@@ -44,11 +44,11 @@ namespace PixelKingdom
             new RankDef { Name = "Grafschaft", Ruler = "Graf", Desc = "Ein befestigtes Land mit mehreren Orten.",
                 Pop = 140, Settlements = 2, MaxSettlements = 5, Prestige = 60, GoldCost = 200, RequiredBuilding = BType.Mauer, ProductionBonus = 0.10f },
             new RankDef { Name = "Fürstentum", Ruler = "Fürst", Desc = "Burgen, Ritter und ein eigener Hof.",
-                Pop = 320, Settlements = 4, MaxSettlements = 8, Prestige = 160, GoldCost = 500, RequiredBuilding = BType.Burg, StoryChapter = 3, ProductionBonus = 0.15f },
+                Pop = 320, Settlements = 4, MaxSettlements = 8, Prestige = 160, GoldCost = 500, RequiredBuilding = BType.Burg, StoryChapter = 5, ProductionBonus = 0.15f },
             new RankDef { Name = "Königreich", Ruler = "König", Desc = "Eine Krone, viele Vasallen.",
-                Pop = 650, Settlements = 7, MaxSettlements = 14, Prestige = 380, GoldCost = 1200, RequiredBuilding = BType.Kathedrale, StoryChapter = 4, ProductionBonus = 0.22f },
+                Pop = 650, Settlements = 7, MaxSettlements = 14, Prestige = 380, GoldCost = 1200, RequiredBuilding = BType.Kathedrale, StoryChapter = 6, ProductionBonus = 0.22f },
             new RankDef { Name = "Kaiserreich", Ruler = "Kaiser", Desc = "Der Tyrann ist gestürzt. Die Welt steht offen.",
-                Pop = 1000, Settlements = 10, MaxSettlements = 99, Prestige = 700, GoldCost = 2500, StoryChapter = 7, ProductionBonus = 0.30f },
+                Pop = 1000, Settlements = 10, MaxSettlements = 99, Prestige = 700, GoldCost = 2500, StoryChapter = 9, ProductionBonus = 0.30f },
         };
         public static RankDef Get(int r) => All[Math.Max(0, Math.Min(Count - 1, r))];
     }
@@ -187,8 +187,8 @@ namespace PixelKingdom
             new UnitDef { Type = UType.Ramme, Name = "Ramme", Plural = "Rammen", Icon = "ram", Desc = "Bricht Mauern. Im Feld nutzlos.",
                 Atk = 1, Def = 4, Hp = 22, Speed = 2f, Cost = new float[]{ 0, 30, 0, 4, 15, 0 }, UpkeepGold = 0.1f, UpkeepFood = 0.1f, Days = 4,
                 Needs = BType.Werkstatt, MinRank = 3, Siege = 0.3f },
-            new UnitDef { Type = UType.Spaeher, Name = "Späher", Plural = "Späher", Icon = "eye", Desc = "Schnell, sieht weit. Erkundet die Welt.",
-                Atk = 1, Def = 1, Hp = 6, Speed = 7f, Cost = new float[]{ 3, 0, 0, 0, 4, 0 }, UpkeepGold = 0.04f, UpkeepFood = 0.08f, Days = 1, Vision = 9 },
+            new UnitDef { Type = UType.Spaeher, Name = "Späher", Plural = "Späher", Icon = "eye", Desc = "Etwas schneller als Fußtruppen, sieht weiter. Erkundet die Welt.",
+                Atk = 1, Def = 1, Hp = 6, Speed = 4f, Cost = new float[]{ 3, 0, 0, 0, 4, 0 }, UpkeepGold = 0.04f, UpkeepFood = 0.08f, Days = 1, Vision = 6 },
         };
         public static UnitDef Get(int t) => All[t];
         public static UnitDef Get(UType t) => All[(int)t];

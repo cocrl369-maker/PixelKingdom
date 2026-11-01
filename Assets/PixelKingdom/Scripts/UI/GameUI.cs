@@ -10,7 +10,7 @@ namespace PixelKingdom
     /// </summary>
     public partial class GameUI : MonoBehaviour
     {
-        public enum Window { None, Menu, Diplomacy, Realm, Log, Help, ConfirmWar }
+        public enum Window { None, Menu, Diplomacy, Realm, Log, Help, ConfirmWar, Armies }
 
         GameManager gm;
         Game G => gm.Game;
@@ -218,6 +218,7 @@ namespace PixelKingdom
             switch (Open)
             {
                 case Window.Diplomacy: DrawDiplomacy(); break;
+                case Window.Armies: DrawArmies(); break;
                 case Window.Realm: DrawRealm(); break;
                 case Window.Log: DrawLog(); break;
                 case Window.Help: DrawHelp(); break;
@@ -477,6 +478,7 @@ namespace PixelKingdom
             (string icon, string tip, Window w)[] items =
             {
                 ("crown", "Reich & Rang (R)", Window.Realm),
+                ("army", "Heerführung (M): Heere befehligen und verwalten", Window.Armies),
                 ("handshake", "Diplomatie (G)", Window.Diplomacy),
                 ("book", "Chronik (L)", Window.Log),
                 ("scroll", "Hilfe (F1)", Window.Help),
@@ -578,39 +580,81 @@ namespace PixelKingdom
         // ------------------------------------------------------------------
         //  Quest-Tracker
         // ------------------------------------------------------------------
+        float questBottom = 60;
+
         void DrawQuest()
         {
             var ch = G.CurrentChapter;
-            float w = 172;
+            float w = Mathf.Min(200, VW * 0.3f);
             float x = VW - w - 4, y = 40;
-            if (ch == null)
-            {
-                var r0 = new Rect(x, y, w, 20);
-                Panel(r0);
-                Text(x + 6, y + 6, "Freies Spiel – die Welt gehört euch", Palette.UIText);
-                return;
-            }
+            // Status-Zeilen: Friedenszeit und Druck des Kaiserreichs
+            var emp = G.Emperor;
+            bool showPressure = emp != null && emp.alive && !G.S.story.Has("emperor_war") && G.Player.rank >= 1;
+            bool war = emp != null && emp.alive && G.S.story.Has("emperor_war");
+            int statusLines = (G.InPeace ? 1 : 0) + (showPressure || war ? 1 : 0) + (G.CanChallengeEmperor ? 1 : 0);
+
             var objs = G.CurrentObjectives();
-            float h = questOpen ? 30 + objs.Count * 12 + 2 : 18;
+            var objLines = new List<List<string>>();
+            foreach (var o in objs)
+            {
+                string t = o.Text;
+                if (o.Target > 1 && !o.Done) t += $" ({(int)o.Cur}/{(int)o.Target})";
+                objLines.Add(PixelFont.Wrap(t, (int)w - 26));
+            }
+            int nLines = 0; foreach (var l in objLines) nLines += l.Count;
+            float h = ch == null ? 18 : questOpen ? 22 + nLines * 10 + objs.Count * 2 + 2 : 18;
+            if (questOpen) h += statusLines * 13;
             var r = new Rect(x, y, w, h);
             Panel(r);
             Mark("quest", r);
             PixelIcons.Draw(new Rect(x + 5, y + 4, 12, 12), "book", Palette.UIText);
-            Text(x + 21, y + 6, ch.Title + ": " + ch.Subtitle, Palette.UIText);
+            string head = ch == null ? "Freies Spiel – die Welt gehört euch" : ch.Title + ": " + ch.Subtitle;
+            if (PixelFont.Width(head) > w - 26) head = ch != null ? ch.Subtitle : head;
+            Text(x + 21, y + 6, head, Palette.UIText);
             if (Clicked(new Rect(x, y, w, 16))) questOpen = !questOpen;
+            questBottom = r.yMax;
             if (!questOpen) return;
             float oy = y + 20;
-            foreach (var o in objs)
+            for (int k = 0; k < objs.Count; k++)
             {
+                var o = objs[k];
                 var box = new Rect(x + 6, oy, 9, 9);
                 Fill(box, Palette.UIPanelDark);
                 if (o.Done) Fill(new Rect(box.x + 2, box.y + 2, 5, 5), Palette.UIGood);
-                string t = o.Text;
-                if (o.Target > 1 && !o.Done) t += $" ({(int)o.Cur}/{(int)o.Target})";
-                Text(x + 19, oy + 1, t, o.Done ? Palette.UITextDim : Palette.UIText);
-                oy += 12;
+                foreach (var line in objLines[k]) { Text(x + 19, oy + 1, line, o.Done ? Palette.UITextDim : Palette.UIText); oy += 10; }
+                oy += 2;
             }
-            Tip(r, "Aktuelles Kapitel der Geschichte. Ziele werden automatisch geprüft. Klick auf den Titel klappt ein/aus.");
+            Tip(new Rect(x, y, w, oy - y), "__Aufgaben__\nDas aktuelle Kapitel der Geschichte. Ziele werden automatisch geprüft. Ihr bestimmt das Tempo – nichts davon läuft euch weg. Klick auf den Titel klappt ein/aus.");
+            if (G.InPeace)
+            {
+                Icon(new Rect(x + 5, oy, 12, 12), "dove", Palette.UIGood);
+                Text(x + 21, oy + 2, $"Friedenszeit: noch {G.PeaceDaysLeft} Tage", Palette.UIGood);
+                Tip(new Rect(x, oy, w, 12), "__Friedenszeit__\nNiemand greift euch an. Zeit, das Dorf auszubauen. Nach jedem Kapitel beginnt eine neue Friedenszeit.");
+                oy += 13;
+            }
+            if (showPressure)
+            {
+                float pr = G.S.story.pressure;
+                Icon(new Rect(x + 5, oy, 12, 12), "eagle", Palette.UIText);
+                Text(x + 21, oy + 2, "Druck", Palette.UIText);
+                Bar(new Rect(x + 52, oy + 4, w - 60, 5), pr / 100f, pr >= 80 ? Palette.UIBad : pr >= 50 ? Palette.UIGood : Palette.UISand);
+                Tip(new Rect(x, oy, w, 12), $"__Druck des Kaiserreichs__: {(int)pr}/100\nSteigt langsam mit eurem Wachstum und wenn ihr dem Kaiser trotzt. Sinkt, wenn ihr den Zehnt zahlt oder Geschenke schickt.\n__Ab 50__: Strafexpeditionen\n__Bei 100__: Der Kaiser erklärt den Krieg (ab Kapitel {Game.ChapterUprising + 1})");
+                oy += 13;
+            }
+            else if (war)
+            {
+                Icon(new Rect(x + 5, oy, 12, 12), "sword", Palette.UIGood);
+                Text(x + 21, oy + 2, "Krieg gegen den Kaiser!", Palette.UIGood);
+                oy += 13;
+            }
+            if (G.CanChallengeEmperor)
+            {
+                if (Button(new Rect(x + 5, oy - 1, w - 10, 13), "Gegen den Kaiser erheben", true,
+                    "__Aufstand__\nIhr entscheidet, wann der Krieg gegen Kaiser Malrik beginnt. Kaisertreue Fürsten werden sich gegen euch stellen, Kaiserfeinde werden euch mögen.", "sword", false, 1, true))
+                    G.ChallengeEmperor();
+                oy += 13;
+            }
+            questBottom = Mathf.Max(r.yMax, oy);
         }
 
         // ------------------------------------------------------------------
@@ -619,7 +663,7 @@ namespace PixelKingdom
         void DrawToasts()
         {
             float w = 190;
-            float y = 40 + (G.CurrentChapter != null && questOpen ? 30 + G.CurrentObjectives().Count * 12 + 8 : 26);
+            float y = questBottom + 6;
             for (int i = toasts.Count - 1; i >= 0; i--)
             {
                 var t = toasts[i];
@@ -709,6 +753,22 @@ namespace PixelKingdom
                     float sz = 16f * zoom / S;
                     Brackets(new Rect(v.x - sz / 2, v.y - sz / 2, sz, sz), 2, gm.CurrentMode == GameManager.Mode.PlaceSettlers ? Palette.UISand : Palette.UIText);
                 }
+                // Befehlsvorschau am Mauszeiger (gewähltes eigenes Heer)
+                var selA = G.A(gm.SelArmy);
+                if (selA != null && selA.faction == G.PlayerId && (!PKInput.UsingTouch || gm.CurrentMode == GameManager.Mode.TargetArmy) && WorldToVirtual(c, out var pv))
+                {
+                    var ts = gm.SettlementNear(gm.HoverPoint.x, gm.HoverPoint.y, 1.2f);
+                    if (ts != null && !G.IsDiscovered(ts.x, ts.y)) ts = null;
+                    string prev = G.OrderPreview(selA, gm.HoverX, gm.HoverY, ts, PKInput.Key(PKKey.Shift) || gm.RaidMode);
+                    if (prev != null)
+                    {
+                        string lbl = (PKInput.UsingTouch ? "Tippen: " : gm.CurrentMode == GameManager.Mode.TargetArmy ? "Klick: " : "Rechtsklick: ") + prev;
+                        var pr = new Rect(Mathf.Round(pv.x + 10), Mathf.Round(pv.y + 8), PixelFont.Width(lbl) + 8, 12);
+                        if (pr.xMax > VW - 4) pr.x = VW - 4 - pr.width;
+                        Fill(pr, new Color(Palette.UIPanelDark.r, Palette.UIPanelDark.g, Palette.UIPanelDark.b, 0.9f));
+                        Text(pr.x + 4, pr.y + 2, lbl, Palette.UIGood);
+                    }
+                }
                 // Geländeinfo unten links über der Minikarte
                 int ti = WorldMap.Idx(gm.HoverX, gm.HoverY);
                 if (G.Map.disc[ti])
@@ -742,7 +802,11 @@ namespace PixelKingdom
         void DrawModeHint()
         {
             string hint = null;
-            if (gm.CurrentMode == GameManager.Mode.PlaceSettlers)
+            if (gm.CurrentMode == GameManager.Mode.TargetArmy)
+            {
+                hint = (PKInput.UsingTouch ? "Tippt" : "Klickt") + " auf das Ziel für das Heer: Gelände, eigene Stadt oder Feind  (" + (PKInput.UsingTouch ? "Zurück" : "Esc") + ": abbrechen)";
+            }
+            else if (gm.CurrentMode == GameManager.Mode.PlaceSettlers)
             {
                 hint = PKInput.UsingTouch ? "Tippt auf den Ort für die neue Siedlung  (Zurück: abbrechen)" : "Linksklick: Ort für die neue Siedlung wählen  (Esc: abbrechen)";
                 if (gm.HoverValid && !G.CanFoundAt(G.PlayerId, gm.HoverX, gm.HoverY, out string why)) hint += "\n" + why;
