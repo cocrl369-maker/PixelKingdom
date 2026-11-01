@@ -20,6 +20,50 @@ Mehr braucht es nicht. Das Spiel startet sich selbst (`RuntimeInitializeOnLoadMe
 - Funktioniert mit dem **alten Input Manager** und mit dem **neuen Input System** (Unity-6-Standard).
 - Für einen Build: *File → Build Settings → Add Open Scenes → Build*.
 
+## Android (Tablet & Handy)
+
+Das Spiel ist für Android ausgelegt und bleibt am PC mit Tastatur und Maus spielbar.
+
+**Einmalig vorbereiten**
+1. Im Unity Hub bei deiner Unity-Version unter *Installs → Zahnrad → Add modules* das Modul **Android Build Support** installieren, mit **OpenJDK** und **Android SDK & NDK Tools**.
+2. Projekt öffnen, oben im Menü **Pixel Kingdom → 1. Android einrichten** wählen. Das übernimmt alle Einstellungen:
+   - Paketname `com.pixelkingdom.game`
+   - Querformat
+   - Android 7 oder neuer
+   - 64 Bit mit IL2CPP (Pflicht für Google Play)
+   - App-Icon aus der Pixelkunst
+   - Startszene
+   - Umschalten auf die Android-Plattform
+
+**Auf dem Tablet testen**
+1. **Pixel Kingdom → 2. APK bauen** wählen. Die Datei landet in `Builds/PixelKingdom.apk`.
+2. Die APK aufs Tablet kopieren (USB, Google Drive, …) und dort antippen. Beim ersten Mal muss das „Installieren aus unbekannten Quellen“ erlaubt werden.
+3. Alternativ das Tablet per USB mit aktiviertem Entwicklermodus anschließen und in Unity *File → Build And Run* nutzen.
+
+**Für Google Play**
+- **Pixel Kingdom → 3. AAB bauen** erzeugt `Builds/PixelKingdom.aab`.
+- Vorher unter *Edit → Project Settings → Player → Publishing Settings* einen eigenen Keystore anlegen. Er ist für Updates im Play Store nötig, also gut aufbewahren!
+- Bei jedem Update die *Bundle Version Code* erhöhen.
+
+**Touch-Steuerung**
+| Aktion | Geste |
+|---|---|
+| Auswählen | Tippen auf Siedlung oder Heer |
+| Heer befehligen | Heer gewählt → auf ein Ziel tippen (Tippen auf das Heer selbst wählt ab) |
+| Überfall statt Eroberung | lange auf die feindliche Stadt drücken oder im Heer-Panel „Angriffsart“ umstellen |
+| Karte verschieben | mit einem Finger ziehen |
+| Zoomen | zwei Finger (Pinch) |
+| Geländeinfo (Vorkommen, Bäume) | lange drücken |
+| Bauen, Diplomatie, Aufsteigen | einmal tippen = Info, zweimal tippen = ausführen |
+| Zurück / Menü | Android-Zurück-Taste |
+
+**Auf dem Gerät**
+- Die Oberfläche skaliert nach Bildschirmgröße und berücksichtigt Notch und Kameraaussparungen.
+- Beim Wechsel in eine andere App wird gespeichert. Beim Zurückkehren wird die verpasste Zeit nachgeholt, mit Zusammenfassung.
+- Auf Mobilgeräten wird nur der sichtbare Kartenbereich im Speicher gehalten.
+
+**Am PC die Touch-Steuerung testen**: **F9** schaltet die Touch-Simulation um. Die Maus verhält sich dann wie ein Finger, und die Oberfläche wird wie auf dem Tablet skaliert.
+
 ## Steuerung
 
 | Aktion | Eingabe |
@@ -34,6 +78,7 @@ Mehr braucht es nicht. Das Spiel startet sich selbst (`RuntimeInitializeOnLoadMe
 | Nächste Siedlung / Hauptstadt | Tab / H |
 | Farbpalette wechseln | P |
 | Speichern | F5 (zusätzlich automatisch alle 90 s und beim Beenden) |
+| Touch-Simulation (Android testen) | F9 |
 
 ## Was alles drin ist
 

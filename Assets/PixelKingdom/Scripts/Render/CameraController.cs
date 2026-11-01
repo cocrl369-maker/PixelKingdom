@@ -106,6 +106,15 @@ namespace PixelKingdom
             }
         }
 
+        /// <summary>Verschiebt die Karte um einen Bildschirm-Versatz (Finger ziehen).</summary>
+        public void Pan(Vector2 screenDelta)
+        {
+            Target -= screenDelta / (16f * Zoom);
+            hasGoal = false;
+        }
+
+        public void ZoomStep(int dir, Vector2 screen) => ZoomAt(dir, screen);
+
         /// <summary>Zoomt um eine Stufe, der Punkt unter der Maus bleibt stehen.</summary>
         void ZoomAt(int dir, Vector2 screen)
         {

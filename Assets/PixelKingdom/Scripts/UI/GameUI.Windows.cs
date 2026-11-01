@@ -133,7 +133,7 @@ namespace PixelKingdom
                     if (acts[i].act != DipAction.Gift && acts[i].act != DipAction.War) tip += $"\nAussicht: {ev.Chance}";
                     if (ev.Reasons.Count > 0) tip += "\n" + string.Join("\n", ev.Reasons);
                 }
-                if (Button(br, acts[i].label, ev.Possible, tip, null))
+                if (Button(br, acts[i].label, ev.Possible, tip, null, false, 1, acts[i].act != DipAction.War))
                 {
                     if (acts[i].act == DipAction.War) { warTarget = d; warArmy = null; warSettlement = null; Open = Window.ConfirmWar; }
                     else dipMessage = G.Perform(acts[i].act, d);
@@ -226,7 +226,7 @@ namespace PixelKingdom
                     Text(ix + 13, iy + 1, all[i].Item1, all[i].Item2 ? Palette.UITextDim : Palette.UIText);
                 }
                 y += ((all.Count + 1) / 2) * 12 + 4;
-                if (Button(new Rect(x, y, 170, 16), "Aufsteigen!", ok, ok ? $"Kostet {(int)next.GoldCost} Gold" : "Bedingungen noch nicht erfüllt", "crown")) G.RankUp();
+                if (Button(new Rect(x, y, 170, 16), "Aufsteigen!", ok, ok ? $"Kostet {(int)next.GoldCost} Gold" : "Bedingungen noch nicht erfüllt", "crown", false, 1, true)) G.RankUp();
                 y += 24;
             }
             else { Text(x, y, "Ihr habt den höchsten Rang erreicht.", Palette.UISand); y += 16; }
@@ -308,6 +308,7 @@ namespace PixelKingdom
             string text =
                 "KARTE: WASD/Pfeile oder rechte Maustaste ziehen zum Bewegen. Mausrad (oder Q/E) zoomt in Pixelstufen.\n" +
                 "AUSWAHL: Linksklick auf Siedlung oder Heer. Rechtsklick gibt einem Heer ein Ziel. Shift+Rechtsklick auf eine feindliche Stadt: Überfall statt Eroberung.\n" +
+                "TABLET: Tippen wählt aus. Ist ein Heer gewählt, gibt Tippen ihm ein Ziel (Tippen auf das Heer selbst wählt ab). Ein Finger verschiebt die Karte, zwei Finger zoomen. Lange drücken zeigt Geländeinfos oder befiehlt einen Überfall. Wichtige Aktionen (Bauen, Diplomatie) bestätigt ihr durch zweimaliges Tippen. Zurück-Taste = Esc. Am PC simuliert F9 die Touch-Steuerung.\n" +
                 "ZEIT: Leertaste Pause, 1/2/3 Tempo. Tab: nächste Siedlung, H: Hauptstadt.\n" +
                 "FENSTER: R Reich, G Diplomatie, L Chronik, F1 Hilfe, P Farbpalette, F5 Speichern.\n\n" +
                 "WIRTSCHAFT: Gebäude brauchen Arbeiter (60% der Bewohner). Bauernhöfe brauchen fruchtbares Land, Steinbrüche Hügel. Holzfäller fällen sichtbar Bäume – der Wald wächst nur langsam nach. Eisen- und Goldminen brauchen Erzvorkommen (rostrote bzw. funkelnde Felsen) im Stadtgebiet. Im Winter wächst wenig – legt Vorräte an!\n" +

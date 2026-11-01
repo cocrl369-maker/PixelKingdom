@@ -23,7 +23,7 @@ namespace PixelKingdom
 
         Rect BottomPanel(float wantW, float h)
         {
-            float minimapW = Mathf.Min(160, VW * 0.22f) + 10;
+            float minimapW = Mathf.Min(160, VW * 0.17f) + 10;
             float w = Mathf.Min(wantW, VW - minimapW - 8);
             float x = Mathf.Max(minimapW, (VW - w) / 2f);
             if (x + w > VW - 4) x = VW - 4 - w;
@@ -195,10 +195,11 @@ namespace PixelKingdom
                 if (d.Need != TerrainNeed.None) tip += $"\nStandortbonus: {Mathf.RoundToInt(G.TerrainBonus(s, d.Need) * 100)}%";
                 if (!ok) tip += "\n> " + why;
                 var cardScreen = new Rect(clip.x + card.x, clip.y + card.y, card.width, card.height);
-                if (hov) { tooltip = tip; tipPos = Event.current.mousePosition + new Vector2(clip.x, clip.y); }
-                if (ok && Clicked(card))
+                if (hov && !PKInput.UsingTouch) { tooltip = tip; tipPos = Event.current.mousePosition + new Vector2(clip.x, clip.y); }
+                if (Clicked(card))
                 {
-                    if (G.QueueBuild(s, d.Type)) Toast($"{d.Name} wird gebaut.", 0);
+                    if (!ok) PinTip(tip);
+                    else if (TouchConfirm("bau" + b, tip) && G.QueueBuild(s, d.Type)) Toast($"{d.Name} wird gebaut.", 0);
                 }
             }
             GUI.EndGroup();
@@ -265,7 +266,7 @@ namespace PixelKingdom
             }
             int total = armySel.Sum();
             float by = c.yMax - 15;
-            if (Button(new Rect(ax, by, 76, 14), "Ausrücken", total > 0, "Das Heer erscheint vor der Stadt. Dann Rechtsklick auf ein Ziel."))
+            if (Button(new Rect(ax, by, 76, 14), "Ausrücken", total > 0, PKInput.UsingTouch ? "Das Heer erscheint vor der Stadt. Dann auf ein Ziel tippen." : "Das Heer erscheint vor der Stadt. Dann Rechtsklick auf ein Ziel."))
             {
                 var a = G.FormArmy(s, (int[])armySel.Clone());
                 System.Array.Clear(armySel, 0, armySel.Length);
@@ -339,7 +340,7 @@ namespace PixelKingdom
             {
                 dipSel = f.id; OpenWindow(Window.Diplomacy);
             }
-            Wrapped(new Rect(r.xMax - 150, r.y + 22, 140, 50), "Angriff: Heer wählen und mit Rechtsklick auf die Stadt klicken.", Palette.UITextDim);
+            Wrapped(new Rect(r.xMax - 150, r.y + 22, 140, 50), PKInput.UsingTouch ? "Angriff: Heer wählen und auf die Stadt tippen." : "Angriff: Heer wählen und mit Rechtsklick auf die Stadt klicken.", Palette.UITextDim);
         }
 
         static string RelWord(float rel) => rel > 60 ? "Freundschaft" : rel > 25 ? "Wohlwollend" : rel > -25 ? "Neutral" : rel > -60 ? "Misstrauisch" : "Feindselig";
@@ -399,7 +400,9 @@ namespace PixelKingdom
             if (Button(new Rect(bx + 62, by, 60, 14), "Heim", true, "Zurück in die nächste eigene Siedlung (Truppen gehen in die Garnison).", "house")) G.SendHome(a);
             var other = G.ArmiesOf(G.PlayerId).FirstOrDefault(o => o.id != a.id && Mathf.Abs(o.x - a.x) < 1.5f && Mathf.Abs(o.y - a.y) < 1.5f);
             if (Button(new Rect(bx + 124, by, 60, 14), "Vereinen", other != null, "Mit einem eigenen Heer in der Nähe zusammenlegen.")) G.Merge(a, other);
-            if (Button(new Rect(bx + 186, by, 60, 14), "Auflösen", true, "Soldaten kehren als Bürger heim (Entf).")) { G.Disband(a); gm.SelArmy = -1; }
+            if (Button(new Rect(bx + 186, by, 60, 14), "Auflösen", true, "Soldaten kehren als Bürger heim (Entf).", null, false, 1, true)) { G.Disband(a); gm.SelArmy = -1; }
+            if (a.units.Sum() > 0 && Button(new Rect(bx + 124, by - 17, 122, 14), gm.RaidMode ? "Angriffsart: Überfall" : "Angriffsart: Erobern", true,
+                "Erobern: die Stadt einnehmen. Überfall: plündern und heimkehren (am PC auch mit Shift).", "sword", gm.RaidMode)) gm.RaidMode = !gm.RaidMode;
             if (a.settlers > 0 && a.units.Sum() == 0 && a.path.Count == 0)
             {
                 int tx = Mathf.FloorToInt(a.x), ty = Mathf.FloorToInt(a.y);

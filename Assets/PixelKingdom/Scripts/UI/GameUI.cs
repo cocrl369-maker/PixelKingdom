@@ -48,11 +48,67 @@ namespace PixelKingdom
             get
             {
                 if (gm == null || gm.InMenu || modalLastFrame) return true;
-                var mp = PKInput.MousePos;
-                var v = new Vector2(mp.x / S, (Screen.height - mp.y) / S);
-                foreach (var r in lastRects) if (r.Contains(v)) return true;
-                return false;
+                return IsOverUI(PKInput.MousePos);
             }
+        }
+
+        /// <summary>Liegt ein Bildschirmpunkt (Maus/Finger) auf einem UI-Element?</summary>
+        public bool IsOverUI(Vector2 screen)
+        {
+            if (gm == null || gm.InMenu || modalLastFrame) return true;
+            var v = ScreenToVirtual(screen);
+            foreach (var r in lastRects) if (r.Contains(v)) return true;
+            return false;
+        }
+
+        Rect safe;
+        Vector2 ScreenToVirtual(Vector2 sp) => new Vector2((sp.x - safe.x) / S, (safe.yMax - sp.y) / S);
+
+        // ---- Touch: Info-Kärtchen statt Maus-Tooltips, Bestätigung durch zweites Tippen ----
+        string pinTip; float pinTime; string armed; float armedTime;
+
+        void PinTip(string text) { if (!string.IsNullOrEmpty(text)) { pinTip = text; pinTime = Time.unscaledTime; } }
+
+        /// <summary>Auf Touch-Geräten: erstes Tippen zeigt die Info, zweites Tippen führt aus.</summary>
+        bool TouchConfirm(string id, string tip)
+        {
+            if (!PKInput.UsingTouch) return true;
+            if (armed == id && Time.unscaledTime - armedTime < 5f) { armed = null; pinTip = null; return true; }
+            armed = id; armedTime = Time.unscaledTime;
+            PinTip((tip ?? "") + "\n> Nochmal tippen zum Bestätigen");
+            return false;
+        }
+
+        public void ShowTileInfo(int x, int y)
+        {
+            int ti = WorldMap.Idx(x, y);
+            if (!G.Map.disc[ti]) { PinTip("Unerforschtes Gebiet"); return; }
+            string info = G.Map.BiomeName(ti);
+            string dep = WorldMap.DepositName(G.Map.deposit[ti]);
+            if (dep != null) info += "\n" + dep;
+            if (G.Map.trees[ti] > 0) info += $"\n{G.Map.trees[ti]} Bäume";
+            else if (G.Map.baseTrees[ti] > 0) info += "\nabgeholzt (wächst nach)";
+            int o = G.Map.owner[ti];
+            if (o >= 0) { var of = G.F(o); if (of != null) info += "\n" + (of.isPlayer ? "Euer Land" : of.name); }
+            PinTip(info);
+        }
+
+        public void ShowOfflineReport(string report) { if (!string.IsNullOrEmpty(report)) offlineReport = report; }
+
+        void DrawPinnedTip()
+        {
+            if (pinTip == null) return;
+            if (Time.unscaledTime - pinTime > 6f) { pinTip = null; armed = null; return; }
+            var lines = PixelFont.Wrap(pinTip, (int)Mathf.Min(260, VW - 30));
+            float w = lines.Max(l => PixelFont.Width(l)) + 14, h = lines.Count * PixelFont.LineH + 10;
+            var r = new Rect(Mathf.Round((VW - w) / 2), 64, w, h);
+            rects.Add(r);
+            Fill(new Rect(r.x + 2, r.y + 2, w, h), Palette.UIShadow);
+            Fill(r, Palette.UIPanelDark);
+            Fill(new Rect(r.x + 1, r.y + 1, w - 2, h - 2), Palette.UISand);
+            float ly = r.y + 6;
+            foreach (var l in lines) { Text(r.x + 7, ly, l, l.StartsWith(">") ? Palette.UIBad : Palette.UIPanelDark); ly += PixelFont.LineH; }
+            if (Clicked(r)) { pinTip = null; armed = null; }
         }
 
         public bool IsBlocking => gm.InMenu || gm.GameOver || (G != null && (G.Dialog.Count > 0 || G.CurrentEvent != null)) || report != null || offlineReport != null
@@ -101,9 +157,15 @@ namespace PixelKingdom
         {
             if (gm == null || G == null) return;
             int extra = PlayerPrefs.GetInt("pk_uiscale", 0);
-            S = Mathf.Clamp((Screen.height < 700 ? 1 : Mathf.Max(2, Mathf.FloorToInt(Screen.height / 500f))) + extra, 1, 8);
-            VW = Screen.width / (float)S; VH = Screen.height / (float)S;
-            GUI.matrix = Matrix4x4.Scale(new Vector3(S, S, 1));
+            safe = Screen.safeArea;
+            if (safe.width < 100 || safe.height < 100) safe = new Rect(0, 0, Screen.width, Screen.height);
+            float hh = safe.height;
+            int baseS = Application.isMobilePlatform || PKInput.TouchSim
+                ? Mathf.Max(1, Mathf.FloorToInt(hh / 360f))                    // Tablet/Handy: große, fingerfreundliche Elemente
+                : (hh < 700 ? 1 : Mathf.Max(2, Mathf.FloorToInt(hh / 500f)));
+            S = Mathf.Clamp(baseS + extra, 1, 8);
+            VW = safe.width / S; VH = safe.height / S;
+            GUI.matrix = Matrix4x4.TRS(new Vector3(safe.x, Screen.height - safe.yMax, 0), Quaternion.identity, new Vector3(S, S, 1));
             if (Event.current.type == EventType.Layout) { }
             if (Event.current.type == EventType.Repaint) { rects.Clear(); modalThisFrame = false; tooltip = null; }
 
@@ -140,6 +202,7 @@ namespace PixelKingdom
 
         void FinishFrame()
         {
+            DrawPinnedTip();
             if (tooltip != null) DrawTooltip();
             if (Event.current.type == EventType.Repaint)
             {
@@ -180,7 +243,17 @@ namespace PixelKingdom
 
         static bool Hover(Rect r) => r.Contains(Event.current.mousePosition);
 
-        void Tip(Rect r, string text) { if (text != null && Hover(r)) { tooltip = text; tipPos = Event.current.mousePosition; } }
+        void Tip(Rect r, string text)
+        {
+            if (text == null) return;
+            if (PKInput.UsingTouch)
+            {
+                var e = Event.current;
+                if (e.type == EventType.MouseDown && r.Contains(e.mousePosition)) PinTip(text);
+                return;
+            }
+            if (Hover(r)) { tooltip = text; tipPos = Event.current.mousePosition; }
+        }
 
         bool Clicked(Rect r, int button = 0)
         {
@@ -189,7 +262,7 @@ namespace PixelKingdom
             return false;
         }
 
-        bool Button(Rect r, string label, bool enabled = true, string tip = null, string icon = null, bool selected = false, int ts = 1)
+        bool Button(Rect r, string label, bool enabled = true, string tip = null, string icon = null, bool selected = false, int ts = 1, bool confirm = false)
         {
             rects.Add(r);
             bool hov = Hover(r) && enabled;
@@ -213,6 +286,13 @@ namespace PixelKingdom
                 tx = ix + isz + 4;
             }
             if (label.Length > 0) Text(tx, r.y + (r.height - 8 * ts) / 2f + ts, label, fg, ts);
+            if (PKInput.UsingTouch)
+            {
+                if (!Clicked(r)) return false;
+                if (!enabled) { PinTip(tip); return false; }
+                if (confirm) return TouchConfirm(label + r.x + "," + r.y, tip);
+                return true;
+            }
             Tip(r, tip);
             return enabled && Clicked(r);
         }
@@ -380,7 +460,7 @@ namespace PixelKingdom
         // ------------------------------------------------------------------
         void DrawMinimap()
         {
-            float w = Mathf.Min(160, VW * 0.22f), h = w * WorldMap.H / WorldMap.W;
+            float w = Mathf.Min(160, VW * 0.17f), h = w * WorldMap.H / WorldMap.W;
             var r = new Rect(4, VH - h - 4, w, h);
             if (Event.current.type == EventType.Repaint)
             {
@@ -528,7 +608,7 @@ namespace PixelKingdom
         {
             var cam = gm.CamCtrl.Cam;
             var sp = cam.WorldToScreenPoint(w);
-            v = new Vector2(sp.x / S, (Screen.height - sp.y) / S);
+            v = ScreenToVirtual(sp);
             return v.x > -50 && v.y > -20 && v.x < VW + 50 && v.y < VH + 20;
         }
 
@@ -582,7 +662,7 @@ namespace PixelKingdom
                 if (a.id == gm.SelArmy) { float bs = 1.6f * 16f * zoom / S; Brackets(new Rect(v.x - bs / 2, v.y + 4, bs, bs), 4, Palette.UIText); }
             }
             // Mauszeiger-Kachel
-            if (gm.HoverValid && !MouseOverUI)
+            if (gm.HoverValid && (PKInput.UsingTouch || !MouseOverUI))
             {
                 var c = new Vector3(gm.HoverX + 0.5f, gm.HoverY + 0.5f, 0);
                 if (WorldToVirtual(c, out var v))
@@ -601,7 +681,7 @@ namespace PixelKingdom
                     else if (G.Map.baseTrees[ti] > 0) info += " - abgeholzt";
                     int o = G.Map.owner[ti];
                     if (o >= 0) { var of = G.F(o); if (of != null) info += " - " + (of.isPlayer ? "euer Land" : of.name); }
-                    float mw = Mathf.Min(160, VW * 0.22f), mh = mw * WorldMap.H / WorldMap.W;
+                    float mw = Mathf.Min(160, VW * 0.17f), mh = mw * WorldMap.H / WorldMap.W;
                     var ir = new Rect(4, VH - mh - 22, PixelFont.Width(info) + 10, 13);
                     Fill(ir, new Color(Palette.UIPanelDark.r, Palette.UIPanelDark.g, Palette.UIPanelDark.b, 0.9f));
                     Text(ir.x + 5, ir.y + 3, info, Palette.UIText);
@@ -625,14 +705,16 @@ namespace PixelKingdom
             string hint = null;
             if (gm.CurrentMode == GameManager.Mode.PlaceSettlers)
             {
-                hint = "Linksklick: Ort für die neue Siedlung wählen  (Esc: abbrechen)";
+                hint = PKInput.UsingTouch ? "Tippt auf den Ort für die neue Siedlung  (Zurück: abbrechen)" : "Linksklick: Ort für die neue Siedlung wählen  (Esc: abbrechen)";
                 if (gm.HoverValid && !G.CanFoundAt(G.PlayerId, gm.HoverX, gm.HoverY, out string why)) hint += "\n" + why;
             }
             else
             {
                 var a = G.A(gm.SelArmy);
                 if (a != null && a.faction == G.PlayerId && a.path.Count == 0)
-                    hint = a.settlers > 0 && a.units.Sum() == 0 ? "Rechtsklick: Ort zum Siedeln wählen" : "Rechtsklick: Ziel – Gelände, eigene Stadt oder Feind (Shift: Überfall)";
+                    hint = PKInput.UsingTouch
+                        ? (a.settlers > 0 && a.units.Sum() == 0 ? "Tippt auf den Ort zum Siedeln" : "Tippt auf ein Ziel. Lange drücken auf eine Stadt: Überfall")
+                        : (a.settlers > 0 && a.units.Sum() == 0 ? "Rechtsklick: Ort zum Siedeln wählen" : "Rechtsklick: Ziel – Gelände, eigene Stadt oder Feind (Shift: Überfall)");
             }
             if (hint == null) return;
             var lines = hint.Split('\n');

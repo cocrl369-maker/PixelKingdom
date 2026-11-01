@@ -174,25 +174,32 @@ namespace PixelKingdom
                 if (c.tex == null || c.tex.width != pw || c.tex.height != ph)
                 {
                     if (c.tex != null) Destroy(c.tex);
-                    c.tex = new Texture2D(pw, ph, TextureFormat.RGBA32, true) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp, name = c.mr.name };
+                    c.tex = new Texture2D(pw, ph, TextureFormat.RGBA32, !LowMemory) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp, name = c.mr.name };
                 }
                 c.tex.SetPixelData(t.Result, 0);
-                c.tex.Apply(true, false);
+                c.tex.Apply(!LowMemory, false);
                 c.paintedPalette = c.taskPalette;
                 mpb.SetTexture("_MainTex", c.tex);
                 c.mr.SetPropertyBlock(mpb);
             }
 
-            // Neue Aufträge vergeben (nächstgelegene zuerst)
-            int maxParallel = Mathf.Max(1, System.Environment.ProcessorCount - 1);
-            if (running >= maxParallel) return;
             var cam = GameManager.I != null ? GameManager.I.CamCtrl : null;
             Vector2 focus = cam != null ? cam.Target : new Vector2(WorldMap.W / 2f, WorldMap.H / 2f);
+            Vector2 view = cam != null ? cam.ViewSize : new Vector2(WorldMap.W, WorldMap.H);
+            // Mobilgeräte: nur Chunks in Sichtnähe malen, entfernte wieder freigeben (Speicher)
+            float reach = Mathf.Max(view.x, view.y) * 0.5f + CS * 1.5f;
+            if (LowMemory) Evict(focus, reach);
+
+            // Neue Aufträge vergeben (nächstgelegene zuerst)
+            int maxParallel = Mathf.Max(1, System.Environment.ProcessorCount - 1);
+            if (LowMemory) maxParallel = Mathf.Min(maxParallel, 2);
+            if (running >= maxParallel) return;
             Chunk best = null; float bd = float.MaxValue;
             foreach (var c in chunks)
             {
                 if (!c.wanted || c.task != null || c.paintedPalette == Palette.Index) continue;
                 float dx = (c.cx + 0.5f) * CS - focus.x, dy = (c.cy + 0.5f) * CS - focus.y;
+                if (LowMemory && (Mathf.Abs(dx) > reach || Mathf.Abs(dy) > reach)) continue;
                 float d = dx * dx + dy * dy;
                 if (d < bd) { bd = d; best = c; }
             }
@@ -207,6 +214,29 @@ namespace PixelKingdom
                 return px;
             });
             running++;
+        }
+
+        /// <summary>Auf Mobilgeräten wird mit Texturspeicher gespart.</summary>
+        public static bool LowMemory => Application.isMobilePlatform || SystemInfo.systemMemorySize < 4000;
+        const int MaxTexturesLowMem = 20;
+
+        void Evict(Vector2 focus, float reach)
+        {
+            int painted = 0;
+            foreach (var c in chunks) if (c.tex != null) painted++;
+            if (painted <= MaxTexturesLowMem) return;
+            Chunk far = null; float fd = 0;
+            foreach (var c in chunks)
+            {
+                if (c.tex == null || c.task != null) continue;
+                float dx = (c.cx + 0.5f) * CS - focus.x, dy = (c.cy + 0.5f) * CS - focus.y;
+                float d = Mathf.Max(Mathf.Abs(dx), Mathf.Abs(dy));
+                if (d > reach && d > fd) { fd = d; far = c; }
+            }
+            if (far == null) return;
+            Destroy(far.tex); far.tex = null; far.paintedPalette = -1;
+            mpb.SetTexture("_MainTex", Placeholder());
+            far.mr.SetPropertyBlock(mpb);
         }
 
         /// <summary>Malt sofort (blockierend) alle benötigten Chunks in der Nähe – z.B. beim Laden.</summary>

@@ -11,7 +11,7 @@ namespace PixelKingdom
     /// Kapselt die Eingabe, damit das Spiel sowohl mit dem alten Input Manager
     /// als auch mit dem neuen Input System (Unity 6 Standard) läuft.
     /// </summary>
-    public static class PKInput
+    public static partial class PKInput
     {
 #if ENABLE_LEGACY_INPUT_MANAGER || !ENABLE_INPUT_SYSTEM
         static KeyCode Map(PKKey k)

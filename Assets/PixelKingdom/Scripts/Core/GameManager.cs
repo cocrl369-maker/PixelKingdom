@@ -45,6 +45,9 @@ namespace PixelKingdom
 
         float autosave = 90f;
         bool isDemo;
+        TouchControls touch;
+        float hoverTimer;
+        public bool RaidMode;   // Touch: Angriffe als Überfall
 
         void Awake()
         {
@@ -52,6 +55,14 @@ namespace PixelKingdom
             I = this;
             DontDestroyOnLoad(gameObject);
             Application.targetFrameRate = 60;
+            touch = new TouchControls(this);
+            if (Application.isMobilePlatform)
+            {
+                Screen.orientation = ScreenOrientation.AutoRotation;
+                Screen.autorotateToPortrait = false; Screen.autorotateToPortraitUpsideDown = false;
+                Screen.autorotateToLandscapeLeft = true; Screen.autorotateToLandscapeRight = true;
+                QualitySettings.vSyncCount = 0;
+            }
             Palette.Set(PlayerPrefs.GetInt("pk_palette", 0));
 
             GroundMat = new Material(LoadShader("PKGround", "PixelKingdom/Ground")) { name = "PK Boden" };
@@ -198,6 +209,12 @@ namespace PixelKingdom
             CamCtrl.InputEnabled = !UI.KeyboardCaptured;
             CamCtrl.BlockMouse = UI.MouseOverUI || InMenu;
 
+            if (PKInput.KeyDown(PKKey.F9) && !Application.isMobilePlatform)
+            {
+                PKInput.TouchSim = !PKInput.TouchSim;
+                UI.Toast(PKInput.TouchSim ? "Touch-Simulation AN: Maus = Finger (ziehen = verschieben, halten = lange drücken)" : "Touch-Simulation AUS", 0);
+            }
+            Screen.sleepTimeout = InMenu ? SleepTimeout.SystemSetting : SleepTimeout.NeverSleep;
             if (!InMenu && !GameOver)
             {
                 if (!Paused && !blocking)
@@ -281,6 +298,13 @@ namespace PixelKingdom
         Vector2 downPos;
         void HandleMouse()
         {
+            if (PKInput.UsingTouch)
+            {
+                touch.Update(!UI.IsBlocking);
+                hoverTimer -= Time.unscaledDeltaTime;
+                HoverValid = hoverTimer > 0;
+                return;
+            }
             HoverValid = false;
             if (UI.MouseOverUI || UI.IsBlocking) return;
             var mp = PKInput.MousePos;
@@ -293,6 +317,63 @@ namespace PixelKingdom
             if (PKInput.MouseDown(0)) downPos = mp;
             if (PKInput.MouseUp(0) && (mp - downPos).sqrMagnitude < 100 && HoverValid) LeftClick();
             if (PKInput.MouseUp(1) && !CamCtrl.DraggedThisPress && HoverValid) RightClick();
+        }
+
+        bool SetHover(Vector2 screen)
+        {
+            var hit = CamCtrl.ScreenToWorld(screen);
+            if (hit.x < 0 || hit.y < 0 || hit.x >= WorldMap.W || hit.y >= WorldMap.H) return false;
+            HoverPoint = hit; HoverX = Mathf.FloorToInt(hit.x); HoverY = Mathf.FloorToInt(hit.y);
+            HoverValid = true; hoverTimer = 4f;
+            return true;
+        }
+
+        ArmyData ArmyAt(Vector2 p, float r)
+        {
+            ArmyData best = null; float bd = r * r;
+            foreach (var a in Game.Armies)
+            {
+                if (!Entities.ArmyVisible(a.id)) continue;
+                float d = (a.x - p.x) * (a.x - p.x) + (a.y + 0.3f - p.y) * (a.y + 0.3f - p.y);
+                if (a.faction == Game.PlayerId) d *= 0.6f;
+                if (d < bd) { bd = d; best = a; }
+            }
+            return best;
+        }
+
+        /// <summary>Touch: kurz tippen.</summary>
+        public void OnTap(Vector2 screen)
+        {
+            if (!SetHover(screen)) return;
+            var sel = Game.A(SelArmy);
+            if (CurrentMode == Mode.None && sel != null && sel.faction == Game.PlayerId)
+            {
+                // Tippen auf ein anderes eigenes Heer wählt dieses; Tippen auf das gewählte Heer wählt ab
+                var other = ArmyAt(HoverPoint, 0.6f);
+                if (other != null && other.id == sel.id) { SelArmy = -1; return; }
+                if (other != null && other.faction == Game.PlayerId) { SelectArmy(other); return; }
+                RightClick();
+                return;
+            }
+            LeftClick();
+        }
+
+        /// <summary>Touch: lange drücken – Überfall-Befehl oder Geländeinfo.</summary>
+        public void OnLongPress(Vector2 screen)
+        {
+            if (!SetHover(screen)) return;
+            var sel = Game.A(SelArmy);
+            if (sel != null && sel.faction == Game.PlayerId)
+            {
+                var s = SettlementNear(HoverPoint.x, HoverPoint.y, 1.2f);
+                if (s != null && s.faction != Game.PlayerId && Game.IsDiscovered(s.x, s.y))
+                {
+                    if (!Game.AtWar(Game.PlayerId, s.faction)) UI.AskWar(Game.F(s.faction), sel, s, true);
+                    else OrderAttack(sel, s, true);
+                    return;
+                }
+            }
+            UI.ShowTileInfo(HoverX, HoverY);
         }
 
         void LeftClick()
@@ -353,7 +434,7 @@ namespace PixelKingdom
                     if (!g.OrderMove(a, s.x, s.y, ArmyMission.Return, s.id, out string w)) UI.Toast(w, 2);
                     return;
                 }
-                bool raid = PKInput.Key(PKKey.Shift);
+                bool raid = PKInput.Key(PKKey.Shift) || RaidMode;
                 if (!g.AtWar(g.PlayerId, s.faction))
                 {
                     UI.AskWar(g.F(s.faction), a, s, raid);
@@ -379,7 +460,16 @@ namespace PixelKingdom
 
         void OnApplicationPause(bool pause)
         {
-            if (pause && HasRunningGame) SaveSystem.Save(Game);
+            if (!HasRunningGame) return;
+            if (pause) { SaveSystem.Save(Game); return; }
+            // Zurück in der App (Android): verpasste Zeit nachholen
+            int days = SaveSystem.OfflineDays(Game.S);
+            if (days > 0 && !InMenu)
+            {
+                string report = Game.SimulateOffline(days);
+                Game.S.lastSaveTicks = System.DateTime.UtcNow.Ticks;
+                UI.ShowOfflineReport(report);
+            }
         }
     }
 }
