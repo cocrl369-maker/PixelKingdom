@@ -170,17 +170,24 @@ namespace PixelKingdom
             return 4;
         }
 
+        /// <summary>"__" schaltet die Unterstreichung um (wird nicht gezeichnet).</summary>
+        static bool IsMark(string s, int i) => s[i] == '_' && i + 1 < s.Length && s[i + 1] == '_';
+
         public static int Width(string s)
         {
             Init();
             int w = 0, best = 0;
-            foreach (var c in s)
+            for (int i = 0; i < s.Length; i++)
             {
+                char c = s[i];
+                if (IsMark(s, i)) { i++; continue; }
                 if (c == '\n') { best = Mathf.Max(best, w); w = 0; continue; }
                 w += CharWidth(c);
             }
             return Mathf.Max(best, w) - (s.Length > 0 ? 1 : 0);
         }
+
+        public static string StripMarks(string s) => s.Replace("__", "");
 
         /// <summary>Zeichnet eine Zeile ohne Umbruch. Skalierung immer ganzzahlig.</summary>
         public static void Draw(float x, float y, string s, Color col, int scale = 1)
@@ -191,15 +198,29 @@ namespace PixelKingdom
             GUI.color = col;
             float cx = x;
             float cellU = 1f / count;
-            foreach (var raw in s)
+            bool ul = false;
+            for (int i = 0; i < s.Length; i++)
             {
+                char raw = s[i];
+                if (IsMark(s, i)) { i++; ul = !ul; continue; }
                 if (raw == '\n') { cx = x; y += LineH * scale; continue; }
-                if (raw == ' ') { cx += 3 * scale; continue; }
-                char c = Normalize(raw);
-                if (!glyphs.TryGetValue(c, out var g) && !glyphs.TryGetValue(char.ToUpperInvariant(c), out g)) { cx += 4 * scale; continue; }
-                var uv = new Rect(g.index * cellU, 0, cellU, 1);
-                GUI.DrawTextureWithTexCoords(new Rect(cx, y, CellW * scale, CellH * scale), atlas, uv);
-                cx += (g.width + 1) * scale;
+                float adv;
+                if (raw == ' ') adv = 3 * scale;
+                else
+                {
+                    char c = Normalize(raw);
+                    if (!glyphs.TryGetValue(c, out var g) && !glyphs.TryGetValue(char.ToUpperInvariant(c), out g)) adv = 4 * scale;
+                    else
+                    {
+                        var uv = new Rect(g.index * cellU, 0, cellU, 1);
+                        GUI.DrawTextureWithTexCoords(new Rect(cx, y, CellW * scale, CellH * scale), atlas, uv);
+                        adv = (g.width + 1) * scale;
+                    }
+                }
+                // Unterstreichung (ohne das Leerzeichen hinter dem letzten Wort)
+                if (ul && !(raw == ' ' && (i + 2 < s.Length && IsMark(s, i + 1))))
+                    GUI.DrawTexture(new Rect(cx, y + 8 * scale, (i + 1 < s.Length && !IsMark(s, i + 1)) ? adv : adv - scale, scale), Texture2D.whiteTexture);
+                cx += adv;
             }
             GUI.color = old;
         }
@@ -243,6 +264,18 @@ namespace PixelKingdom
                     else cur = test;
                 }
                 result.Add(cur);
+            }
+            // Unterstreichung über Zeilenumbrüche fortsetzen
+            bool open = false;
+            for (int i = 0; i < result.Count; i++)
+            {
+                string l = result[i];
+                if (open) l = "__" + l;
+                int marks = 0;
+                for (int k = 0; k + 1 < l.Length; k++) if (l[k] == '_' && l[k + 1] == '_') { marks++; k++; }
+                open = marks % 2 == 1;
+                if (open) l += "__";
+                result[i] = l;
             }
             return result;
         }

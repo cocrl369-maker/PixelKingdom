@@ -75,7 +75,7 @@ namespace PixelKingdom
             if (!PKInput.UsingTouch) return true;
             if (armed == id && Time.unscaledTime - armedTime < 5f) { armed = null; pinTip = null; return true; }
             armed = id; armedTime = Time.unscaledTime;
-            PinTip((tip ?? "") + "\n> Nochmal tippen zum Bestätigen");
+            PinTip((tip ?? "") + "\n> __Nochmal tippen zum Bestätigen__");
             return false;
         }
 
@@ -83,9 +83,9 @@ namespace PixelKingdom
         {
             int ti = WorldMap.Idx(x, y);
             if (!G.Map.disc[ti]) { PinTip("Unerforschtes Gebiet"); return; }
-            string info = G.Map.BiomeName(ti);
+            string info = "__" + G.Map.BiomeName(ti) + "__";
             string dep = WorldMap.DepositName(G.Map.deposit[ti]);
-            if (dep != null) info += "\n" + dep;
+            if (dep != null) info += "\n__Vorkommen__: " + dep;
             if (G.Map.trees[ti] > 0) info += $"\n{G.Map.trees[ti]} Bäume";
             else if (G.Map.baseTrees[ti] > 0) info += "\nabgeholzt (wächst nach)";
             int o = G.Map.owner[ti];
@@ -111,7 +111,7 @@ namespace PixelKingdom
             if (Clicked(r)) { pinTip = null; armed = null; }
         }
 
-        public bool IsBlocking => gm.InMenu || gm.GameOver || (G != null && (G.Dialog.Count > 0 || G.CurrentEvent != null)) || report != null || offlineReport != null
+        public bool IsBlocking => gm.InMenu || gm.GameOver || TutorialActive || (G != null && (G.Dialog.Count > 0 || G.CurrentEvent != null)) || report != null || offlineReport != null
                                    || Open == Window.Menu || Open == Window.ConfirmWar;
         public bool KeyboardCaptured => false;
 
@@ -120,7 +120,7 @@ namespace PixelKingdom
         public void OnGameStarted(string offline)
         {
             offlineReport = offline;
-            toasts.Clear(); Open = Window.None; report = null; dipSel = -1;
+            toasts.Clear(); Open = Window.None; report = null; dipSel = -1; tutStep = -1; pinTip = null;
             minimapTimer = 0;
         }
 
@@ -147,7 +147,7 @@ namespace PixelKingdom
             if (toasts.Count > 6) toasts.RemoveRange(0, toasts.Count - 6);
             toasts.RemoveAll(t => Time.unscaledTime - t.t > 7f);
             // Dialog weiterklicken mit Leertaste
-            if (G.Dialog.Count > 0 && (PKInput.KeyDown(PKKey.Space))) G.Dialog.Dequeue();
+            if (G.Dialog.Count > 0 && !TutorialActive && offlineReport == null && report == null && PKInput.KeyDown(PKKey.Space)) G.Dialog.Dequeue();
         }
 
         // ------------------------------------------------------------------
@@ -166,11 +166,35 @@ namespace PixelKingdom
             S = Mathf.Clamp(baseS + extra, 1, 8);
             VW = safe.width / S; VH = safe.height / S;
             GUI.matrix = Matrix4x4.TRS(new Vector3(safe.x, Screen.height - safe.yMax, 0), Quaternion.identity, new Vector3(S, S, 1));
-            if (Event.current.type == EventType.Layout) { }
-            if (Event.current.type == EventType.Repaint) { rects.Clear(); modalThisFrame = false; tooltip = null; }
+            if (Event.current.type == EventType.Repaint) { rects.Clear(); modalThisFrame = false; tooltip = null; marks.Clear(); }
+            modalNow = false;
 
-            if (gm.InMenu) { DrawMainMenu(); FinishFrame(); return; }
+            // Eingaben gehen zuerst an die oberste Ebene (Fenster, Dialoge, Ereignisse).
+            // Nur wenn dort nichts getroffen wurde, erreicht der Klick die Leisten und Panels darunter.
+            var et = Event.current.type;
+            bool input = et == EventType.MouseDown || et == EventType.MouseUp || et == EventType.MouseDrag || et == EventType.ScrollWheel;
+            if (input)
+            {
+                DrawTopLayer();
+                bool overTop = modalNow;
+                foreach (var r in lastTopRects) if (r.Contains(Event.current.mousePosition)) { overTop = true; break; }
+                if (Event.current.type != EventType.Used && !overTop) DrawBackgroundLayer();
+                FinishFrame();
+                return;
+            }
+            DrawBackgroundLayer();
+            int topStart = rects.Count;
+            DrawTopLayer();
+            if (Event.current.type == EventType.Repaint) lastTopRects = rects.GetRange(topStart, rects.Count - topStart);
+            FinishFrame();
+        }
 
+        List<Rect> lastTopRects = new List<Rect>();
+        bool modalNow;
+
+        void DrawBackgroundLayer()
+        {
+            if (gm.InMenu) { DrawMainMenu(); return; }
             DrawWorldLabels();
             DrawTopBar();
             DrawSideButtons();
@@ -179,7 +203,18 @@ namespace PixelKingdom
             DrawToasts();
             DrawSelectionPanel();
             DrawModeHint();
+            if (gm.Paused && !IsBlocking) Centered(VH * 0.18f, "- PAUSE -", Palette.UIPanelDark, 2);
+        }
 
+        /// <summary>Oberste Ebene: Fenster, Dialoge, Ereignisse, Einführung, Info-Kärtchen.</summary>
+        void DrawTopLayer()
+        {
+            if (gm.InMenu)
+            {
+                if (Open == Window.Help) DrawHelp();
+                DrawPinnedTip();
+                return;
+            }
             switch (Open)
             {
                 case Window.Diplomacy: DrawDiplomacy(); break;
@@ -193,16 +228,14 @@ namespace PixelKingdom
             if (gm.GameOver) DrawGameOver();
             else if (offlineReport != null) DrawOffline();
             else if (report != null) DrawReport();
+            else if (TutorialActive) DrawTutorial();
             else if (G.Dialog.Count > 0) DrawDialog();
             else if (G.CurrentEvent != null) DrawEvent();
-
-            if (gm.Paused && !IsBlocking) Centered(VH * 0.18f, "- PAUSE -", Palette.UIPanelDark, 2);
-            FinishFrame();
+            DrawPinnedTip();
         }
 
         void FinishFrame()
         {
-            DrawPinnedTip();
             if (tooltip != null) DrawTooltip();
             if (Event.current.type == EventType.Repaint)
             {
@@ -232,7 +265,7 @@ namespace PixelKingdom
 
         void Modal()
         {
-            modalThisFrame = true;
+            modalThisFrame = true; modalNow = true;
             rects.Add(new Rect(0, 0, VW, VH));
             Fill(new Rect(0, 0, VW, VH), new Color(0.2f, 0.08f, 0.04f, 0.35f));
         }
@@ -376,12 +409,13 @@ namespace PixelKingdom
             var d = G.Delta(p.id);
             // Links: Rang & Datum (wie im Vorbild: Krone + Zahl, "Day")
             var left = new Rect(4, 4, 150, 30);
+            Mark("rank", left);
             Panel(left);
             Icon(new Rect(9, 9, 12, 12), "crown", Palette.UIText);
             Text(25, 8, Ranks.Get(p.rank).Name, Palette.UIText);
             Text(25, 19, $"Tag {G.S.day + 1}", Palette.UITextDim);
             Text(70, 19, Calendar.SeasonNames[(int)G.Season] + " J" + Calendar.Year(G.S.day), Palette.UITextDim);
-            Tip(left, $"{p.name}\n{G.DateString()}\nAnsehen: {(int)p.prestige}\nKlick: Reich-Übersicht (R)");
+            Tip(left, $"__{p.name}__\n__Datum__: {G.DateString()}\n__Ansehen__: {(int)p.prestige}\nKlick: Reich-Übersicht (R)");
             if (Clicked(left)) ToggleWindow(Window.Realm);
 
             // Mitte: Kacheln
@@ -396,20 +430,21 @@ namespace PixelKingdom
             for (int i = 0; i < n; i++)
             {
                 var r = new Rect(x0 + i * (tw + gap), 4, tw, 22);
+                Mark("resources", new Rect(r.x - 2, r.y, r.width + 4, 33));
                 rects.Add(new Rect(r.x, r.y, r.width, 32));
                 IconTile(r, icons[i]);
                 string val; string tip; Color col = Palette.UIText; float frac = -1;
                 if (i < ResInfo.Count)
                 {
                     val = Num(p.res[i]);
-                    tip = $"{ResInfo.Name(i)}: {(int)p.res[i]}" + (i != (int)Res.Gold ? $" / {(int)cap}" : "") + $"\nPro Tag: {Signed(d[i])}";
+                    tip = $"__{ResInfo.Name(i)}__\n__Vorrat__: {(int)p.res[i]}" + (i != (int)Res.Gold ? $" / {(int)cap}" : "") + $"\n__Pro Tag__: {Signed(d[i])}";
                     if (i != (int)Res.Gold) frac = p.res[i] / cap;
                     if (d[i] < -0.05f) col = Palette.UIGood;
-                    if (i == (int)Res.Food && d[i] < 0) tip += "\nAchtung: Nahrung nimmt ab!";
+                    if (i == (int)Res.Food && d[i] < 0) tip += "\n__Achtung__: Nahrung nimmt ab!";
                 }
-                else if (i == 6) { val = Num(pop); tip = $"Bevölkerung: {(int)pop}\nSoldaten: {G.TotalSoldiers(p.id)}"; }
-                else if (i == 7) { val = ((int)happy).ToString(); tip = "Durchschnittliche Zufriedenheit. Unter 25 drohen Abwanderung und Aufstände."; frac = happy / 100f; }
-                else { val = Num(p.prestige); tip = "Ansehen: nötig für Rangaufstiege und Diplomatie."; }
+                else if (i == 6) { val = Num(pop); tip = $"__Bevölkerung__: {(int)pop}\n__Soldaten__: {G.TotalSoldiers(p.id)}"; }
+                else if (i == 7) { val = ((int)happy).ToString(); tip = "__Zufriedenheit__\nDurchschnitt aller Siedlungen. Unter 25 drohen Abwanderung und Aufstände."; frac = happy / 100f; }
+                else { val = Num(p.prestige); tip = "__Ansehen__\nNötig für Rangaufstiege und Diplomatie."; }
                 // Balken unter dem Icon (wie im Vorbild)
                 if (frac >= 0) Bar(new Rect(r.x + 3, r.yMax - 4, r.width - 6, 2), frac, Palette.UIText, Palette.UIPanelDark);
                 var lr = new Rect(r.x - 2, r.yMax + 1, r.width + 4, 10);
@@ -429,6 +464,7 @@ namespace PixelKingdom
                 if (Button(new Rect(bx, 4, 22, 18), s == 1 ? "1x" : s == 2 ? "2x" : "5x", true, $"Geschwindigkeit ({s})", null, sel)) { gm.Speed = s; gm.Paused = false; }
                 bx -= 24;
             }
+            Mark("speed", new Rect(bx, 4, VW - 4 - bx, 18));
             if (Button(new Rect(bx, 4, 22, 18), "", true, "Pause (Leertaste)", gm.Paused ? "play" : "pause", gm.Paused)) gm.Paused = !gm.Paused;
         }
 
@@ -453,6 +489,7 @@ namespace PixelKingdom
             if (Button(new Rect(4, y, 22, 20), "", true, "Zur Hauptstadt (H)", "house")) gm.FocusHome();
             y += 23;
             if (Button(new Rect(4, y, 22, 20), "", true, "Farbpalette wechseln (P): " + Palette.Name, "sun")) gm.CyclePalette();
+            Mark("side", new Rect(4, 40, 22, y + 20 - 40));
         }
 
         // ------------------------------------------------------------------
@@ -468,6 +505,7 @@ namespace PixelKingdom
                 if (minimap == null || minimapTimer <= 0) { UpdateMinimap(); minimapTimer = 1.5f; }
             }
             Panel(new Rect(r.x - 2, r.y - 2, r.width + 4, r.height + 4), Palette.UIPanelDark);
+            Mark("map", new Rect(r.x - 2, r.y - 2, r.width + 4, r.height + 4));
             if (Event.current.type == EventType.Repaint && minimap != null) GUI.DrawTexture(r, minimap);
             // Kamera-Position
             var t = gm.CamCtrl.Target;
@@ -556,6 +594,7 @@ namespace PixelKingdom
             float h = questOpen ? 30 + objs.Count * 12 + 2 : 18;
             var r = new Rect(x, y, w, h);
             Panel(r);
+            Mark("quest", r);
             PixelIcons.Draw(new Rect(x + 5, y + 4, 12, 12), "book", Palette.UIText);
             Text(x + 21, y + 6, ch.Title + ": " + ch.Subtitle, Palette.UIText);
             if (Clicked(new Rect(x, y, w, 16))) questOpen = !questOpen;

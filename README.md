@@ -151,6 +151,10 @@ Das Spiel ist für Android ausgelegt und bleibt am PC mit Tastatur und Maus spie
 
 Wer dem Kaiser den Zehnt dreimal verweigert, löst den Krieg schon früher aus.
 
+### Einstieg
+- **Einführung beim ersten Spiel**: Die Oberfläche wird Schritt für Schritt hervorgehoben und kurz erklärt – Vorräte, Rang, Tempo, Schnellzugriff, Aufgaben, Weltkarte, Dorf und Bauen. Sie lässt sich überspringen und über die Hilfe (F1) erneut aufrufen.
+- **Gut lesbare Beschreibungen**: Die Überpunkte in den Infotexten (Kosten, Bauzeit, Wirkung, Werte, Sold, Aussicht, …) sind unterstrichen. Gebäude zeigen ihre Wirkung, Truppen ihre Stärken und Voraussetzungen.
+
 ### Für gelegentliches Spielen gemacht
 - **Automatisches Speichern** alle 90 s, beim Beenden und beim Pausieren der App.
 - **Fortschritt während der Abwesenheit**: Pro 3 Minuten Pause vergeht ein Spieltag, maximal 100. Wirtschaft, Bau und Wachstum laufen weiter, Kriegserklärungen und Ereignisse nicht. Beim Zurückkehren gibt es eine Zusammenfassung.

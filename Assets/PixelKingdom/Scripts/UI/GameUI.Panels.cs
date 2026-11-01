@@ -48,6 +48,7 @@ namespace PixelKingdom
                 if (Button(tr, tabs[i], true, i == 1 ? "Gebäude errichten (B)" : null, null, SettlementTab == i)) SettlementTab = i;
             }
             Panel(r);
+            Mark("panel", new Rect(r.x, r.y - 15, r.width, r.height + 15));
             var f = G.F(s.faction);
             Text(r.x + 8, r.y + 6, s.name, Palette.UIText);
             string sub = G.Capital(f) == s ? "Hauptstadt" : "Siedlung";
@@ -71,7 +72,7 @@ namespace PixelKingdom
             Icon(new Rect(x, y, 12, 12), "people", Palette.UIText);
             Text(x + 16, y + 2, $"Bewohner {(int)s.pop} / {housing}");
             Bar(new Rect(x + 16, y + 12, 140, 2), s.pop / housing, Palette.UIText);
-            Tip(new Rect(x, y, 160, 14), "Wohnhäuser schaffen Platz. Wachstum braucht Nahrung und Zufriedenheit.");
+            Tip(new Rect(x, y, 160, 14), "__Bewohner__\nWohnhäuser schaffen Platz. Wachstum braucht Nahrung und Zufriedenheit.");
             y += 18;
             // Zufriedenheit
             Icon(new Rect(x, y, 12, 12), s.happiness >= 40 ? "smile" : "angry", Palette.UIText);
@@ -79,19 +80,19 @@ namespace PixelKingdom
             Bar(new Rect(x + 16, y + 12, 140, 2), s.happiness / 100f, s.happiness < 25 ? Palette.UIBad : Palette.UIText);
             var reasons = new System.Collections.Generic.List<string>();
             float target = G.HappinessTarget(s, reasons);
-            Tip(new Rect(x, y, 160, 14), $"Ziel: {(int)target}\n" + string.Join("\n", reasons));
+            Tip(new Rect(x, y, 160, 14), $"__Zufriedenheit__\n__Zielwert__: {(int)target}\n__Einflüsse__:\n" + string.Join("\n", reasons));
             y += 18;
             // Arbeit
             int jobs = G.Jobs(s);
             Text(x, y + 2, $"Arbeiter {(int)(s.pop * 0.6f)} / Stellen {jobs}", Palette.UITextDim);
-            Tip(new Rect(x, y, 160, 12), "60% der Bewohner arbeiten. Nahrungsbetriebe werden zuerst besetzt. Fehlen Arbeiter, sinkt die Produktion.");
+            Tip(new Rect(x, y, 160, 12), "__Arbeit__\n60% der Bewohner arbeiten. Nahrungsbetriebe werden zuerst besetzt. Fehlen Arbeiter, sinkt die Produktion.");
             y += 14;
             // Steuern
             Text(x, y + 3, "Steuern");
             if (Button(new Rect(x + 50, y, 14, 13), "-", s.taxRate > 0.001f)) s.taxRate = Mathf.Max(0, s.taxRate - 0.05f);
             Text(x + 69, y + 3, $"{Mathf.RoundToInt(s.taxRate * 100)}%");
             if (Button(new Rect(x + 92, y, 14, 13), "+", s.taxRate < 0.349f)) s.taxRate = Mathf.Min(0.35f, s.taxRate + 0.05f);
-            Tip(new Rect(x, y, 110, 13), "Mehr Steuern = mehr Gold, aber weniger Zufriedenheit.");
+            Tip(new Rect(x, y, 110, 13), "__Steuern__\nMehr Steuern = mehr Gold, aber weniger Zufriedenheit.");
             y += 16;
             Text(x, y + 3, "Rationen");
             string[] rn = { "Knapp", "Normal", "Üppig" };
@@ -138,7 +139,7 @@ namespace PixelKingdom
             gy += 30;
             float def = G.DefenseStrength(s);
             Text(gx, gy, $"Verteidigung {(int)def}", Palette.UIText);
-            Tip(new Rect(gx, gy, 120, 10), $"Garnison + Aufgebot ({G.Levy(s)} Bürger) mit +{Mathf.RoundToInt(G.DefenseBonus(s) * 100)}% durch Mauern/Gelände.");
+            Tip(new Rect(gx, gy, 120, 10), $"__Verteidigung__\n__Truppen__: Garnison + Aufgebot ({G.Levy(s)} Bürger)\n__Bonus__: +{Mathf.RoundToInt(G.DefenseBonus(s) * 100)}% durch Mauern/Gelände");
             gy += 14;
             if (Button(new Rect(gx, gy, 150, 14), "Heer aufstellen", s.garrison.Sum() > 0, "Truppen aus der Garnison ins Feld schicken", "army")) SettlementTab = 2;
             gy += 17;
@@ -190,10 +191,11 @@ namespace PixelKingdom
                 float mult = G.BuildCostMult(s, d.Type);
                 string cost = CostText(d.Cost, mult);
                 Text(x + (cardW - PixelFont.Width(cost)) / 2, card.yMax + 4, cost, CanAfford(d.Cost, mult) ? Palette.UIText : Palette.UIGood);
-                string tip = $"{d.Name}\n{d.Desc}\nKosten: {CostLong(d.Cost, mult)}\nBauzeit: ~{d.Days} Tage";
-                if (d.Jobs > 0) tip += $"\nArbeiter: {d.Jobs}";
-                if (d.Need != TerrainNeed.None) tip += $"\nStandortbonus: {Mathf.RoundToInt(G.TerrainBonus(s, d.Need) * 100)}%";
-                if (!ok) tip += "\n> " + why;
+                string tip = $"__{d.Name}__\n{d.Desc}\n__Kosten__: {CostLong(d.Cost, mult)}\n__Bauzeit__: ~{d.Days} Tage";
+                if (d.Jobs > 0) tip += $"\n__Arbeiter__: {d.Jobs}";
+                if (BuildingEffects(d) != null) tip += "\n__Wirkung__: " + BuildingEffects(d);
+                if (d.Need != TerrainNeed.None) tip += $"\n__Standortbonus__: {Mathf.RoundToInt(G.TerrainBonus(s, d.Need) * 100)}%";
+                if (!ok) tip += "\n__Gesperrt__: " + why;
                 var cardScreen = new Rect(clip.x + card.x, clip.y + card.y, card.width, card.height);
                 if (hov && !PKInput.UsingTouch) { tooltip = tip; tipPos = Event.current.mousePosition + new Vector2(clip.x, clip.y); }
                 if (Clicked(card))
@@ -203,6 +205,19 @@ namespace PixelKingdom
                 }
             }
             GUI.EndGroup();
+        }
+
+        static string BuildingEffects(BuildingDef d)
+        {
+            var parts = new System.Collections.Generic.List<string>();
+            for (int r = 0; r < ResInfo.Count; r++) if (d.Prod[r] > 0) parts.Add($"+{d.Prod[r]:0.#} {ResInfo.Name(r)}/Tag");
+            for (int r = 0; r < ResInfo.Count; r++) if (d.Use[r] > 0) parts.Add($"-{d.Use[r]:0.#} {ResInfo.Name(r)}/Tag");
+            if (d.Housing > 0) parts.Add($"+{d.Housing} Wohnplätze");
+            if (d.Happiness > 0) parts.Add($"+{d.Happiness:0} Zufriedenheit");
+            if (d.Defense > 0) parts.Add($"+{Mathf.RoundToInt(d.Defense * 100)}% Verteidigung");
+            if (d.Storage > 0) parts.Add($"+{d.Storage} Lager");
+            if (d.Prestige > 0) parts.Add("Ansehen");
+            return parts.Count == 0 ? null : string.Join(", ", parts);
         }
 
         bool CanAfford(float[] cost, float mult) => G.CanAfford(G.Player, cost, mult);
@@ -238,8 +253,10 @@ namespace PixelKingdom
                 Text(x + 92, y + 3, "x" + s.garrison[u], Palette.UIText);
                 Text(x + 120, y + 3, $"A{d.Atk} V{d.Def} L{d.Hp}", Palette.UITextDim);
                 Text(x + 182, y + 3, CostText(d.Cost, 1), CanAfford(d.Cost, 1) ? Palette.UIText : Palette.UIGood);
-                string tip = $"{d.Name}: {d.Desc}\nAngriff {d.Atk}, Verteidigung {d.Def}, Leben {d.Hp}, Tempo {d.Speed}\nKosten: {CostLong(d.Cost, 1)} + 1 Bewohner\nSold: {d.UpkeepGold:0.00} Gold, {d.UpkeepFood:0.00} Nahrung/Tag";
-                if (!ok1) tip += "\n> " + why;
+                string tip = $"__{d.Name}__\n{d.Desc}\n__Werte__: Angriff {d.Atk}, Verteidigung {d.Def}, Leben {d.Hp}, Tempo {d.Speed}\n__Kosten__: {CostLong(d.Cost, 1)} + 1 Bewohner\n__Ausbildung__: {d.Days} Tage\n__Sold__: {d.UpkeepGold:0.00} Gold, {d.UpkeepFood:0.00} Nahrung pro Tag";
+                if (d.StrongVs >= 0) tip += $"\n__Stark gegen__: {Units.Get(d.StrongVs).Plural}";
+                if (d.Needs != BType.None) tip += $"\n__Benötigt__: {Buildings.Get(d.Needs).Name}";
+                if (!ok1) tip += "\n__Gesperrt__: " + why;
                 Tip(new Rect(x, y, 230, 14), tip);
                 if (Button(new Rect(x + 236, y, 24, 13), "+1", ok1)) G.QueueTrain(s, (UType)u, 1);
                 bool ok5 = G.CanTrain(s, (UType)u, 5, out _);

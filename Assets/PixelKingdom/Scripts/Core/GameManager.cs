@@ -157,6 +157,7 @@ namespace PixelKingdom
             SaveSystem.Save(g);
             UI.OnGameStarted(null);
             g.StoryTick();
+            UI.StartTutorial();
         }
 
         public void ContinueGame()

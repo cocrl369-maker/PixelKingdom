@@ -126,12 +126,12 @@ namespace PixelKingdom
             {
                 var ev = G.Evaluate(acts[i].act, d);
                 var br = new Rect(x + (i % 4) * (bw + 2), by + (i / 4) * 18, bw, 16);
-                string tip = acts[i].label + ": " + ActionDesc(acts[i].act, d, ev);
-                if (!ev.Possible) tip += "\nNicht möglich: " + ev.Blocker;
+                string tip = "__" + acts[i].label + "__\n" + ActionDesc(acts[i].act, d, ev);
+                if (!ev.Possible) tip += "\n__Nicht möglich__: " + ev.Blocker;
                 else
                 {
-                    if (acts[i].act != DipAction.Gift && acts[i].act != DipAction.War) tip += $"\nAussicht: {ev.Chance}";
-                    if (ev.Reasons.Count > 0) tip += "\n" + string.Join("\n", ev.Reasons);
+                    if (acts[i].act != DipAction.Gift && acts[i].act != DipAction.War) tip += $"\n__Aussicht__: {ev.Chance}";
+                    if (ev.Reasons.Count > 0) tip += "\n__Gründe__:\n" + string.Join("\n", ev.Reasons);
                 }
                 if (Button(br, acts[i].label, ev.Possible, tip, null, false, 1, acts[i].act != DipAction.War))
                 {
@@ -198,7 +198,7 @@ namespace PixelKingdom
                 string nm = rd.Name.Length > 13 ? rd.Name.Substring(0, 12) + "." : rd.Name;
                 Text(rr.x + (rr.width - PixelFont.Width(nm)) / 2, rr.y + 4, nm, fg);
                 Text(rr.x + (rr.width - PixelFont.Width(rd.Ruler)) / 2, rr.y + 14, rd.Ruler.Length > 13 ? "" : rd.Ruler, fg);
-                Tip(rr, $"{rd.Name}: {rd.Desc}\nMax. Siedlungen: {rd.MaxSettlements}\nProduktionsbonus: +{Mathf.RoundToInt(rd.ProductionBonus * 100)}%");
+                Tip(rr, $"__{rd.Name}__\n{rd.Desc}\n__Herrscher__: {rd.Ruler}\n__Max. Siedlungen__: {rd.MaxSettlements}\n__Produktionsbonus__: +{Mathf.RoundToInt(rd.ProductionBonus * 100)}%");
             }
             y += 34;
             // Nächster Rang
@@ -316,6 +316,8 @@ namespace PixelKingdom
                 "MILITÄR: Rekruten kommen aus der Bevölkerung. Speere schlagen Ritter, Ritter schlagen Bogenschützen, Bogenschützen schlagen Speere. Rammen brechen Mauern.\n" +
                 "DIPLOMATIE: Jeder Herrscher hat eigene Interessen: Gebietsansprüche, Treue zum Kaiser, Gier, Ehre. Fahrt mit der Maus über eine Aktion, um die Aussichten zu sehen.\n" +
                 "GELEGENTLICH SPIELEN: Das Spiel speichert automatisch. Während ihr weg seid, laufen Wirtschaft und Bau weiter (bis zu 100 Tage). Schaltet den Verwalter ein, damit eure Städte selbst bauen.";
+            if (!gm.InMenu && Button(new Rect(c.xMax - 150, c.yMax - 15, 150, 15), "Einführung zeigen", true, null, "book")) StartTutorial();
+            c.height -= 18;
             Wrapped(c, text);
         }
 
@@ -459,7 +461,6 @@ namespace PixelKingdom
             if (Button(new Rect(bx, by, bw, bh), "Hilfe", true, null, "scroll", false, bs)) { Open = Open == Window.Help ? Window.None : Window.Help; }
             by += bh + gap;
             if (Button(new Rect(bx, by, bw, bh), "Beenden", true, null, "close", false, bs)) Application.Quit();
-            if (Open == Window.Help) DrawHelp();
             string foot = "Ein Städtebauspiel im Mittelalter. Speichert automatisch.";
             var fr = new Rect(4, VH - 16, PixelFont.Width(foot) + 10, 13);
             Fill(fr, new Color(Palette.UIPanelDark.r, Palette.UIPanelDark.g, Palette.UIPanelDark.b, 0.85f));
