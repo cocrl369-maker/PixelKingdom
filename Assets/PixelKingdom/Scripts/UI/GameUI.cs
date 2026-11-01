@@ -101,7 +101,7 @@ namespace PixelKingdom
         {
             if (gm == null || G == null) return;
             int extra = PlayerPrefs.GetInt("pk_uiscale", 0);
-            S = Mathf.Clamp(Mathf.FloorToInt(Screen.height / 380f) + extra, 1, 8);
+            S = Mathf.Clamp((Screen.height < 700 ? 1 : Mathf.Max(2, Mathf.FloorToInt(Screen.height / 500f))) + extra, 1, 8);
             VW = Screen.width / (float)S; VH = Screen.height / (float)S;
             GUI.matrix = Matrix4x4.Scale(new Vector3(S, S, 1));
             if (Event.current.type == EventType.Layout) { }
@@ -189,24 +189,30 @@ namespace PixelKingdom
             return false;
         }
 
-        bool Button(Rect r, string label, bool enabled = true, string tip = null, string icon = null, bool selected = false)
+        bool Button(Rect r, string label, bool enabled = true, string tip = null, string icon = null, bool selected = false, int ts = 1)
         {
             rects.Add(r);
             bool hov = Hover(r) && enabled;
-            var bg = !enabled ? Palette.UIPanelLight : selected ? Palette.UISand : hov ? Palette.UIPanelLight : Palette.UIPanelDark;
+            var bg = !enabled ? Palette.UIPanelLight : selected ? Palette.UISand : hov ? Palette.UIPanelLight : Palette.UIPanel;
             var fg = !enabled ? Palette.UITextDim : selected ? Palette.UIPanelDark : Palette.UIText;
             Fill(r, Palette.UIPanelDark);
             Fill(new Rect(r.x + 1, r.y + 1, r.width - 2, r.height - 2), bg);
-            if (enabled && !selected) Fill(new Rect(r.x + 1, r.yMax - 2, r.width - 2, 1), new Color(0, 0, 0, 0.18f));
-            float tx = r.x + (r.width - PixelFont.Width(label)) / 2f;
+            if (enabled && !selected)
+            {
+                Fill(new Rect(r.x + 1, r.y + 1, r.width - 2, 1), new Color(1, 1, 1, hov ? 0.25f : 0.14f));     // Lichtkante
+                Fill(new Rect(r.x + 1, r.yMax - 2, r.width - 2, 1), new Color(0, 0, 0, 0.25f));             // Schattenkante
+            }
+            float lw = PixelFont.Width(label) * ts;
+            float tx = r.x + (r.width - lw) / 2f;
             if (icon != null)
             {
-                float total = 12 + (label.Length > 0 ? 3 + PixelFont.Width(label) : 0);
+                float isz = ts > 1 ? 16 : 12;
+                float total = isz + (label.Length > 0 ? 4 + lw : 0);
                 float ix = r.x + (r.width - total) / 2f;
-                PixelIcons.Draw(new Rect(Mathf.Round(ix), Mathf.Round(r.y + (r.height - 12) / 2f), 12, 12), icon, fg);
-                tx = ix + 15;
+                Icon(new Rect(Mathf.Round(ix), Mathf.Round(r.y + (r.height - isz) / 2f), isz, isz), icon, fg);
+                tx = ix + isz + 4;
             }
-            if (label.Length > 0) Text(tx, r.y + (r.height - 8) / 2f + 1, label, fg);
+            if (label.Length > 0) Text(tx, r.y + (r.height - 8 * ts) / 2f + ts, label, fg, ts);
             Tip(r, tip);
             return enabled && Clicked(r);
         }
@@ -221,8 +227,33 @@ namespace PixelKingdom
         {
             Fill(r, Palette.UIPanelDark);
             Fill(new Rect(r.x + 1, r.y + 1, r.width - 2, r.height - 2), bg ?? Palette.UIPanel);
+            string key = ColorKey(icon);
+            if (key != null) { SpriteLib.DrawUI(new Rect(r.x + 2, r.y + 2, r.width - 4, r.height - 4), key, null, true, true); return; }
             float isz = r.width >= 26 ? 24 : 12;
             PixelIcons.Draw(new Rect(Mathf.Round(r.x + (r.width - isz) / 2), Mathf.Round(r.y + (r.height - isz) / 2), isz, isz), icon, Palette.UIText);
+        }
+
+        static string ColorKey(string icon)
+        {
+            if (icon == null) return null;
+            if (SpriteLib.Has("i_" + icon)) return "i_" + icon;
+            if (SpriteLib.Has(icon)) return icon;
+            return null;
+        }
+
+        /// <summary>Icon: farbig, wenn es in den Platz passt, sonst die schlichte Variante.</summary>
+        static void Icon(Rect r, string name, Color tint)
+        {
+            string key = ColorKey(name);
+            var sp = key != null ? SpriteLib.Get(key) : null;
+            if (sp != null && sp.W <= r.width + 4 && sp.H <= r.height + 4)
+            {
+                var rr = new Rect(r.x - 2, r.y - 2, r.width + 4, r.height + 4);
+                if (tint.a < 0.99f) SpriteLib.DrawUI(rr, key, new Color(1, 1, 1, tint.a)); else SpriteLib.DrawUI(rr, key);
+                return;
+            }
+            if (PixelIcons.Has(name)) { PixelIcons.Draw(r, name, tint); return; }
+            if (key != null) SpriteLib.DrawUI(r, key);
         }
 
         void DrawTooltip()
@@ -266,7 +297,7 @@ namespace PixelKingdom
             // Links: Rang & Datum (wie im Vorbild: Krone + Zahl, "Day")
             var left = new Rect(4, 4, 150, 30);
             Panel(left);
-            PixelIcons.Draw(new Rect(9, 9, 12, 12), "crown", Palette.UIText);
+            Icon(new Rect(9, 9, 12, 12), "crown", Palette.UIText);
             Text(25, 8, Ranks.Get(p.rank).Name, Palette.UIText);
             Text(25, 19, $"Tag {G.S.day + 1}", Palette.UITextDim);
             Text(70, 19, Calendar.SeasonNames[(int)G.Season] + " J" + Calendar.Year(G.S.day), Palette.UITextDim);
@@ -341,7 +372,7 @@ namespace PixelKingdom
             }
             if (Button(new Rect(4, y, 22, 20), "", true, "Zur Hauptstadt (H)", "house")) gm.FocusHome();
             y += 23;
-            if (Button(new Rect(4, y, 22, 20), "", true, "Farbpalette wechseln (P): " + Palette.Current.Name, "sun")) gm.CyclePalette();
+            if (Button(new Rect(4, y, 22, 20), "", true, "Farbpalette wechseln (P): " + Palette.Name, "sun")) gm.CyclePalette();
         }
 
         // ------------------------------------------------------------------
@@ -360,16 +391,17 @@ namespace PixelKingdom
             if (Event.current.type == EventType.Repaint && minimap != null) GUI.DrawTexture(r, minimap);
             // Kamera-Position
             var t = gm.CamCtrl.Target;
-            float cx = r.x + t.x / WorldMap.W * w, cy = r.yMax - t.z / WorldMap.H * h;
-            float vs = gm.CamCtrl.Distance / WorldMap.W * w * 0.8f;
-            var vr = new Rect(cx - vs, cy - vs * 0.6f, vs * 2, vs * 1.2f);
+            float cx = r.x + t.x / WorldMap.W * w, cy = r.yMax - t.y / WorldMap.H * h;
+            var view = gm.CamCtrl.ViewSize;
+            float vw = Mathf.Min(w, view.x / WorldMap.W * w), vh = Mathf.Min(h, view.y / WorldMap.H * h);
+            var vr = new Rect(cx - vw / 2, cy - vh / 2, vw, vh);
             Fill(new Rect(vr.x, vr.y, vr.width, 1), Palette.UIText); Fill(new Rect(vr.x, vr.yMax, vr.width, 1), Palette.UIText);
             Fill(new Rect(vr.x, vr.y, 1, vr.height), Palette.UIText); Fill(new Rect(vr.xMax, vr.y, 1, vr.height + 1), Palette.UIText);
             var e = Event.current;
             if ((e.type == EventType.MouseDown || e.type == EventType.MouseDrag) && e.button == 0 && r.Contains(e.mousePosition))
             {
                 float mx = (e.mousePosition.x - r.x) / w * WorldMap.W, mz = (r.yMax - e.mousePosition.y) / h * WorldMap.H;
-                gm.CamCtrl.JumpTo(new Vector3(mx, gm.CamCtrl.Target.y, mz));
+                gm.CamCtrl.JumpTo(new Vector2(mx, mz));
                 e.Use();
             }
             Tip(r, "Weltkarte – klicken zum Springen");
@@ -383,20 +415,35 @@ namespace PixelKingdom
                 minimap = new Texture2D(W, H, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
                 minimapPx = new Color32[W * H];
             }
-            var pal = Palette.Current;
+            var a = Palette.Art;
             var map = G.Map;
             for (int i = 0; i < W * H; i++)
             {
-                Color c;
-                if (!map.disc[i]) c = map.IsSea(i) ? pal.FogSea : pal.Fog;
+                Px c;
+                if (!map.disc[i]) c = (i / W + i) % 7 == 0 ? a.ParchB : a.ParchA;
+                else if (map.river[i]) c = a.River;
                 else
                 {
-                    c = map.river[i] ? pal.River : pal.BiomeColor(map.biome[i]);
-                    if (map.biome[i] == Biome.Forest || map.biome[i] == Biome.Pine) c = Color.Lerp(c, pal.Tree, 0.5f);
+                    switch (map.biome[i])
+                    {
+                        case Biome.Ocean: c = a.Deep; break;
+                        case Biome.Shallow: c = a.Shallow; break;
+                        case Biome.Lake: c = a.Water; break;
+                        case Biome.Beach: c = a.Beach; break;
+                        case Biome.Fertile: c = a.Fertile; break;
+                        case Biome.Forest: c = a.Leaf; break;
+                        case Biome.Pine: c = a.Pine; break;
+                        case Biome.Hills: c = a.Hills; break;
+                        case Biome.Mountain: c = a.Rock; break;
+                        case Biome.Snow: c = a.Snow; break;
+                        case Biome.Desert: c = a.Desert; break;
+                        case Biome.Steppe: c = a.Steppe; break;
+                        default: c = a.Grass; break;
+                    }
                     int o = map.owner[i];
-                    if (o >= 0) { var f = G.F(o); if (f != null) c = Color.Lerp(c, pal.FactionColor(f.color), 0.55f); }
+                    if (o >= 0) { var f = G.F(o); if (f != null) { var fc = (Color32)Palette.FactionColor(f.color); c = c.Lerp(new Px(fc.r, fc.g, fc.b), 0.5f); } }
                 }
-                minimapPx[i] = c;
+                minimapPx[i] = new Color32(c.r, c.g, c.b, 255);
             }
             foreach (var s in G.Settlements)
             {
@@ -482,30 +529,29 @@ namespace PixelKingdom
             var cam = gm.CamCtrl.Cam;
             var sp = cam.WorldToScreenPoint(w);
             v = new Vector2(sp.x / S, (Screen.height - sp.y) / S);
-            return sp.z > 0 && v.x > -50 && v.y > -20 && v.x < VW + 50 && v.y < VH + 20;
+            return v.x > -50 && v.y > -20 && v.x < VW + 50 && v.y < VH + 20;
         }
 
         void DrawWorldLabels()
         {
             if (Event.current.type != EventType.Repaint) return;
-            var pal = Palette.Current;
-            float dist = gm.CamCtrl.Distance;
+            float zoom = gm.CamCtrl.Zoom;
             foreach (var s in G.Settlements)
             {
                 if (!G.IsDiscovered(s.x, s.y)) continue;
                 var f = G.F(s.faction);
                 bool mine = f != null && f.isPlayer;
-                if (dist > 80 && !mine && s.pop < 100) continue;
-                var wp = gm.Entities.SettlementWorldPos(s) + Vector3.up * 1.4f;
+                if (zoom < 1f && !mine && s.pop < 100) continue;
+                var wp = gm.Entities.SettlementWorldPos(s) + Vector3.up * (zoom < 1f ? 0.5f : 2.2f);
                 if (!WorldToVirtual(wp, out var v)) continue;
                 string label = s.name;
                 float w = PixelFont.Width(label) + 14;
                 var r = new Rect(Mathf.Round(v.x - w / 2), Mathf.Round(v.y - 12), w, 11);
-                var fc = f != null ? pal.FactionColor(f.color) : Color.white;
+                var fc = f != null ? Palette.FactionColor(f.color) : Color.white;
                 Fill(r, new Color(Palette.UIPanelDark.r, Palette.UIPanelDark.g, Palette.UIPanelDark.b, 0.8f));
                 Fill(new Rect(r.x + 2, r.y + 2, 7, 7), fc);
                 Text(r.x + 11, r.y + 2, label, Palette.UIText);
-                if (dist < 45)
+                if (zoom >= 2f)
                 {
                     string sub = ((int)s.pop).ToString();
                     if (f != null && !mine)
@@ -514,33 +560,51 @@ namespace PixelKingdom
                         if (st == DipStatus.War) sub += " KRIEG";
                         else if (st == DipStatus.Alliance) sub += " verbündet";
                     }
-                    Text(Mathf.Round(v.x - PixelFont.Width(sub) / 2f), r.yMax + 1, sub, mine ? Palette.UIPanelDark : Palette.UIBad);
+                    var subR = new Rect(Mathf.Round(v.x - PixelFont.Width(sub) / 2f) - 2, r.yMax, PixelFont.Width(sub) + 4, 10);
+                    Fill(subR, new Color(0, 0, 0, 0.35f));
+                    Text(subR.x + 2, subR.y + 1, sub, mine ? Palette.UIText : Palette.UIGood);
                 }
-                if (s.id == gm.SelSettlement) Brackets(new Rect(v.x - 22, v.y - 2, 44, 36));
+                if (s.id == gm.SelSettlement) { float bs = 3.4f * 16f * zoom / S; var cpos = gm.Entities.SettlementWorldPos(s); if (WorldToVirtual(cpos, out var cv)) Brackets(new Rect(cv.x - bs / 2, cv.y - bs * 0.6f, bs, bs), 5, Palette.UIText); }
             }
             foreach (var a in G.Armies)
             {
                 if (!gm.Entities.ArmyVisible(a.id)) continue;
-                var wp = gm.Entities.ArmyWorldPos(a) + Vector3.up * 0.6f;
+                var wp = gm.Entities.ArmyWorldPos(a) + Vector3.up * 1.3f;
                 if (!WorldToVirtual(wp, out var v)) continue;
                 string t = (a.units.Sum() + a.settlers).ToString();
                 var f = G.F(a.faction);
-                var fc = f != null ? pal.FactionColor(f.color) : Color.white;
+                var fc = f != null ? Palette.FactionColor(f.color) : Color.white;
                 float w = PixelFont.Width(t) + 6;
                 var r = new Rect(Mathf.Round(v.x - w / 2), Mathf.Round(v.y - 10), w, 10);
                 Fill(r, f != null && f.isPlayer ? Palette.UIPanel : (G.AtWar(G.PlayerId, a.faction) ? Palette.UIBad : Palette.UIPanelDark));
                 Fill(new Rect(r.x, r.yMax - 1, r.width, 1), fc);
                 Text(r.x + 3, r.y + 1, t, Palette.UIText);
-                if (a.id == gm.SelArmy) Brackets(new Rect(v.x - 14, v.y - 14, 28, 28));
+                if (a.id == gm.SelArmy) { float bs = 1.6f * 16f * zoom / S; Brackets(new Rect(v.x - bs / 2, v.y + 4, bs, bs), 4, Palette.UIText); }
             }
             // Mauszeiger-Kachel
             if (gm.HoverValid && !MouseOverUI)
             {
-                var c = new Vector3(gm.HoverX + 0.5f, gm.Terrain.GroundY(gm.HoverX + 0.5f, gm.HoverY + 0.5f), gm.HoverY + 0.5f);
+                var c = new Vector3(gm.HoverX + 0.5f, gm.HoverY + 0.5f, 0);
                 if (WorldToVirtual(c, out var v))
                 {
-                    float sz = Mathf.Clamp(260f / gm.CamCtrl.Distance, 6, 30);
-                    Brackets(new Rect(v.x - sz / 2, v.y - sz / 2, sz, sz), 2, gm.CurrentMode == GameManager.Mode.PlaceSettlers ? Palette.UISand : Palette.UIPanelDark);
+                    float sz = 16f * zoom / S;
+                    Brackets(new Rect(v.x - sz / 2, v.y - sz / 2, sz, sz), 2, gm.CurrentMode == GameManager.Mode.PlaceSettlers ? Palette.UISand : Palette.UIText);
+                }
+                // Geländeinfo unten links über der Minikarte
+                int ti = WorldMap.Idx(gm.HoverX, gm.HoverY);
+                if (G.Map.disc[ti])
+                {
+                    string info = G.Map.BiomeName(ti);
+                    string dep = WorldMap.DepositName(G.Map.deposit[ti]);
+                    if (dep != null) info += " - " + dep;
+                    if (G.Map.trees[ti] > 0) info += $" - {G.Map.trees[ti]} Bäume";
+                    else if (G.Map.baseTrees[ti] > 0) info += " - abgeholzt";
+                    int o = G.Map.owner[ti];
+                    if (o >= 0) { var of = G.F(o); if (of != null) info += " - " + (of.isPlayer ? "euer Land" : of.name); }
+                    float mw = Mathf.Min(160, VW * 0.22f), mh = mw * WorldMap.H / WorldMap.W;
+                    var ir = new Rect(4, VH - mh - 22, PixelFont.Width(info) + 10, 13);
+                    Fill(ir, new Color(Palette.UIPanelDark.r, Palette.UIPanelDark.g, Palette.UIPanelDark.b, 0.9f));
+                    Text(ir.x + 5, ir.y + 3, info, Palette.UIText);
                 }
             }
         }

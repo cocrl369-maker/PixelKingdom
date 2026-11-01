@@ -3,285 +3,151 @@ using UnityEngine;
 
 namespace PixelKingdom
 {
-    /// <summary>Zeichnet Siedlungen (aus ihren tatsächlichen Gebäuden zusammengesetzt) und Armeen.</summary>
+    /// <summary>Siedlungen (aus ihren echten Gebäuden zusammengesetzt), Armeen, Grenzen und Marschrouten.</summary>
     public class EntityRenderer : MonoBehaviour
     {
-        class View { public GameObject go; public Mesh mesh; public int sig = int.MinValue; }
+        class View { public GameObject go, shadowGo; public Mesh mesh, shadow; public int sig = int.MinValue; public bool flip; }
 
         Game game;
-        TerrainRenderer terrain;
-        Material mat;
+        Material spriteMat, shadowMat;
+        ObjectRenderer objects;
         readonly Dictionary<int, View> settlementViews = new Dictionary<int, View>();
         readonly Dictionary<int, View> armyViews = new Dictionary<int, View>();
-        readonly MeshBuilder mb = new MeshBuilder();
-        LineRenderer pathLine;
-        float refreshTimer;
+        readonly QuadBatch qb = new QuadBatch(), sb = new QuadBatch();
+        Mesh borderMesh, pathMesh;
+        bool bordersDirty = true;
+        float refresh;
         int paletteIdx = -1;
+        readonly HashSet<int> occupied = new HashSet<int>();
 
         public int SelectedArmy = -1;
 
-        public void Init(Game g, TerrainRenderer t, Material m)
+        public void Init(Game g, Material sprite, Material shadow, ObjectRenderer obj)
         {
-            game = g; terrain = t; mat = m;
-            foreach (var v in settlementViews.Values) Destroy(v.go);
-            foreach (var v in armyViews.Values) Destroy(v.go);
+            game = g; spriteMat = sprite; shadowMat = shadow; objects = obj;
+            foreach (Transform c in transform) Destroy(c.gameObject);
             settlementViews.Clear(); armyViews.Clear();
-            if (pathLine == null)
-            {
-                var go = new GameObject("Pfad");
-                go.transform.SetParent(transform, false);
-                pathLine = go.AddComponent<LineRenderer>();
-                pathLine.sharedMaterial = mat;
-                pathLine.widthMultiplier = 0.08f;
-                pathLine.numCapVertices = 2;
-                pathLine.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            }
-            paletteIdx = Palette.Index;
+            QuadBatch.MakeObject("Grenzen", transform, spriteMat, out borderMesh);
+            QuadBatch.MakeObject("Marschroute", transform, spriteMat, out pathMesh);
+            bordersDirty = true; refresh = 0; paletteIdx = Palette.Index;
+            RefreshSettlements(true);
         }
 
-        public void ForceRefresh()
-        {
-            foreach (var v in settlementViews.Values) v.sig = int.MinValue;
-            foreach (var v in armyViews.Values) v.sig = int.MinValue;
-        }
+        public void MarkBordersDirty() => bordersDirty = true;
+        public void ForceRefresh() { foreach (var v in settlementViews.Values) v.sig = int.MinValue; foreach (var v in armyViews.Values) v.sig = int.MinValue; bordersDirty = true; }
 
         View Get(Dictionary<int, View> dict, int id, string name)
         {
             if (dict.TryGetValue(id, out var v)) return v;
-            v = new View { go = new GameObject(name), mesh = new Mesh() };
-            v.go.transform.SetParent(transform, false);
-            v.go.AddComponent<MeshFilter>().sharedMesh = v.mesh;
-            var mr = v.go.AddComponent<MeshRenderer>();
-            mr.sharedMaterial = mat;
-            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            mr.receiveShadows = false;
+            v = new View();
+            v.go = QuadBatch.MakeObject(name, transform, spriteMat, out v.mesh);
+            v.shadowGo = QuadBatch.MakeObject(name + " Schatten", transform, shadowMat, out v.shadow);
             dict[id] = v;
             return v;
         }
 
         void Update()
         {
-            if (game == null) return;
+            if (game == null || SpriteLib.Atlas == null) return;
             if (paletteIdx != Palette.Index) { paletteIdx = Palette.Index; ForceRefresh(); }
-            refreshTimer -= Time.unscaledDeltaTime;
-            if (refreshTimer <= 0 || terrain.PendingChunks > 0)
-            {
-                refreshTimer = 0.4f;
-                RefreshSettlements();
-            }
+            refresh -= Time.unscaledDeltaTime;
+            if (refresh <= 0) { refresh = 0.5f; RefreshSettlements(false); }
+            if (bordersDirty) BuildBorders();
             UpdateArmies();
-            UpdatePath();
+            BuildPath();
         }
 
         // ------------------------------------------------------------------
         //  Siedlungen
         // ------------------------------------------------------------------
-        void RefreshSettlements()
+        void RefreshSettlements(bool force)
         {
             var alive = new HashSet<int>();
+            bool occChanged = false;
             foreach (var s in game.Settlements)
             {
                 alive.Add(s.id);
-                bool visible = game.IsDiscovered(s.x, s.y);
                 var v = Get(settlementViews, s.id, "Siedlung " + s.name);
-                v.go.SetActive(visible);
-                if (!visible) continue;
                 int sig = Signature(s);
-                if (sig == v.sig) continue;
+                if (sig == v.sig && !force) continue;
                 v.sig = sig;
-                BuildSettlement(s);
-                mb.ToMesh(v.mesh);
+                occChanged = true;
+                BuildSettlement(s, v);
             }
             var remove = new List<int>();
-            foreach (var kv in settlementViews) if (!alive.Contains(kv.Key)) { Destroy(kv.Value.go); remove.Add(kv.Key); }
+            foreach (var kv in settlementViews)
+                if (!alive.Contains(kv.Key)) { Destroy(kv.Value.go); Destroy(kv.Value.shadowGo); remove.Add(kv.Key); occChanged = true; }
             foreach (var k in remove) settlementViews.Remove(k);
+            if (occChanged)
+            {
+                occupied.Clear();
+                foreach (var s in game.Settlements) SettlementLayout.Build(game, s, game.Season, occupied);
+                objects.SetOccupied(occupied);
+            }
         }
 
         int Signature(SettlementData s)
         {
             unchecked
             {
-                int h = s.faction * 7919 + CenterLevel(s) * 31 + (int)(s.pop / 30) * 131 + terrain.PendingChunks * 0;
+                int h = s.faction * 7919 + SettlementLayout.CenterLevel(game, s) * 31 + (int)game.Season * 977 + Palette.Index * 13;
                 for (int i = 0; i < s.buildings.Length; i++) h = h * 17 + s.buildings[i];
-                // Nachbarschaft entdeckt? (Höhen ändern sich beim Aufdecken)
-                h = h * 3 + (game.IsDiscovered(s.x + 3, s.y) ? 1 : 0) + (game.IsDiscovered(s.x - 3, s.y) ? 2 : 0);
                 return h;
             }
         }
 
-        int CenterLevel(SettlementData s)
+        void BuildSettlement(SettlementData s, View v)
         {
+            qb.Clear(); sb.Clear();
             var f = game.F(s.faction);
-            if (s.isCapitalOfEmperor) return 4;
-            if (s.pop > 160 || (f != null && f.capital == s.id && f.rank >= 3)) return 3;
-            if (s.pop > 70 || (f != null && f.capital == s.id && f.rank >= 2)) return 2;
-            if (s.pop > 35) return 1;
-            return 0;
+            Color32 fc = f != null ? (Color32)Palette.FactionColor(f.color) : new Color32(255, 255, 255, 255);
+            var white = new Color32(255, 255, 255, 255);
+            foreach (var p in SettlementLayout.Build(game, s, game.Season, null))
+            {
+                var sp = SpriteLib.Get(p.Name);
+                if (sp == null) continue;
+                float z = p.Flat ? 19.5f : QuadBatch.DepthOf(p.Y);
+                qb.Add(sp, p.X, p.Y, z, white, p.Flip);
+                if (sp.Overlay != null) qb.Add(sp.Overlay, p.X, p.Y, z - 0.002f, fc, p.Flip);
+                if (sp.Shadow != null) sb.Add(sp.Shadow, p.X, p.Y, ObjectRenderer.ShadowZ, white);
+            }
+            qb.ToMesh(v.mesh); sb.ToMesh(v.shadow);
         }
 
-        struct Slot { public Vector3 pos; public int tile; }
-
-        void BuildSettlement(SettlementData s)
+        // ------------------------------------------------------------------
+        //  Grenzen (gestrichelt, in Fraktionsfarbe)
+        // ------------------------------------------------------------------
+        void BuildBorders()
         {
-            mb.Clear();
-            var pal = Palette.Current;
+            bordersDirty = false;
+            qb.Clear();
+            var white = SpriteLib.Get("white");
             var map = game.Map;
-            var f = game.F(s.faction);
-            Color fc = f != null ? pal.FactionColor(f.color) : Color.white;
-
-            // Kacheln im Umkreis sortiert nach Entfernung
-            var tiles = new List<(int i, float d)>();
-            for (int y = s.y - 4; y <= s.y + 4; y++)
-                for (int x = s.x - 4; x <= s.x + 4; x++)
+            const float t = 2f / 16f, inset = 1f / 16f;
+            for (int y = 0; y < WorldMap.H; y++)
+                for (int x = 0; x < WorldMap.W; x++)
                 {
-                    if (!WorldMap.In(x, y)) continue;
-                    float d = Mathf.Sqrt((x - s.x) * (x - s.x) + (y - s.y) * (y - s.y)) + TerrainRenderer.Hash(x, y, 77) * 0.3f;
-                    if (d > 4.3f) continue;
-                    tiles.Add((WorldMap.Idx(x, y), d));
+                    int i = WorldMap.Idx(x, y);
+                    int o = map.owner[i];
+                    if (o < 0 || !map.disc[i]) continue;
+                    var f = game.F(o);
+                    if (f == null) continue;
+                    Color32 c = Palette.FactionColor(f.color);
+                    bool L = Own(x - 1, y) != o, R = Own(x + 1, y) != o, D = Own(x, y - 1) != o, U = Own(x, y + 1) != o;
+                    if (!(L || R || D || U)) continue;
+                    for (int k = 0; k < 2; k++)
+                    {
+                        float a = k * 0.5f + 0.06f, b = a + 0.32f;
+                        if (D) qb.Rect(white, x + a, y + inset, x + b, y + inset + t, 19.4f, c);
+                        if (U) qb.Rect(white, x + a, y + 1 - inset - t, x + b, y + 1 - inset, 19.4f, c);
+                        if (L) qb.Rect(white, x + inset, y + a, x + inset + t, y + b, 19.4f, c);
+                        if (R) qb.Rect(white, x + 1 - inset - t, y + a, x + 1 - inset, y + b, 19.4f, c);
+                    }
                 }
-            tiles.Sort((a, b) => a.d.CompareTo(b.d));
-            var used = new HashSet<int>();
-            int centerTile = WorldMap.Idx(s.x, s.y);
-            used.Add(centerTile);
-
-            bool Usable(int i) => map.Buildable(i) && !used.Contains(i) && (map.ownerSettlement[i] == s.id || map.ownerSettlement[i] == -1);
-
-            // Zentrum
-            var cpos = new Vector3(s.x + 0.5f, terrain.GroundY(s.x + 0.5f, s.y + 0.5f), s.y + 0.5f);
-            mb.SetTransform(cpos, 0);
-            Models.Center(mb, pal, CenterLevel(s), fc);
-            if (s.buildings[(int)BType.Burg] > 0) Models.Castle(mb, pal, fc);
-            mb.ResetTransform();
-
-            int variant = s.id * 13;
-            // Gebäude, die eine bestimmte Landschaft brauchen
-            PlaceOnTerrain(s, BType.Bauernhof, Mathf.Min(12, s.buildings[(int)BType.Bauernhof]), i => map.biome[i] == Biome.Fertile || map.biome[i] == Biome.Grass || map.biome[i] == Biome.Steppe, tiles, used, ref variant, 1.0f);
-            PlaceOnTerrain(s, BType.Fischerhuette, Mathf.Min(6, s.buildings[(int)BType.Fischerhuette]), i => map.coast[i], tiles, used, ref variant, 0.8f);
-            PlaceOnTerrain(s, BType.Hafen, s.buildings[(int)BType.Hafen], i => map.coast[i], tiles, used, ref variant, 1.1f);
-            PlaceOnTerrain(s, BType.Holzfaeller, Mathf.Min(6, s.buildings[(int)BType.Holzfaeller]), i => NearBiome(i, Biome.Forest, Biome.Pine), tiles, used, ref variant, 0.9f);
-            PlaceOnTerrain(s, BType.Steinbruch, s.buildings[(int)BType.Steinbruch], i => NearBiome(i, Biome.Hills, Biome.Mountain), tiles, used, ref variant, 1f);
-            PlaceOnTerrain(s, BType.Mine, s.buildings[(int)BType.Mine], i => NearBiome(i, Biome.Mountain, Biome.Snow), tiles, used, ref variant, 1f);
-
-            // Große Gebäude: je eine ganze Kachel
-            BType[] big = { BType.Kathedrale, BType.Markt, BType.Taverne, BType.Kapelle, BType.Kaserne, BType.Archerie, BType.Stall, BType.Werkstatt, BType.Lagerhaus };
-            var bigTiles = new Queue<int>();
-            foreach (var t in tiles) if (t.d < 2.9f && Usable(t.i)) bigTiles.Enqueue(t.i);
-            foreach (var b in big)
-            {
-                int n = Mathf.Min(s.buildings[(int)b], 3);
-                for (int k = 0; k < n && bigTiles.Count > 0; k++)
-                {
-                    int ti = bigTiles.Dequeue();
-                    if (used.Contains(ti)) { k--; continue; }
-                    used.Add(ti);
-                    Place(b, TileCenter(ti, 0, 0), ref variant, b == BType.Kathedrale ? 1.2f : 1f);
-                }
-            }
-
-            // Kleine Gebäude: je vier pro Kachel
-            var small = new List<BType>();
-            for (int k = 0; k < Mathf.Min(3, s.buildings[(int)BType.Brunnen]); k++) small.Add(BType.Brunnen);
-            for (int k = 0; k < Mathf.Min(4, s.buildings[(int)BType.Schmiede]); k++) small.Add(BType.Schmiede);
-            int houses = Mathf.Min(40, s.buildings[(int)BType.Wohnhaus] + 1);
-            for (int k = 0; k < houses; k++) small.Add(BType.Wohnhaus);
-            int si = 0;
-            foreach (var t in tiles)
-            {
-                if (si >= small.Count) break;
-                if (!Usable(t.i) || t.d > 3.6f) continue;
-                used.Add(t.i);
-                for (int q = 0; q < 4 && si < small.Count; q++)
-                {
-                    float ox = (q % 2 == 0 ? -0.23f : 0.23f) + (TerrainRenderer.Hash(t.i, q, 1) - 0.5f) * 0.08f;
-                    float oz = (q < 2 ? -0.23f : 0.23f) + (TerrainRenderer.Hash(t.i, q, 2) - 0.5f) * 0.08f;
-                    Place(small[si++], TileCenter(t.i, ox, oz), ref variant, 0.9f);
-                }
-            }
-
-            // Mauern
-            int walls = s.buildings[(int)BType.Mauer];
-            if (walls > 0) Walls(s, walls, pal);
+            qb.ToMesh(borderMesh);
         }
 
-        bool NearBiome(int i, Biome a, Biome b)
-        {
-            var map = game.Map;
-            int x = WorldMap.X(i), y = WorldMap.Y(i);
-            for (int k = 0; k < 8; k++)
-            {
-                int nx = x + WorldMap.DX8[k], ny = y + WorldMap.DY8[k];
-                if (!WorldMap.In(nx, ny)) continue;
-                var bb = map.biome[WorldMap.Idx(nx, ny)];
-                if (bb == a || bb == b) return true;
-            }
-            return false;
-        }
-
-        void PlaceOnTerrain(SettlementData s, BType t, int count, System.Func<int, bool> pred, List<(int i, float d)> tiles, HashSet<int> used, ref int variant, float scale)
-        {
-            var map = game.Map;
-            for (int k = 0; k < count; k++)
-            {
-                int found = -1;
-                foreach (var tt in tiles)
-                {
-                    if (tt.d < 1.2f || used.Contains(tt.i) || !map.Buildable(tt.i)) continue;
-                    if (map.ownerSettlement[tt.i] != s.id && map.ownerSettlement[tt.i] != -1) continue;
-                    if (!pred(tt.i)) continue;
-                    found = tt.i; break;
-                }
-                if (found < 0) return;
-                used.Add(found);
-                Place(t, TileCenter(found, 0, 0), ref variant, scale);
-            }
-        }
-
-        Vector3 TileCenter(int i, float ox, float oz)
-        {
-            float x = WorldMap.X(i) + 0.5f + ox, z = WorldMap.Y(i) + 0.5f + oz;
-            return new Vector3(x, terrain.GroundY(x, z), z);
-        }
-
-        void Place(BType t, Vector3 pos, ref int variant, float scale)
-        {
-            variant++;
-            float rot = (variant * 37 % 4) * 90f + (TerrainRenderer.Hash(variant, 3, 5) - 0.5f) * 20f;
-            mb.SetTransform(pos, rot, scale * 1.15f);
-            Models.Building(mb, Palette.Current, t, variant);
-            mb.ResetTransform();
-        }
-
-        void Walls(SettlementData s, int level, Palette pal)
-        {
-            float r = 2.35f;
-            int segs = 28;
-            var map = game.Map;
-            var c = new Vector2(s.x + 0.5f, s.y + 0.5f);
-            for (int k = 0; k < segs; k++)
-            {
-                if (k == segs / 4) continue; // Tor
-                float a0 = k * Mathf.PI * 2 / segs, a1 = (k + 1) * Mathf.PI * 2 / segs;
-                var p0 = c + new Vector2(Mathf.Cos(a0), Mathf.Sin(a0)) * r;
-                var p1 = c + new Vector2(Mathf.Cos(a1), Mathf.Sin(a1)) * r;
-                var mid = (p0 + p1) * 0.5f;
-                int mx = Mathf.FloorToInt(mid.x), my = Mathf.FloorToInt(mid.y);
-                if (!WorldMap.In(mx, my) || map.IsWater(WorldMap.Idx(mx, my))) continue;
-                float y = terrain.GroundY(mid.x, mid.y);
-                float len = Vector2.Distance(p0, p1) + 0.02f;
-                float ang = -Mathf.Atan2(p1.y - p0.y, p1.x - p0.x) * Mathf.Rad2Deg;
-                mb.SetTransform(new Vector3(mid.x, y, mid.y), ang);
-                if (level == 1)
-                {
-                    mb.Box(new Vector3(0, -0.15f, 0), len, 0.36f, 0.05f, pal.Wood);
-                }
-                else
-                {
-                    mb.Box(new Vector3(0, -0.15f, 0), len, 0.45f, 0.08f, pal.Stone);
-                    if (k % 4 == 0) { mb.ResetTransform(); Models.Tower(mb, pal, new Vector3(p0.x, terrain.GroundY(p0.x, p0.y), p0.y), 0.45f, 0.08f); }
-                }
-                mb.ResetTransform();
-            }
-        }
+        int Own(int x, int y) => WorldMap.In(x, y) ? game.Map.owner[WorldMap.Idx(x, y)] : -1;
 
         // ------------------------------------------------------------------
         //  Armeen
@@ -289,49 +155,39 @@ namespace PixelKingdom
         void UpdateArmies()
         {
             var alive = new HashSet<int>();
-            var pal = Palette.Current;
             foreach (var a in game.Armies)
             {
                 alive.Add(a.id);
                 var v = Get(armyViews, a.id, "Armee " + a.id);
-                int tx = Mathf.FloorToInt(a.x), ty = Mathf.FloorToInt(a.y);
-                bool visible = game.IsDiscovered(tx, ty) && (a.faction == game.PlayerId || IsSeenByPlayer(a));
-                v.go.SetActive(visible);
+                bool visible = game.IsDiscovered((int)a.x, (int)a.y) && (a.faction == game.PlayerId || IsSeenByPlayer(a));
+                v.go.SetActive(visible); v.shadowGo.SetActive(visible);
                 if (!visible) continue;
-                int sig = ArmySig(a);
-                if (sig != v.sig)
+                // Blickrichtung
+                if (a.path != null && a.pathIndex < a.path.Count)
                 {
-                    v.sig = sig;
-                    BuildArmy(a, pal);
-                    mb.ToMesh(v.mesh);
+                    float nx = WorldMap.X(a.path[a.pathIndex]) + 0.5f;
+                    if (Mathf.Abs(nx - a.x) > 0.05f) v.flip = nx < a.x;
                 }
-                var target = new Vector3(a.x, a.atSea ? 0.02f : terrain.GroundY(a.x, a.y), a.y);
+                int sig = ArmySig(a) * 2 + (v.flip ? 1 : 0);
+                if (sig != v.sig) { v.sig = sig; BuildArmy(a, v); }
                 var tr = v.go.transform;
-                var delta = target - tr.position;
-                if (delta.sqrMagnitude > 4f) tr.position = target;
-                else
-                {
-                    tr.position = Vector3.Lerp(tr.position, target, 1f - Mathf.Exp(-10f * Time.unscaledDeltaTime));
-                    var flat = new Vector3(delta.x, 0, delta.z);
-                    if (flat.sqrMagnitude > 0.00002f)
-                        tr.rotation = Quaternion.Slerp(tr.rotation, Quaternion.LookRotation(flat), 1f - Mathf.Exp(-6f * Time.unscaledDeltaTime));
-                }
-                if (a.atSea) tr.position += Vector3.up * Mathf.Sin(Time.time * 2f + a.id) * 0.015f;
+                Vector2 cur = tr.position, target = new Vector2(a.x, a.y);
+                cur = (cur - target).sqrMagnitude > 9f ? target : Vector2.Lerp(cur, target, 1f - Mathf.Exp(-10f * Time.unscaledDeltaTime));
+                tr.position = new Vector3(cur.x, cur.y, QuadBatch.DepthOf(cur.y));
+                v.shadowGo.transform.position = new Vector3(cur.x, cur.y, ObjectRenderer.ShadowZ);
             }
             var remove = new List<int>();
-            foreach (var kv in armyViews) if (!alive.Contains(kv.Key)) { Destroy(kv.Value.go); remove.Add(kv.Key); }
+            foreach (var kv in armyViews) if (!alive.Contains(kv.Key)) { Destroy(kv.Value.go); Destroy(kv.Value.shadowGo); remove.Add(kv.Key); }
             foreach (var k in remove) armyViews.Remove(k);
         }
 
         bool IsSeenByPlayer(ArmyData a)
         {
-            // Fremde Heere sieht man nur in der Nähe eigener Siedlungen/Heere
             foreach (var s in game.SettlementsOf(game.PlayerId))
                 if ((s.x - a.x) * (s.x - a.x) + (s.y - a.y) * (s.y - a.y) < 15 * 15) return true;
             foreach (var o in game.ArmiesOf(game.PlayerId))
                 if ((o.x - a.x) * (o.x - a.x) + (o.y - a.y) * (o.y - a.y) < 8 * 8) return true;
-            var f = game.F(a.faction);
-            return f != null && game.Status(game.PlayerId, a.faction) == DipStatus.Alliance;
+            return game.Status(game.PlayerId, a.faction) == DipStatus.Alliance;
         }
 
         int ArmySig(ArmyData a)
@@ -344,68 +200,80 @@ namespace PixelKingdom
             }
         }
 
-        void BuildArmy(ArmyData a, Palette pal)
+        void BuildArmy(ArmyData a, View v)
         {
-            mb.Clear();
+            qb.Clear(); sb.Clear();
             var f = game.F(a.faction);
-            var fc = f != null ? pal.FactionColor(f.color) : Color.white;
-            if (a.atSea)
+            Color32 fc = f != null ? (Color32)Palette.FactionColor(f.color) : new Color32(255, 255, 255, 255);
+            var white = new Color32(255, 255, 255, 255);
+            // Lokale Koordinaten; die Tiefe kommt über die Position des Objekts
+            void Put(string name, float dx, float dy)
             {
-                Models.Ship(mb, pal, fc);
-                return;
+                var s = SpriteLib.Get(name);
+                if (s == null) return;
+                float z = -0.01f - dy * 0.04f;
+                qb.Add(s, dx, dy, z, white, v.flip);
+                if (s.Overlay != null) qb.Add(s.Overlay, dx, dy, z - 0.002f, fc, v.flip);
+                if (s.Shadow != null) sb.Add(s.Shadow, dx, dy, 0f, white);
             }
-            if (a.settlers > 0 && a.units[0] + a.units[1] + a.units[2] + a.units[3] == 0)
+            if (a.atSea) Put("u_ship", 0, -0.1f);
+            else if (a.settlers > 0 && a.units[0] + a.units[1] + a.units[2] + a.units[3] == 0) { Put("u_cart", 0, -0.1f); Put("u_banner", -0.45f, 0.05f); }
+            else
             {
-                Models.Cart(mb, pal);
-                Models.Soldier(mb, pal, new Vector3(0.12f, 0, 0.1f), pal.Wood, 0);
-                Models.Soldier(mb, pal, new Vector3(-0.12f, 0, -0.05f), pal.Roof, 0);
-                Models.Flag(mb, pal, new Vector3(0, 0, -0.18f), fc, 0.3f);
-                return;
+                var kinds = new List<string>();
+                for (int u = 0; u < Units.Count && kinds.Count < 3; u++)
+                    if (a.units[u] > 0) kinds.Add("u_" + (UType)u);
+                int total = 0; for (int u = 0; u < Units.Count; u++) total += a.units[u];
+                while (kinds.Count < Mathf.Min(3, total)) kinds.Add(kinds[0]);
+                float[] ox = { 0f, -0.42f, 0.42f };
+                float[] oy = { -0.15f, 0.05f, 0.08f };
+                for (int k = kinds.Count - 1; k >= 0; k--) Put(kinds[k], ox[k], oy[k]);
+                Put("u_banner", 0.15f, 0.25f);
             }
-            // Formation: bis zu 6 Figuren, nach Truppenart
-            var kinds = new List<int>();
-            for (int u = 0; u < Units.Count; u++)
-            {
-                int n = a.units[u] == 0 ? 0 : Mathf.Clamp(Mathf.CeilToInt(a.units[u] / 6f), 1, 3);
-                for (int k = 0; k < n && kinds.Count < 6; k++)
-                    kinds.Add(u == (int)UType.Speer ? 1 : u == (int)UType.Bogen ? 2 : u == (int)UType.Ritter ? 3 : u == (int)UType.Ramme ? 4 : 0);
-            }
-            if (kinds.Count == 0) kinds.Add(0);
-            var body = Color.Lerp(fc, pal.Dark, 0.3f);
-            for (int k = 0; k < kinds.Count; k++)
-            {
-                float x = ((k % 3) - 1) * 0.11f, z = (k / 3) * -0.13f;
-                Models.Soldier(mb, pal, new Vector3(x, kinds[k] == 3 ? 0.06f : 0f, z), body, kinds[k]);
-            }
-            Models.Flag(mb, pal, new Vector3(-0.17f, 0, 0.1f), fc, 0.45f);
+            qb.ToMesh(v.mesh); sb.ToMesh(v.shadow);
+            v.mesh.bounds = new Bounds(Vector3.zero, new Vector3(1000, 1000, 100));
+            v.shadow.bounds = new Bounds(Vector3.zero, new Vector3(1000, 1000, 100));
         }
 
-        void UpdatePath()
+        // ------------------------------------------------------------------
+        //  Marschroute der ausgewählten Armee (gepunktet)
+        // ------------------------------------------------------------------
+        void BuildPath()
         {
+            qb.Clear();
             var a = game.A(SelectedArmy);
-            if (a == null || a.path == null || a.pathIndex >= a.path.Count)
+            if (a != null && a.path != null && a.pathIndex < a.path.Count)
             {
-                pathLine.positionCount = 0;
-                return;
+                var white = SpriteLib.Get("white");
+                var f = game.F(a.faction);
+                Color32 c = f != null ? (Color32)Palette.FactionColor(f.color) : new Color32(255, 255, 255, 255);
+                Color32 dark = new Color32(30, 20, 20, 255);
+                Vector2 prev = new Vector2(a.x, a.y);
+                float acc = 0;
+                for (int k = a.pathIndex; k < a.path.Count; k++)
+                {
+                    var next = new Vector2(WorldMap.X(a.path[k]) + 0.5f, WorldMap.Y(a.path[k]) + 0.5f);
+                    float len = Vector2.Distance(prev, next);
+                    for (float t = (0.5f - acc); t < len; t += 0.5f)
+                    {
+                        var p = Vector2.Lerp(prev, next, t / len);
+                        qb.Rect(white, p.x - 2.5f / 16, p.y - 2.5f / 16, p.x + 2.5f / 16, p.y + 2.5f / 16, 0.6f, dark);
+                        qb.Rect(white, p.x - 1.5f / 16, p.y - 1.5f / 16, p.x + 1.5f / 16, p.y + 1.5f / 16, 0.59f, c);
+                    }
+                    acc = (acc + len) % 0.5f;
+                    prev = next;
+                }
             }
-            int n = a.path.Count - a.pathIndex + 1;
-            pathLine.positionCount = n;
-            var col = Palette.Current.FactionColor(game.F(a.faction).color);
-            pathLine.startColor = col; pathLine.endColor = new Color(col.r, col.g, col.b, 1f);
-            pathLine.SetPosition(0, new Vector3(a.x, terrain.GroundY(a.x, a.y) + 0.12f, a.y));
-            for (int k = a.pathIndex; k < a.path.Count; k++)
-            {
-                float x = WorldMap.X(a.path[k]) + 0.5f, z = WorldMap.Y(a.path[k]) + 0.5f;
-                pathLine.SetPosition(k - a.pathIndex + 1, new Vector3(x, terrain.GroundY(x, z) + 0.12f, z));
-            }
+            qb.ToMesh(pathMesh);
         }
 
-        public Vector3 SettlementWorldPos(SettlementData s) => new Vector3(s.x + 0.5f, terrain.GroundY(s.x + 0.5f, s.y + 0.5f), s.y + 0.5f);
+        // ------------------------------------------------------------------
+        public Vector3 SettlementWorldPos(SettlementData s) => new Vector3(s.x + 0.5f, s.y + 0.5f, 0);
 
         public Vector3 ArmyWorldPos(ArmyData a)
         {
             if (armyViews.TryGetValue(a.id, out var v) && v.go.activeSelf) return v.go.transform.position;
-            return new Vector3(a.x, terrain.GroundY(a.x, a.y), a.y);
+            return new Vector3(a.x, a.y, 0);
         }
 
         public bool ArmyVisible(int id) => armyViews.TryGetValue(id, out var v) && v.go.activeSelf;

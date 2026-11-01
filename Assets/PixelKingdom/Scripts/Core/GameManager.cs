@@ -20,11 +20,12 @@ namespace PixelKingdom
         }
 
         public Game Game;
-        public TerrainRenderer Terrain;
+        public GroundRenderer Ground;
+        public ObjectRenderer Objects;
         public EntityRenderer Entities;
         public CameraController CamCtrl;
         public GameUI UI;
-        public Material Mat;
+        public Material GroundMat, SpriteMat, ShadowMat;
 
         public bool InMenu = true;
         public bool Paused;
@@ -38,7 +39,7 @@ namespace PixelKingdom
         public int ModeSource = -1;
 
         public bool HoverValid;
-        public Vector3 HoverPoint;
+        public Vector2 HoverPoint;
         public int HoverX, HoverY;
         public bool GameOver;
 
@@ -53,10 +54,9 @@ namespace PixelKingdom
             Application.targetFrameRate = 60;
             Palette.Set(PlayerPrefs.GetInt("pk_palette", 0));
 
-            var shader = Resources.Load<Shader>("PKFlat");
-            if (shader == null) shader = Shader.Find("PixelKingdom/Flat");
-            if (shader == null) shader = Shader.Find("Sprites/Default");
-            Mat = new Material(shader) { name = "PixelKingdomFlat" };
+            GroundMat = new Material(LoadShader("PKGround", "PixelKingdom/Ground")) { name = "PK Boden" };
+            SpriteMat = new Material(LoadShader("PKSprite", "PixelKingdom/Sprite")) { name = "PK Sprites" };
+            ShadowMat = new Material(LoadShader("PKShadow", "PixelKingdom/Shadow")) { name = "PK Schatten" };
 
             var cam = Camera.main;
             if (cam == null)
@@ -65,18 +65,27 @@ namespace PixelKingdom
                 cgo.tag = "MainCamera";
                 cam = cgo.AddComponent<Camera>();
             }
-            foreach (var l in FindObjectsOfType<Light>()) l.enabled = false; // Licht ist "gebacken"
+            foreach (var l in FindObjectsOfType<Light>()) l.enabled = false; // 2D-Pixelkunst braucht kein Licht
             RenderSettings.fog = false;
             CamCtrl = cam.GetComponent<CameraController>();
             if (CamCtrl == null) CamCtrl = cam.gameObject.AddComponent<CameraController>();
             CamCtrl.Init(cam);
 
-            Terrain = new GameObject("Terrain").AddComponent<TerrainRenderer>();
-            Terrain.transform.SetParent(transform, false);
-            Entities = new GameObject("Entities").AddComponent<EntityRenderer>();
+            Ground = new GameObject("Boden").AddComponent<GroundRenderer>();
+            Ground.transform.SetParent(transform, false);
+            Objects = new GameObject("Natur").AddComponent<ObjectRenderer>();
+            Objects.transform.SetParent(transform, false);
+            Entities = new GameObject("Siedlungen & Heere").AddComponent<EntityRenderer>();
             Entities.transform.SetParent(transform, false);
             UI = gameObject.AddComponent<GameUI>();
-            CamCtrl.GroundAt = (x, z) => Terrain.GroundY(x, z);
+        }
+
+        static Shader LoadShader(string res, string name)
+        {
+            var sh = Resources.Load<Shader>(res);
+            if (sh == null) sh = Shader.Find(name);
+            if (sh == null) { Debug.LogError("PixelKingdom: Shader fehlt: " + name); sh = Shader.Find("Sprites/Default"); }
+            return sh;
         }
 
         void Start()
@@ -86,32 +95,40 @@ namespace PixelKingdom
             if (saved != null) LoadInto(Game.FromState(saved), false);
             else ShowDemoWorld();
             InMenu = true;
-            CamCtrl.AutoRotate = 4f;
+            CamCtrl.AutoPan = new Vector2(1.2f, 0.4f);
         }
 
         void ShowDemoWorld()
         {
             var g = Game.NewGame(Random.Range(1, 999999));
-            for (int i = 0; i < g.Map.disc.Length; i++) g.Map.disc[i] = true;
+            var cap0 = g.Capital(g.Player);
+            g.Reveal(cap0.x, cap0.y, 48);
             g.Headless = true;
             isDemo = true;
             LoadInto(g, false);
-            var cap = g.Capital(g.Player);
-            CamCtrl.JumpTo(new Vector3(cap.x, 0, cap.y), 60f);
         }
 
         void LoadInto(Game g, bool focus)
         {
             Game = g;
             Palette.Set(PlayerPrefs.GetInt("pk_palette", g.S.palette));
-            Terrain.Init(g, Mat);
-            Terrain.BuildAll();
-            Entities.Init(g, Terrain, Mat);
+            SpriteLib.Build(Palette.Index);
+            SpriteMat.mainTexture = SpriteLib.Atlas; ShadowMat.mainTexture = SpriteLib.Atlas;
+            g.DirtyTiles.Clear(); g.DirtyTrees.Clear();
+            Ground.Init(g, GroundMat);
+            Objects.Init(g, SpriteMat, ShadowMat);
+            Entities.Init(g, SpriteMat, ShadowMat, Objects);
+            Objects.BuildAll();
             SelSettlement = SelArmy = -1;
             CurrentMode = Mode.None;
             GameOver = false;
             var cap = g.Capital(g.Player);
-            if (cap != null) CamCtrl.JumpTo(new Vector3(cap.x + 0.5f, 0, cap.y + 0.5f), focus ? 22f : 40f);
+            if (cap != null)
+            {
+                CamCtrl.JumpTo(new Vector2(cap.x + 0.5f, cap.y + 0.5f));
+                CamCtrl.SetZoom(focus ? 3 : 2);
+                Ground.PaintNearNow(CamCtrl.Target, 1);
+            }
         }
 
         // ------------------------------------------------------------------
@@ -125,7 +142,7 @@ namespace PixelKingdom
             isDemo = false;
             LoadInto(g, true);
             InMenu = false; Paused = false; Speed = 1;
-            CamCtrl.AutoRotate = 0;
+            CamCtrl.AutoPan = Vector2.zero;
             SaveSystem.Save(g);
             UI.OnGameStarted(null);
             g.StoryTick();
@@ -141,7 +158,7 @@ namespace PixelKingdom
             isDemo = false;
             LoadInto(g, true);
             InMenu = false; Paused = false;
-            CamCtrl.AutoRotate = 0;
+            CamCtrl.AutoPan = Vector2.zero;
             UI.OnGameStarted(report);
         }
 
@@ -157,14 +174,17 @@ namespace PixelKingdom
         {
             if (HasRunningGame) SaveSystem.Save(Game);
             InMenu = true;
-            CamCtrl.AutoRotate = 4f;
+            CamCtrl.AutoPan = new Vector2(1.2f, 0.4f);
         }
 
         public void CyclePalette()
         {
             Palette.Set(Palette.Index + 1);
             PlayerPrefs.SetInt("pk_palette", Palette.Index);
-            Terrain.MarkAllDirty();
+            SpriteLib.Build(Palette.Index);
+            SpriteMat.mainTexture = SpriteLib.Atlas; ShadowMat.mainTexture = SpriteLib.Atlas;
+            Ground.PaletteChanged();
+            Objects.MarkAll();
             Entities.ForceRefresh();
         }
 
@@ -195,6 +215,10 @@ namespace PixelKingdom
                 if (ss == null) SelSettlement = -1;
             }
             Entities.SelectedArmy = SelArmy;
+            if (InMenu) CamCtrl.AutoPan = new Vector2(Mathf.Sin(Time.unscaledTime * 0.07f) * 1.6f, Mathf.Cos(Time.unscaledTime * 0.05f) * 1.1f);
+            // Änderungen an Karte an die Darstellung weitergeben
+            if (Game.DirtyTiles.Count > 0) { Ground.MarkFogDirty(); Entities.MarkBordersDirty(); Game.DirtyTiles.Clear(); }
+            if (Game.DirtyTrees.Count > 0) { foreach (int t in Game.DirtyTrees) Objects.MarkTile(t); Game.DirtyTrees.Clear(); }
         }
 
         void HandleKeys()
@@ -245,13 +269,13 @@ namespace PixelKingdom
         public void SelectSettlement(SettlementData s, bool focus = true)
         {
             SelSettlement = s.id; SelArmy = -1;
-            if (focus) CamCtrl.FocusOn(new Vector3(s.x + 0.5f, 0, s.y + 0.5f));
+            if (focus) CamCtrl.FocusOn(new Vector2(s.x + 0.5f, s.y + 0.5f));
         }
 
         public void SelectArmy(ArmyData a, bool focus = false)
         {
             SelArmy = a.id; SelSettlement = -1;
-            if (focus) CamCtrl.FocusOn(new Vector3(a.x, 0, a.y));
+            if (focus) CamCtrl.FocusOn(new Vector2(a.x, a.y));
         }
 
         Vector2 downPos;
@@ -260,10 +284,11 @@ namespace PixelKingdom
             HoverValid = false;
             if (UI.MouseOverUI || UI.IsBlocking) return;
             var mp = PKInput.MousePos;
-            if (CamCtrl.PickGround(mp, out var hit))
+            var hit = CamCtrl.ScreenToWorld(mp);
+            if (hit.x >= 0 && hit.y >= 0 && hit.x < WorldMap.W && hit.y < WorldMap.H)
             {
                 HoverValid = true; HoverPoint = hit;
-                HoverX = Mathf.FloorToInt(hit.x); HoverY = Mathf.FloorToInt(hit.z);
+                HoverX = Mathf.FloorToInt(hit.x); HoverY = Mathf.FloorToInt(hit.y);
             }
             if (PKInput.MouseDown(0)) downPos = mp;
             if (PKInput.MouseUp(0) && (mp - downPos).sqrMagnitude < 100 && HoverValid) LeftClick();
@@ -288,12 +313,12 @@ namespace PixelKingdom
             foreach (var a in g.Armies)
             {
                 if (!Entities.ArmyVisible(a.id)) continue;
-                float d = (a.x - HoverPoint.x) * (a.x - HoverPoint.x) + (a.y - HoverPoint.z) * (a.y - HoverPoint.z);
+                float d = (a.x - HoverPoint.x) * (a.x - HoverPoint.x) + (a.y + 0.3f - HoverPoint.y) * (a.y + 0.3f - HoverPoint.y);
                 if (a.faction == g.PlayerId) d *= 0.6f;
                 if (d < bd) { bd = d; best = a; }
             }
             if (best != null) { SelectArmy(best); return; }
-            var s = SettlementNear(HoverPoint.x, HoverPoint.z, 1.4f);
+            var s = SettlementNear(HoverPoint.x, HoverPoint.y, 1.4f);
             if (s != null && g.IsDiscovered(s.x, s.y)) { SelectSettlement(s, false); return; }
             SelArmy = -1; SelSettlement = -1;
         }
@@ -314,7 +339,7 @@ namespace PixelKingdom
             var g = Game;
             var a = g.A(SelArmy);
             if (a == null || a.faction != g.PlayerId) return;
-            var s = SettlementNear(HoverPoint.x, HoverPoint.z, 1.2f);
+            var s = SettlementNear(HoverPoint.x, HoverPoint.y, 1.2f);
             if (a.settlers > 0 && a.units.Sum() == 0)
             {
                 if (!g.OrderMove(a, HoverX, HoverY, ArmyMission.Found, -1, out string w)) UI.Toast(w, 2);

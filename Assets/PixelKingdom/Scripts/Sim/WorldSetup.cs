@@ -70,6 +70,8 @@ namespace PixelKingdom
             pst.buildings[(int)BType.Bauernhof] = 1;
             pst.garrison[(int)UType.Miliz] = 4;
             pst.happiness = 60;
+            EnsureDeposit(g, pSite.x, pSite.y, WorldMap.DepIron);
+            EnsureDeposit(g, pSite.x, pSite.y, WorldMap.DepStone);
 
             // ---------------- Kaiser ----------------------------------------------------
             var eSite = home.OrderByDescending(s => Game.Dist(s.x, s.y, pSite.x, pSite.y) * 0.9f + s.score * 2f)
@@ -180,6 +182,29 @@ namespace PixelKingdom
         }
 
         static float Clamp01(float v) => v < 0 ? 0 : v > 1 ? 1 : v;
+
+        /// <summary>Sorgt dafür, dass der Spieler ein Vorkommen in Reichweite hat (wird im Spielstand gemerkt).</summary>
+        static void EnsureDeposit(Game g, int cx, int cy, byte kind)
+        {
+            var map = g.Map;
+            if (map.CountAround(cx, cy, 4, i => map.deposit[i] == kind) > 0) return;
+            int best = -1; float bd = float.MaxValue;
+            for (int y = cy - 4; y <= cy + 4; y++)
+                for (int x = cx - 4; x <= cx + 4; x++)
+                {
+                    if (!WorldMap.In(x, y)) continue;
+                    float d = (x - cx) * (x - cx) + (y - cy) * (y - cy);
+                    if (d < 4 || d > 13) continue;
+                    int i = WorldMap.Idx(x, y);
+                    if (!map.Buildable(i) || map.deposit[i] != 0) continue;
+                    var b = map.biome[i];
+                    float score = d + (b == Biome.Hills ? -20 : 0) + (b == Biome.Forest || b == Biome.Pine ? 6 : 0);
+                    if (score < bd) { bd = score; best = i; }
+                }
+            if (best < 0) return;
+            g.S.extraDeposits.Add(best); g.S.extraDeposits.Add(kind);
+            map.deposit[best] = kind; map.trees[best] = 0; map.baseTrees[best] = 0;
+        }
 
         /// <summary>Startplatz des Spielers: Wald, fruchtbares Land und Hügel in Reichweite.</summary>
         static bool GoodStart(WorldMap map, Site s)

@@ -198,6 +198,19 @@ namespace PixelKingdom
 
             // Kontinent-Ids der Inseln korrigieren: zusammenhängende Landmassen erhalten Mehrheits-Id
             FixContinents(map);
+
+            // --- Bodenschätze (eigener Zufallsgenerator, damit die restliche Welt gleich bleibt) ----
+            var dr = new Random(seed * 7 + 12345);
+            for (int i = 0; i < W * H; i++)
+            {
+                var b = map.biome[i];
+                double r = dr.NextDouble();
+                if (b == Biome.Mountain) map.deposit[i] = r < 0.07 ? WorldMap.DepIron : r < 0.085 ? WorldMap.DepGold : (byte)0;
+                else if (b == Biome.Hills) map.deposit[i] = r < 0.035 ? WorldMap.DepIron : r < 0.04 ? WorldMap.DepGold : r < 0.1 ? WorldMap.DepStone : (byte)0;
+                else if (b == Biome.Desert) map.deposit[i] = r < 0.004 ? WorldMap.DepGold : r < 0.02 ? WorldMap.DepStone : (byte)0;
+                if (map.deposit[i] != 0) map.trees[i] = 0;
+            }
+            Array.Copy(map.trees, map.baseTrees, map.trees.Length);
             return map;
         }
 

@@ -16,7 +16,10 @@ namespace PixelKingdom
         public readonly bool[] river = new bool[W * H];
         public readonly bool[] coast = new bool[W * H];
         public readonly byte[] cont = new byte[W * H];
-        public readonly byte[] trees = new byte[W * H];
+        public readonly byte[] trees = new byte[W * H];       // aktueller Baumbestand (Holzfäller fällen, Wald wächst nach)
+        public readonly byte[] baseTrees = new byte[W * H];   // ursprünglicher Bestand
+        public readonly byte[] deposit = new byte[W * H];     // 0 = nichts, 1 = Eisen, 2 = Gold, 3 = Stein
+        public const byte DepIron = 1, DepGold = 2, DepStone = 3;
         public readonly int[] owner = new int[W * H];      // Fraktions-Id oder -1
         public readonly int[] ownerSettlement = new int[W * H];
         public readonly bool[] disc = new bool[W * H];
@@ -117,6 +120,21 @@ namespace PixelKingdom
             try { bytes = Convert.FromBase64String(s); } catch { return; }
             for (int i = 0; i < disc.Length && (i >> 3) < bytes.Length; i++) disc[i] = (bytes[i >> 3] & (1 << (i & 7))) != 0;
         }
+
+        public string TreesToString() => Convert.ToBase64String(trees);
+
+        public void TreesFromString(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return;
+            try
+            {
+                var b = Convert.FromBase64String(s);
+                if (b.Length == trees.Length) Array.Copy(b, trees, b.Length);
+            }
+            catch { }
+        }
+
+        public static string DepositName(byte d) => d == DepIron ? "Eisenvorkommen" : d == DepGold ? "Goldvorkommen" : d == DepStone ? "Steinvorkommen" : null;
 
         public string BiomeName(int i)
         {

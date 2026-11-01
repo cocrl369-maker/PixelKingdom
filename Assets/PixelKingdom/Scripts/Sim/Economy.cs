@@ -32,8 +32,10 @@ namespace PixelKingdom
             switch (need)
             {
                 case TerrainNeed.Fertile: return Clamp(0.35f + t[0] / 22f, 0.35f, 1.35f);
-                case TerrainNeed.Forest: return Clamp(0.3f + t[1] / 9f, 0.3f, 1.35f);
-                case TerrainNeed.Hills: return Clamp(0.4f + t[2] / 7f, 0.4f, 1.3f);
+                case TerrainNeed.Forest: return Clamp(0.2f + t[1] / 22f, 0.2f, 1.35f);
+                case TerrainNeed.Hills: return Clamp(0.4f + t[2] / 8f + t[8] * 0.15f, 0.4f, 1.5f);
+                case TerrainNeed.Iron: return Clamp(0.6f + t[6] * 0.25f, 0.6f, 1.6f);
+                case TerrainNeed.Gold: return Clamp(0.6f + t[7] * 0.3f, 0.6f, 1.6f);
                 case TerrainNeed.Mountain: return Clamp(0.4f + t[3] / 4f, 0.4f, 1.3f);
                 case TerrainNeed.Coast: return Clamp(0.5f + t[5] / 14f, 0.5f, 1.3f);
             }
@@ -47,7 +49,9 @@ namespace PixelKingdom
             switch (need)
             {
                 case TerrainNeed.Fertile: if (t[0] < 3) why = "Kein fruchtbares Land in der Nähe"; break;
-                case TerrainNeed.Forest: if (t[1] < 1) why = "Kein Wald in der Nähe"; break;
+                case TerrainNeed.Forest: if (t[1] < 2) why = "Keine Bäume in der Nähe (Wald abgeholzt?)"; break;
+                case TerrainNeed.Iron: if (t[6] < 1) why = "Kein Eisenvorkommen im Gebiet"; break;
+                case TerrainNeed.Gold: if (t[7] < 1) why = "Kein Goldvorkommen im Gebiet"; break;
                 case TerrainNeed.Hills: if (t[2] < 1) why = "Keine Hügel oder Berge in der Nähe"; break;
                 case TerrainNeed.Mountain: if (t[3] < 1) why = "Kein Gebirge in der Nähe"; break;
                 case TerrainNeed.Coast: if (t[4] < 1) why = "Kein Wasser in der Nähe"; break;
@@ -195,11 +199,43 @@ namespace PixelKingdom
             // Unruhen
             if (s.happiness < 15 && !Offline && Rng.NextDouble() < 0.02) Revolt(s);
 
+            // Holzfällerei: Bäume werden sichtbar gefällt und wachsen langsam nach
+            Forestry(s);
+
             // Bauschlange
             ProcessQueue(s, f);
 
             // KI und Verwalter bauen automatisch
             if ((s.auto && f.isPlayer) || (!f.isPlayer && (S.day + s.id) % 4 == 0)) AutoManage(s, f);
+        }
+
+        void Forestry(SettlementData s)
+        {
+            int r = Radius(s) + 1;
+            int cutters = s.buildings[(int)BType.Holzfaeller];
+            bool changed = false;
+            for (int k = 0; k < cutters; k++)
+            {
+                if (Rng.NextDouble() > 0.12) continue;
+                for (int t = 0; t < 6; t++)
+                {
+                    int x = s.x + Rng.Next(-r, r + 1), y = s.y + Rng.Next(-r, r + 1);
+                    if (!WorldMap.In(x, y)) continue;
+                    int i = WorldMap.Idx(x, y);
+                    if (Map.trees[i] == 0 || (Map.ownerSettlement[i] != s.id && Map.ownerSettlement[i] != -1)) continue;
+                    Map.trees[i]--; DirtyTrees.Add(i); changed = true;
+                    break;
+                }
+            }
+            // Nachwachsen (Förster pflanzen nach)
+            for (int k = 0; k < 6; k++)
+            {
+                int x = s.x + Rng.Next(-r - 2, r + 3), y = s.y + Rng.Next(-r - 2, r + 3);
+                if (!WorldMap.In(x, y)) continue;
+                int i = WorldMap.Idx(x, y);
+                if (Map.trees[i] < Map.baseTrees[i] && Rng.NextDouble() < 0.35) { Map.trees[i]++; DirtyTrees.Add(i); changed = true; }
+            }
+            if (changed) terrainCounts.Remove(s.id);
         }
 
         void Add(FactionData f, int r, float v, float[] delta)
@@ -487,6 +523,7 @@ namespace PixelKingdom
             {
                 if (s.buildings[(int)BType.Kaserne] == 0 && s.pop > 50 && Try(BType.Kaserne)) return BType.Kaserne;
                 if (s.buildings[(int)BType.Mine] == 0 && Try(BType.Mine)) return BType.Mine;
+                if (s.buildings[(int)BType.Goldmine] == 0 && Try(BType.Goldmine)) return BType.Goldmine;
                 if (s.buildings[(int)BType.Schmiede] == 0 && s.buildings[(int)BType.Mine] > 0 && Try(BType.Schmiede)) return BType.Schmiede;
                 if (s.buildings[(int)BType.Mauer] == 0 && s.pop > 70 && Try(BType.Mauer)) return BType.Mauer;
                 if (s.buildings[(int)BType.Archerie] == 0 && s.pop > 80 && Try(BType.Archerie)) return BType.Archerie;
@@ -514,7 +551,7 @@ namespace PixelKingdom
             if (t[2] >= 1) s.buildings[(int)BType.Steinbruch] = s.pop > 50 ? 1 : 0;
             if (s.pop > 45) { s.buildings[(int)BType.Markt] = 1; s.buildings[(int)BType.Taverne] = 1; s.buildings[(int)BType.Brunnen] = 1; }
             if (s.pop > 70) { s.buildings[(int)BType.Kapelle] = 1; s.buildings[(int)BType.Kaserne] = 1; s.buildings[(int)BType.Mauer] = 1; }
-            if (s.pop > 100) { s.buildings[(int)BType.Archerie] = 1; s.buildings[(int)BType.Lagerhaus] = 1; if (t[3] >= 1) { s.buildings[(int)BType.Mine] = 1; s.buildings[(int)BType.Schmiede] = 1; } }
+            if (s.pop > 100) { s.buildings[(int)BType.Archerie] = 1; s.buildings[(int)BType.Lagerhaus] = 1; if (t[6] >= 1) { s.buildings[(int)BType.Mine] = 1; s.buildings[(int)BType.Schmiede] = 1; } }
             if (s.pop > 140) { s.buildings[(int)BType.Stall] = 1; s.buildings[(int)BType.Mauer] = 2; }
             if (s.pop > 200) { s.buildings[(int)BType.Burg] = 1; s.buildings[(int)BType.Kapelle] = 2; s.buildings[(int)BType.Lagerhaus] = 2; }
             // Garnison

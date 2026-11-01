@@ -54,7 +54,6 @@ namespace PixelKingdom
             float rowH = 22;
             scrollDip = Scroll(list, scrollDip, known.Count * rowH - list.height);
             GUI.BeginGroup(list);
-            var pal = Palette.Current;
             for (int i = 0; i < known.Count; i++)
             {
                 var f = known[i];
@@ -62,7 +61,7 @@ namespace PixelKingdom
                 if (rr.yMax < 0 || rr.y > list.height) continue;
                 bool sel = f.id == dipSel;
                 Fill(rr, sel ? Palette.UISand : Hover(rr) ? Palette.UIPanelLight : Palette.UIPanel);
-                Fill(new Rect(rr.x + 3, rr.y + 3, 6, 14), pal.FactionColor(f.color));
+                Fill(new Rect(rr.x + 3, rr.y + 3, 6, 14), Palette.FactionColor(f.color));
                 var fg = sel ? Palette.UIPanelDark : Palette.UIText;
                 string nm = f.name.Length > 24 ? f.name.Substring(0, 23) + "." : f.name;
                 Text(rr.x + 13, rr.y + 2, nm, fg);
@@ -77,7 +76,7 @@ namespace PixelKingdom
             // Details
             var d = G.F(dipSel);
             float x = c.x + 180, y = c.y, w = c.xMax - x;
-            Fill(new Rect(x, y + 1, 8, 8), pal.FactionColor(d.color));
+            Fill(new Rect(x, y + 1, 8, 8), Palette.FactionColor(d.color));
             Text(x + 12, y + 1, d.name);
             y += 12;
             Text(x, y, d.leader + "  -  " + Ranks.Get(d.rank).Name, Palette.UITextDim); y += 11;
@@ -307,11 +306,11 @@ namespace PixelKingdom
         {
             var c = WindowFrame("Hilfe & Steuerung", 470, 320, false);
             string text =
-                "KAMERA: WASD/Pfeile bewegen, rechte Maustaste ziehen, Mausrad zoomen, Q/E oder mittlere Maustaste drehen.\n" +
+                "KARTE: WASD/Pfeile oder rechte Maustaste ziehen zum Bewegen. Mausrad (oder Q/E) zoomt in Pixelstufen.\n" +
                 "AUSWAHL: Linksklick auf Siedlung oder Heer. Rechtsklick gibt einem Heer ein Ziel. Shift+Rechtsklick auf eine feindliche Stadt: Überfall statt Eroberung.\n" +
                 "ZEIT: Leertaste Pause, 1/2/3 Tempo. Tab: nächste Siedlung, H: Hauptstadt.\n" +
                 "FENSTER: R Reich, G Diplomatie, L Chronik, F1 Hilfe, P Farbpalette, F5 Speichern.\n\n" +
-                "WIRTSCHAFT: Gebäude brauchen Arbeiter (60% der Bewohner). Bauernhöfe brauchen fruchtbares Land, Holzfäller Wald, Steinbrüche Hügel, Minen Gebirge. Im Winter wächst wenig – legt Vorräte an!\n" +
+                "WIRTSCHAFT: Gebäude brauchen Arbeiter (60% der Bewohner). Bauernhöfe brauchen fruchtbares Land, Steinbrüche Hügel. Holzfäller fällen sichtbar Bäume – der Wald wächst nur langsam nach. Eisen- und Goldminen brauchen Erzvorkommen (rostrote bzw. funkelnde Felsen) im Stadtgebiet. Im Winter wächst wenig – legt Vorräte an!\n" +
                 "ZUFRIEDENHEIT: Steuern und Hunger senken sie, Tavernen, Kapellen und Feste heben sie. Unter 25 wandern Leute ab, unter 15 drohen Aufstände.\n" +
                 "MILITÄR: Rekruten kommen aus der Bevölkerung. Speere schlagen Ritter, Ritter schlagen Bogenschützen, Bogenschützen schlagen Speere. Rammen brechen Mauern.\n" +
                 "DIPLOMATIE: Jeder Herrscher hat eigene Interessen: Gebietsansprüche, Treue zum Kaiser, Gier, Ehre. Fahrt mit der Maus über eine Aktion, um die Aussichten zu sehen.\n" +
@@ -328,7 +327,7 @@ namespace PixelKingdom
             float y = c.y;
             if (Button(new Rect(c.x, y, c.width, 16), "Weiterspielen")) Open = Window.None; y += 20;
             if (Button(new Rect(c.x, y, c.width, 16), "Speichern (F5)", true, null, "save")) gm.SaveNow(); y += 20;
-            if (Button(new Rect(c.x, y, c.width, 16), "Palette: " + Palette.Current.Name, true, null, "sun")) gm.CyclePalette(); y += 20;
+            if (Button(new Rect(c.x, y, c.width, 16), "Palette: " + Palette.Name, true, null, "sun")) gm.CyclePalette(); y += 20;
             int extra = PlayerPrefs.GetInt("pk_uiscale", 0);
             Text(c.x, y + 4, "UI-Größe");
             if (Button(new Rect(c.x + 80, y, 30, 16), "-", S > 1)) PlayerPrefs.SetInt("pk_uiscale", extra - 1);
@@ -390,11 +389,11 @@ namespace PixelKingdom
                 for (int u = 0; u < Units.Count; u++)
                 {
                     if (start[u] == 0) continue;
-                    PixelIcons.Draw(new Rect(x, yy, 12, 12), Units.Get(u).Icon, Palette.UIText);
+                    Icon(new Rect(x, yy, 12, 12), Units.Get(u).Icon, Palette.UIText);
                     Text(x + 15, yy + 2, $"{start[u]}  -{loss[u]}");
                     yy += 13;
                 }
-                if (levy > 0) { PixelIcons.Draw(new Rect(x, yy, 12, 12), "militia", Palette.UITextDim); Text(x + 15, yy + 2, $"Aufgebot {levy}  -{levyLoss}", Palette.UITextDim); }
+                if (levy > 0) { Icon(new Rect(x, yy, 12, 12), "militia", Palette.UITextDim); Text(x + 15, yy + 2, $"Aufgebot {levy}  -{levyLoss}", Palette.UITextDim); }
             }
             Side(c.x, "Angreifer: " + rp.Attacker, rp.AttStart, rp.AttLoss, 0, 0);
             Side(c.x + c.width / 2, "Verteidiger: " + rp.Defender, rp.DefStart, rp.DefLoss, rp.Levy, rp.LevyLoss);
@@ -425,37 +424,45 @@ namespace PixelKingdom
         void DrawMainMenu()
         {
             modalThisFrame = true;
-            int ts = VW > 420 ? 4 : 3;
+            int ts = VW > 520 ? 5 : VW > 380 ? 4 : 3;
             string title = "PIXEL KINGDOM";
             float tw = PixelFont.Width(title) * ts;
-            float ty = VH * 0.16f;
-            var plate = new Rect((VW - tw) / 2 - 16, ty - 12, tw + 32, 9 * ts + 40);
+            float ty = Mathf.Round(VH * 0.12f);
+            var plate = new Rect(Mathf.Round((VW - tw) / 2 - 20), ty - 14, Mathf.Round(tw + 40), 9 * ts + 46);
             Panel(plate);
-            PixelFont.DrawShadow((VW - tw) / 2, ty, title, Palette.UIText, Palette.UIPanelDark, ts);
-            Centered(ty + 9 * ts + 10, "Vom kleinen Dorf zum Königreich", Palette.UISand);
+            Fill(new Rect(plate.x + 3, plate.y + 3, plate.width - 6, 1), Palette.UIGood);
+            Fill(new Rect(plate.x + 3, plate.yMax - 4, plate.width - 6, 1), Palette.UIGood);
+            PixelFont.DrawShadow(Mathf.Round((VW - tw) / 2), ty, title, Palette.UIGood, Palette.UIPanelDark, ts);
+            Centered(ty + 9 * ts + 12, "Vom kleinen Dorf zum Königreich", Palette.UISand);
 
-            float bw = 170, bx = (VW - bw) / 2, by = VH * 0.45f;
             bool hasSave = SaveSystem.Exists;
-            var box = new Rect(bx - 10, by - 10, bw + 20, (hasSave ? 5 : 4) * 22 + 16);
+            int bs = VW > 400 ? 2 : 1;
+            float bw = Mathf.Min(VW - 40, bs == 2 ? 280 : 200), bh = bs == 2 ? 30 : 22, gap = 8;
+            int n = hasSave ? 5 : 4;
+            float bx = Mathf.Round((VW - bw) / 2), by = Mathf.Round(Mathf.Max(plate.yMax + 16, VH * 0.42f));
+            var box = new Rect(bx - 14, by - 14, bw + 28, n * (bh + gap) - gap + 28);
             Panel(box);
             if (hasSave)
             {
-                if (Button(new Rect(bx, by, bw, 18), "Fortsetzen", true, "Weiterspielen. Die Zeit seit dem letzten Spiel wird nachgeholt.", "play")) gm.ContinueGame();
-                by += 22;
+                if (Button(new Rect(bx, by, bw, bh), "Fortsetzen", true, "Weiterspielen. Die Zeit seit dem letzten Spiel wird nachgeholt.", "play", false, bs)) gm.ContinueGame();
+                by += bh + gap;
             }
-            if (Button(new Rect(bx, by, bw, 18), confirmNew ? "Wirklich? Alter Stand weg!" : "Neues Spiel", true, null, "flag"))
+            if (Button(new Rect(bx, by, bw, bh), confirmNew ? "Wirklich neu?" : "Neues Spiel", true, confirmNew ? "Der alte Spielstand wird überschrieben." : null, "flag", confirmNew, bs))
             {
                 if (hasSave && !confirmNew) confirmNew = true;
                 else { confirmNew = false; gm.NewGame(); }
             }
-            by += 22;
-            if (Button(new Rect(bx, by, bw, 18), "Palette: " + Palette.Current.Name, true, null, "sun")) gm.CyclePalette();
-            by += 22;
-            if (Button(new Rect(bx, by, bw, 18), "Hilfe", true, null, "scroll")) { Open = Open == Window.Help ? Window.None : Window.Help; }
-            by += 22;
-            if (Button(new Rect(bx, by, bw, 18), "Beenden", true, null, "close")) Application.Quit();
+            by += bh + gap;
+            if (Button(new Rect(bx, by, bw, bh), "Farben: " + Palette.Name, true, "Farbpalette der Karte wechseln", "sun", false, bs)) gm.CyclePalette();
+            by += bh + gap;
+            if (Button(new Rect(bx, by, bw, bh), "Hilfe", true, null, "scroll", false, bs)) { Open = Open == Window.Help ? Window.None : Window.Help; }
+            by += bh + gap;
+            if (Button(new Rect(bx, by, bw, bh), "Beenden", true, null, "close", false, bs)) Application.Quit();
             if (Open == Window.Help) DrawHelp();
-            Text(4, VH - 12, "Ein Städtebauspiel im Mittelalter. Speichert automatisch.", Palette.UIPanelDark);
+            string foot = "Ein Städtebauspiel im Mittelalter. Speichert automatisch.";
+            var fr = new Rect(4, VH - 16, PixelFont.Width(foot) + 10, 13);
+            Fill(fr, new Color(Palette.UIPanelDark.r, Palette.UIPanelDark.g, Palette.UIPanelDark.b, 0.85f));
+            Text(fr.x + 5, fr.y + 3, foot, Palette.UITextDim);
         }
     }
 }

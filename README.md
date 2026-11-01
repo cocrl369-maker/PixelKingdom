@@ -1,10 +1,10 @@
 # Pixel Kingdom
 
-**Vom kleinen Dorf zum Königreich** – ein minimalistisches, nett gezeichnetes 3D-Städtebau- und Strategiespiel im Mittelalter für Unity.
+**Vom kleinen Dorf zum Königreich** – ein Städtebau- und Strategiespiel im Mittelalter für Unity, im Retro-Pixel-Stil alter Rollenspiele.
 
 Ihr startet mit zwei Hütten und einem Acker. Ihr sammelt Ressourcen, kümmert euch um eure Bürger, baut, bildet Truppen aus und expandiert. Ihr trefft auf Fürsten, freie Dörfer und das Kaiserreich – verbündet euch mit Gold oder erobert sie. Schritt für Schritt steigt ihr auf: **Dorf → Städtegemeinde → Grafschaft → Fürstentum → Königreich → Kaiserreich**. Am Ende stürzt ihr den tyrannischen **Kaiser Malrik** und segelt zu anderen Kontinenten.
 
-Der Stil orientiert sich am Vorbild: warme Terrakotta- und Sandtöne, Pixel-Icons, Spielkarten zum Bauen und Eck-Klammern um die Auswahl. Die Welt selbst ist 3D, aber bewusst flach schattiert und reduziert statt fotorealistisch.
+Die Karte ist 2D in Schrägansicht wie in alten Spielen. Räumlich wirkt sie durch Hangschattierung, Klippenkanten, Brandung an den Küsten und Schlagschatten. Jedes Gebäude ist eine eigene Pixelgrafik mit Ziegeldach, Fachwerk, Fenstern und Türen, sodass man die Gebäudearten auf einen Blick unterscheidet. Alle Grafiken werden beim Start aus Code erzeugt, es gibt keine Bilddateien.
 
 ---
 
@@ -16,7 +16,7 @@ Der Stil orientiert sich am Vorbild: warme Terrakotta- und Sandtöne, Pixel-Icon
 
 Mehr braucht es nicht. Das Spiel startet sich selbst (`RuntimeInitializeOnLoadMethod`) und erzeugt Kamera, Welt und Oberfläche komplett aus Code. Es gibt keine Prefabs, keine Texturen und keine Szenen-Einrichtung.
 
-- Läuft in der **Built-in Render Pipeline** und in **URP**. Der Shader hat keinen LightMode-Tag und wird deshalb überall gezeichnet.
+- Läuft in der **Built-in Render Pipeline** und in **URP**. Die Shader haben keinen LightMode-Tag und werden deshalb überall gezeichnet.
 - Funktioniert mit dem **alten Input Manager** und mit dem **neuen Input System** (Unity-6-Standard).
 - Für einen Build: *File → Build Settings → Add Open Scenes → Build*.
 
@@ -24,9 +24,8 @@ Mehr braucht es nicht. Das Spiel startet sich selbst (`RuntimeInitializeOnLoadMe
 
 | Aktion | Eingabe |
 |---|---|
-| Kamera bewegen | WASD / Pfeiltasten / rechte Maustaste ziehen |
-| Zoomen | Mausrad |
-| Drehen | Q / E oder mittlere Maustaste ziehen |
+| Karte bewegen | WASD / Pfeiltasten / rechte oder mittlere Maustaste ziehen |
+| Zoomen (pixelgenaue Stufen) | Mausrad oder Q / E |
 | Auswählen | Linksklick auf Siedlung oder Heer |
 | Heer befehligen | Rechtsklick auf Gelände, eigene Stadt (Garnison) oder Feind (Angriff) |
 | Überfall statt Eroberung | Shift + Rechtsklick auf eine feindliche Stadt |
@@ -38,22 +37,36 @@ Mehr braucht es nicht. Das Spiel startet sich selbst (`RuntimeInitializeOnLoadMe
 
 ## Was alles drin ist
 
+### Grafik
+- **Pixelkunst aus Code**: über 70 Sprites, darunter 20 unterscheidbare Gebäude, Ortszentren vom Dorfhaus bis zum Kaiserpalast, Palisaden und Steinmauern mit Türmen und Toren, Felder, Bäume, Berge, Erzvorkommen und Truppen. Alle haben Kontur und Schlagschatten.
+- **Kartenboden pixelweise gemalt**:
+  - weiche Küsten mit Brandung und Stränden
+  - geschwungene Flüsse und Teiche
+  - Hangschattierung mit Licht von Nordosten
+  - Klippen an Geländestufen
+  - Gras, Blumen, Sand und Fels als Bodentexturen
+- Der Boden wird im Hintergrund-Thread gemalt, so ruckelt das Spiel nicht.
+- **Nebel des Krieges**: Unerforschtes Land ist Pergament mit Tintenrand.
+- **Fraktionsfarben** auf Fahnen, Wappenröcken, Segeln und gestrichelten Grenzen.
+- **Pixelgenauer Zoom** in sechs Stufen, von der Weltkarte bis zur Nahansicht.
+- **Drei Farbpaletten**: Retro, Herbst und Terrakotta.
+
 ### Welt
 - **Prozedural und groß**: 320 × 224 Felder, aus einem Seed erzeugt. Dazu gehören:
   - der Heimatkontinent **Mittland**, die kalten **Nordlande**, das heiße **Südreich** und der Archipel **Inselbund**,
   - **Gebirgszüge** (Ridged Noise) mit Schneegipfeln,
   - **Flüsse**, die bergab ins Meer fließen, sowie **Seen**, **Inseln**, Strände und Flachwasser,
   - **Klimazonen** mit Laub- und Nadelwald, Steppe, Wüste und fruchtbarem Schwemmland an Flüssen.
-- **Low-Poly-3D**: Die Höhenfelder sind flach schattiert, das Licht ist in die Vertexfarben „gebacken“. Bäume, Steine, Grenzlinien und Gebietstönung sind ebenfalls 3D.
-- **Nebel des Krieges als Pergament**: Unerforschtes Land ist flaches Papier. Beim Erkunden wächst die 3D-Welt daraus hervor.
-- **Drei Farbpaletten**: Terrakotta (wie das Vorbild), Pastell und Abenddämmerung.
+- **Bodenschätze**: Eisen-, Gold- und Steinvorkommen liegen als Felsen auf der Karte.
 
 ### Wirtschaft & Bürger
 - **6 Ressourcen**: Nahrung, Holz, Stein, Eisen, Gold und Waffen. Dazu kommen **Ansehen** und **Bevölkerung**.
-- **20 Gebäude** mit Standortbedingungen:
+- **21 Gebäude** mit Standortbedingungen:
   - Bauernhöfe brauchen fruchtbares Land, Fischer brauchen Wasser.
-  - Holzfäller brauchen Wald, Steinbrüche Hügel und Minen Gebirge.
+  - Steinbrüche brauchen Hügel; Steinvorkommen erhöhen den Ertrag.
   - Der Ertrag hängt vom Gelände im Stadtgebiet ab.
+- **Holzfällerei**: Holzfäller fällen sichtbar Bäume, an ihrer Stelle bleiben Stümpfe. Der Wald wächst langsam nach. Ein kahler Wald liefert wenig Holz.
+- **Erzabbau**: Eisenminen und Goldminen brauchen ein passendes Erzvorkommen im Stadtgebiet. Je mehr Vorkommen, desto höher der Ertrag. Jeder Spieler hat ein Eisen- und ein Steinvorkommen in Reichweite seines Startdorfs.
 - **Realistische Bevölkerung**: Es arbeiten 60 % der Bewohner, Nahrungsbetriebe werden zuerst besetzt. Wachstum braucht Nahrung, Wohnraum und Zufriedenheit. Rekruten werden aus der Bevölkerung genommen.
 - **Zufriedenheit**: Steuern, Rationen, Überfüllung, Hunger, Krieg, Winter, frisch eroberte Städte und Verwaltungslast wirken sich aus. Den Zielwert seht ihr samt Gründen im Tooltip.
 - **Jahreszeiten**: Im Winter wachsen kaum Feldfrüchte, deshalb lohnt sich Vorratshaltung.
@@ -116,22 +129,25 @@ Assets/PixelKingdom/
     Data/      Defs: Ressourcen, Ränge, Gebäude, Einheiten, Kalender – hier wird balanciert
     World/     WorldMap, WorldGenerator (Kontinente/Flüsse/Klima), Noise, Pathfinder (A*)
     Sim/       Game (Kern), Economy, Military, Diplomacy, AI, Events, Story, WorldSetup, NameGen
-    Render/    TerrainRenderer (Chunks), EntityRenderer (Städte/Heere), Models, MeshBuilder, Palette, CameraController
-    UI/        GameUI (+Panels, +Windows), PixelFont (eigene Bitmapschrift), PixelIcons (12x12-Icons)
+    Art/       Pixelkunst ohne Unity: PixelCanvas, SpriteArt (Gebäude/Natur/Truppen), IconArt, GroundPainter (Kartenboden),
+               MapLayout (Natur-Objekte je Kachel, Anordnung der Gebäude in Siedlungen), ArtPalette
+    Render/    GroundRenderer, ObjectRenderer, EntityRenderer, SpriteLib (Atlas), QuadBatch, CameraController, Palette
+    UI/        GameUI (+Panels, +Windows), PixelFont (eigene Bitmapschrift), PixelIcons
 ```
 
-Die Simulation (`World/`, `Sim/`, `Data/`) ist **komplett unabhängig von Unity**. Sie lässt sich ohne Editor testen und über tausende Spieltage laufen lassen.
+Die Simulation (`World/`, `Sim/`, `Data/`) und die Pixelkunst (`Art/`) sind **komplett unabhängig von Unity**. Sie lässt sich ohne Editor testen und über tausende Spieltage laufen lassen.
 
 ## Erweitern
 
-- **Neues Gebäude**: Wert in `BType` ergänzen, in `Buildings` definieren (Kosten, Produktion, Bedingungen) und ein Modell in `Models.Building` hinzufügen. Die Bau-Karte erscheint automatisch.
+- **Neues Gebäude**: Wert am Ende von `BType` ergänzen und in `Buildings` definieren (Kosten, Produktion, Bedingungen). Dann eine Zeichenfunktion in `SpriteArt` schreiben und sie als `"b_" + Name` registrieren. Den Platz in der Siedlung legt `SettlementLayout` fest. Die Bau-Karte erscheint automatisch.
 - **Neue Einheit**: `UType` und `Units.All` erweitern, dann `Units.Count` anpassen.
 - **Neues Ereignis**: In `Events.cs` eine ID in den Pool aufnehmen, dann einen `Describe`- und einen `ResolveEvent`-Fall schreiben.
 - **Neues Kapitel**: In `Story.cs` einen Eintrag in `Chapters` mit Intro, Zielen, Outro und Belohnung anlegen.
-- **Neue Farbpalette**: In `Palette.All` hinzufügen.
-- **Neue Icons**: 12×12 ASCII-Art in `PixelIcons` eintragen (`#` voll, `+` halbtransparent).
+- **Neue Farbpalette**: In `ArtPalette.All` hinzufügen.
+- **Neue Icons**: farbig in `IconArt` (16×16) oder schlicht in `PixelIcons` (12×12 ASCII-Art).
 
 ## Hinweise
 
-- Die Unity-Teile wurden gegen die Unity-Referenzassemblies kompiliert. Die Simulation wurde headless mit Bot-Spielern über tausende Tage getestet, darunter Story, Kaiser-Sturz und Seefahrt. Optik, Kamera und UI-Größen sollten beim ersten Start im Editor noch einmal angeschaut und nach Geschmack nachjustiert werden.
+- Die Unity-Teile wurden gegen die Unity-Referenzassemblies kompiliert. Die Simulation wurde ohne Unity mit Bot-Spielern über tausende Tage getestet, darunter Story, Kaiser-Sturz und Seefahrt. Gebäude, Icons und Kartenausschnitte wurden außerhalb von Unity als Vorschaubilder gerendert und geprüft.
+- Alte Spielstände bleiben ladbar. Die Abholzung beginnt dann beim Ursprungswald.
 - Der Spielstand liegt unter `Application.persistentDataPath/pixelkingdom_save.json`, eine Sicherung unter `.bak`.

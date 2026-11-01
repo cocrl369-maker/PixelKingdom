@@ -60,10 +60,10 @@ namespace PixelKingdom
     {
         None = -1,
         Wohnhaus, Bauernhof, Fischerhuette, Holzfaeller, Steinbruch, Mine, Lagerhaus, Markt, Taverne,
-        Kapelle, Brunnen, Schmiede, Kaserne, Archerie, Stall, Mauer, Burg, Hafen, Kathedrale, Werkstatt,
+        Kapelle, Brunnen, Schmiede, Kaserne, Archerie, Stall, Mauer, Burg, Hafen, Kathedrale, Werkstatt, Goldmine,
     }
 
-    public enum TerrainNeed { None, Coast, Forest, Hills, Mountain, Fertile }
+    public enum TerrainNeed { None, Coast, Forest, Hills, Mountain, Fertile, Iron, Gold }
 
     public class BuildingDef
     {
@@ -104,12 +104,12 @@ namespace PixelKingdom
                 Cost = R(wood: 25), Days = 3, Jobs = 4, Prod = R(food: 4.2f), Need = TerrainNeed.Fertile, FoodBuilding = true, Max = 12 });
             Add(new BuildingDef { Type = BType.Fischerhuette, Name = "Fischerhütte", Icon = "fish", Desc = "Fisch aus Meer, See oder Fluss.",
                 Cost = R(wood: 18), Days = 2, Jobs = 2, Prod = R(food: 3.0f), Need = TerrainNeed.Coast, FoodBuilding = true, Max = 6 });
-            Add(new BuildingDef { Type = BType.Holzfaeller, Name = "Holzfäller", Icon = "axe", Desc = "Schlägt Holz im nahen Wald.",
+            Add(new BuildingDef { Type = BType.Holzfaeller, Name = "Holzfäller", Icon = "axe", Desc = "Fällt Bäume im nahen Wald. Gefällte Bäume wachsen langsam nach – ein kahler Wald liefert wenig.",
                 Cost = R(wood: 10, gold: 5), Days = 2, Jobs = 3, Prod = R(wood: 3.2f), Need = TerrainNeed.Forest, Max = 8 });
-            Add(new BuildingDef { Type = BType.Steinbruch, Name = "Steinbruch", Icon = "pick", Desc = "Bricht Stein aus Hügeln und Bergen.",
+            Add(new BuildingDef { Type = BType.Steinbruch, Name = "Steinbruch", Icon = "pick", Desc = "Bricht Stein aus Hügeln und Bergen. Steinvorkommen in der Nähe erhöhen den Ertrag.",
                 Cost = R(wood: 25, gold: 10), Days = 3, Jobs = 4, Prod = R(stone: 2.4f), Need = TerrainNeed.Hills, Max = 6 });
-            Add(new BuildingDef { Type = BType.Mine, Name = "Eisenmine", Icon = "mine", Desc = "Fördert Eisenerz im Gebirge.",
-                Cost = R(wood: 40, stone: 20, gold: 30), Days = 5, Jobs = 5, Prod = R(iron: 1.6f), Need = TerrainNeed.Mountain, MinRank = 1, Max = 5 });
+            Add(new BuildingDef { Type = BType.Mine, Name = "Eisenmine", Icon = "mine", Desc = "Fördert Eisenerz. Braucht ein Eisenvorkommen (rostrote Felsen) im Gebiet.",
+                Cost = R(wood: 40, stone: 20, gold: 30), Days = 5, Jobs = 5, Prod = R(iron: 1.8f), Need = TerrainNeed.Iron, MinRank = 1, Max = 5 });
             Add(new BuildingDef { Type = BType.Lagerhaus, Name = "Lagerhaus", Icon = "crate", Desc = "+250 Lagerplatz für Waren.",
                 Cost = R(wood: 40, stone: 10), Days = 3, Storage = 250, Max = 6 });
             Add(new BuildingDef { Type = BType.Markt, Name = "Markt", Icon = "market", Desc = "Handel, Gold und gute Laune. Erlaubt Kauf/Verkauf.",
@@ -138,6 +138,8 @@ namespace PixelKingdom
                 Cost = R(wood: 150, stone: 400, iron: 30, gold: 300), Days = 24, Jobs = 2, Happiness = 14, Prestige = 3.0f, MinRank = 3, Max = 1 });
             Add(new BuildingDef { Type = BType.Werkstatt, Name = "Belagerungswerkstatt", Icon = "ram", Desc = "Baut Rammen gegen Mauern.",
                 Cost = R(wood: 100, stone: 30, iron: 15, gold: 60), Days = 6, MinRank = 3, Max = 1 });
+            Add(new BuildingDef { Type = BType.Goldmine, Name = "Goldmine", Icon = "gold", Desc = "Fördert Golderz. Braucht ein Goldvorkommen (funkelnde Felsen) im Gebiet.",
+                Cost = R(wood: 60, stone: 40, iron: 10, gold: 40), Days = 7, Jobs = 6, Prod = R(gold: 4.0f), Need = TerrainNeed.Gold, MinRank = 2, Max = 3 });
         }
 
         public static BuildingDef Get(BType t) => All[(int)t];

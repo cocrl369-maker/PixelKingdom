@@ -34,6 +34,7 @@ namespace PixelKingdom
         public readonly Queue<Notice> Notices = new Queue<Notice>();
         public readonly Queue<DialogLine> Dialog = new Queue<DialogLine>();
         public readonly HashSet<int> DirtyTiles = new HashSet<int>();
+        public readonly HashSet<int> DirtyTrees = new HashSet<int>();
         public bool SettlementsDirty = true;
         public bool Offline;      // während der Offline-Simulation
         public bool Headless;     // Tests: keine Dialoge
@@ -78,6 +79,8 @@ namespace PixelKingdom
             g.Map = WorldGenerator.Generate(state.seed);
             g.Rng = new Random(state.seed ^ state.day * 7919);
             g.Map.DiscoveredFromString(state.discovered);
+            g.Map.TreesFromString(state.trees);
+            g.ApplyExtraDeposits();
             g.Reindex();
             g.RecomputeTerritory();
             return g;
@@ -86,7 +89,18 @@ namespace PixelKingdom
         public void PrepareSave()
         {
             S.discovered = Map.DiscoveredToString();
+            S.trees = Map.TreesToString();
             if (S.log.Count > 200) S.log.RemoveRange(0, S.log.Count - 200);
+        }
+
+        public void ApplyExtraDeposits()
+        {
+            if (S.extraDeposits == null) S.extraDeposits = new List<int>();
+            for (int k = 0; k + 1 < S.extraDeposits.Count; k += 2)
+            {
+                int i = S.extraDeposits[k];
+                if (i >= 0 && i < Map.deposit.Length) { Map.deposit[i] = (byte)S.extraDeposits[k + 1]; Map.trees[i] = 0; Map.baseTrees[i] = 0; }
+            }
         }
 
         public void Reindex()
@@ -269,11 +283,11 @@ namespace PixelKingdom
             SettlementsDirty = false;
         }
 
-        /// <summary>Zählt Geländearten im Gebiet der Siedlung: [fruchtbar, wald, hügel, berg, küste, wasser]</summary>
+        /// <summary>Zählt im Gebiet der Siedlung: [fruchtbar, Bäume, Hügel, Berg, Küste, Wasser, Eisen, Gold, Stein]</summary>
         public int[] Terrain(SettlementData s)
         {
             if (terrainCounts.TryGetValue(s.id, out var c)) return c;
-            c = new int[6];
+            c = new int[9];
             int r = Radius(s);
             for (int y = s.y - r; y <= s.y + r; y++)
                 for (int x = s.x - r; x <= s.x + r; x++)
@@ -286,15 +300,20 @@ namespace PixelKingdom
                     var b = Map.biome[i];
                     if (b == Biome.Fertile) c[0] += 2;
                     else if (b == Biome.Grass || b == Biome.Steppe) c[0] += 1;
-                    if (b == Biome.Forest || b == Biome.Pine) c[1]++;
+                    c[1] += Map.trees[i];
                     if (b == Biome.Hills) c[2]++;
                     if (b == Biome.Mountain || b == Biome.Snow) { c[3]++; c[2]++; }
                     if (Map.coast[i]) c[4]++;
                     if (Map.IsWater(i) || Map.river[i]) c[5]++;
+                    if (Map.deposit[i] == WorldMap.DepIron) c[6]++;
+                    if (Map.deposit[i] == WorldMap.DepGold) c[7]++;
+                    if (Map.deposit[i] == WorldMap.DepStone) c[8]++;
                 }
             terrainCounts[s.id] = c;
             return c;
         }
+
+        public void InvalidateTerrain(int settlementId) => terrainCounts.Remove(settlementId);
 
         public void Reveal(int cx, int cy, int r)
         {

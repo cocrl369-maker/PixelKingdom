@@ -68,13 +68,13 @@ namespace PixelKingdom
             float x = c.x + 2, y = c.y + 2;
             int housing = G.Housing(s);
             // Bevölkerung
-            PixelIcons.Draw(new Rect(x, y, 12, 12), "people", Palette.UIText);
+            Icon(new Rect(x, y, 12, 12), "people", Palette.UIText);
             Text(x + 16, y + 2, $"Bewohner {(int)s.pop} / {housing}");
             Bar(new Rect(x + 16, y + 12, 140, 2), s.pop / housing, Palette.UIText);
             Tip(new Rect(x, y, 160, 14), "Wohnhäuser schaffen Platz. Wachstum braucht Nahrung und Zufriedenheit.");
             y += 18;
             // Zufriedenheit
-            PixelIcons.Draw(new Rect(x, y, 12, 12), s.happiness >= 40 ? "smile" : "angry", Palette.UIText);
+            Icon(new Rect(x, y, 12, 12), s.happiness >= 40 ? "smile" : "angry", Palette.UIText);
             Text(x + 16, y + 2, $"Zufriedenheit {(int)s.happiness}");
             Bar(new Rect(x + 16, y + 12, 140, 2), s.happiness / 100f, s.happiness < 25 ? Palette.UIBad : Palette.UIText);
             var reasons = new System.Collections.Generic.List<string>();
@@ -111,7 +111,7 @@ namespace PixelKingdom
                 var q = s.queue[i];
                 string name = q.kind == 0 ? Buildings.Get(q.type).Name : q.count + " " + Units.Get(q.type).Plural;
                 string icon = q.kind == 0 ? Buildings.Get(q.type).Icon : Units.Get(q.type).Icon;
-                PixelIcons.Draw(new Rect(qx, qy, 12, 12), icon, Palette.UIText);
+                Icon(new Rect(qx, qy, 12, 12), icon, Palette.UIText);
                 Text(qx + 15, qy + 1, name);
                 if (i == 0) Bar(new Rect(qx + 15, qy + 10, 110, 2), 1f - q.daysLeft / Mathf.Max(0.01f, q.total), Palette.UIGood);
                 else Text(qx + 130, qy + 1, "...", Palette.UITextDim);
@@ -129,7 +129,7 @@ namespace PixelKingdom
             {
                 if (s.garrison[u] == 0) continue;
                 float ux = gx + (shown % 3) * 46, uy = gy + (shown / 3) * 14;
-                PixelIcons.Draw(new Rect(ux, uy, 12, 12), Units.Get(u).Icon, Palette.UIText);
+                Icon(new Rect(ux, uy, 12, 12), Units.Get(u).Icon, Palette.UIText);
                 Text(ux + 14, uy + 2, s.garrison[u].ToString());
                 Tip(new Rect(ux, uy, 44, 12), Units.Get(u).Plural);
                 shown++;
@@ -181,7 +181,9 @@ namespace PixelKingdom
                 Fill(new Rect(card.x + 2, card.y + 2, card.width - 4, card.height - 4), locked ? Palette.UIPanelLight : (hov && ok ? Palette.UIText : Palette.UISand));
                 Fill(new Rect(card.x + 3, card.y + 3, card.width - 6, card.height - 6), locked ? Palette.UIPanel : Palette.UISand);
                 var ic = locked ? Palette.UIPanelLight : Palette.UIPanelDark;
-                PixelIcons.Draw(new Rect(card.x + (cardW - 24) / 2, card.y + 14, 24, 24), d.Icon, ic);
+                string spr = d.Type == BType.Wohnhaus ? "b_Wohnhaus0" : "b_" + d.Type;
+                if (!SpriteLib.DrawUI(new Rect(card.x + 3, card.y + 9, card.width - 6, card.height - 11), spr, locked ? new Color(1, 1, 1, 0.45f) : (Color?)null))
+                    PixelIcons.Draw(new Rect(card.x + (cardW - 24) / 2, card.y + 14, 24, 24), d.Icon, ic);
                 Text(card.x + 5, card.y + 5, have.ToString() + (queued > 0 ? "+" + queued : ""), ic);
                 if (!ok && !locked) Fill(new Rect(card.xMax - 8, card.y + 5, 3, 3), Palette.UIBad);
                 // Kosten unter der Karte
@@ -230,7 +232,7 @@ namespace PixelKingdom
                 bool ok1 = G.CanTrain(s, (UType)u, 1, out string why);
                 bool locked = !ok1 && why != "Nicht genug Ressourcen" && why != "Zu wenige Bewohner" && why != "Warteschlange voll";
                 var rowR = new Rect(x, y, 300, 15);
-                PixelIcons.Draw(new Rect(x, y + 1, 12, 12), d.Icon, locked ? Palette.UITextDim : Palette.UIText);
+                Icon(new Rect(x, y + 1, 12, 12), d.Icon, locked ? Palette.UITextDim : Palette.UIText);
                 Text(x + 15, y + 3, d.Name, locked ? Palette.UITextDim : Palette.UIText);
                 Text(x + 92, y + 3, "x" + s.garrison[u], Palette.UIText);
                 Text(x + 120, y + 3, $"A{d.Atk} V{d.Def} L{d.Hp}", Palette.UITextDim);
@@ -254,7 +256,7 @@ namespace PixelKingdom
             {
                 if (s.garrison[u] == 0) { armySel[u] = 0; continue; }
                 armySel[u] = Mathf.Clamp(armySel[u], 0, s.garrison[u]);
-                PixelIcons.Draw(new Rect(ax, ay, 12, 12), Units.Get(u).Icon, Palette.UIText);
+                Icon(new Rect(ax, ay, 12, 12), Units.Get(u).Icon, Palette.UIText);
                 if (Button(new Rect(ax + 16, ay, 12, 12), "-", armySel[u] > 0)) armySel[u] = Mathf.Max(0, armySel[u] - (PKInput.Key(PKKey.Shift) ? 10 : 1));
                 Text(ax + 32, ay + 2, armySel[u] + "/" + s.garrison[u]);
                 if (Button(new Rect(ax + 74, ay, 12, 12), "+", armySel[u] < s.garrison[u])) armySel[u] = Mathf.Min(s.garrison[u], armySel[u] + (PKInput.Key(PKKey.Shift) ? 10 : 1));
@@ -292,7 +294,7 @@ namespace PixelKingdom
             for (int r = 0; r < ResInfo.Count; r++)
             {
                 if (r == (int)Res.Gold) continue;
-                PixelIcons.Draw(new Rect(c.x + 4, y, 12, 12), ResInfo.Icons[r], Palette.UIText);
+                Icon(new Rect(c.x + 4, y, 12, 12), ResInfo.Icons[r], Palette.UIText);
                 Text(c.x + 19, y + 2, ResInfo.Name(r));
                 Text(c.x + 84, y + 2, ((int)p.res[r]).ToString());
                 Text(c.x + 124, y + 2, G.Price(r, true).ToString("0.0"));
@@ -318,8 +320,7 @@ namespace PixelKingdom
             Panel(r);
             if (CloseButton(r)) gm.SelSettlement = -1;
             var f = G.F(s.faction);
-            var pal = Palette.Current;
-            Fill(new Rect(r.x + 8, r.y + 7, 8, 8), pal.FactionColor(f.color));
+            Fill(new Rect(r.x + 8, r.y + 7, 8, 8), Palette.FactionColor(f.color));
             Text(r.x + 20, r.y + 7, s.name);
             Text(r.x + 26 + PixelFont.Width(s.name), r.y + 7, "- " + f.name, Palette.UITextDim);
             float y = r.y + 22;
@@ -353,15 +354,14 @@ namespace PixelKingdom
             if (CloseButton(r)) gm.SelArmy = -1;
             var f = G.F(a.faction);
             bool mine = f.isPlayer;
-            var pal = Palette.Current;
-            Fill(new Rect(r.x + 8, r.y + 7, 8, 8), pal.FactionColor(f.color));
+            Fill(new Rect(r.x + 8, r.y + 7, 8, 8), Palette.FactionColor(f.color));
             Text(r.x + 20, r.y + 7, a.name);
             if (!mine) Text(r.x + 26 + PixelFont.Width(a.name), r.y + 7, "- " + f.name, Palette.UITextDim);
             float x = r.x + 8, y = r.y + 22;
             for (int u = 0; u < Units.Count; u++)
             {
                 if (a.units[u] == 0) continue;
-                PixelIcons.Draw(new Rect(x, y, 12, 12), Units.Get(u).Icon, Palette.UIText);
+                Icon(new Rect(x, y, 12, 12), Units.Get(u).Icon, Palette.UIText);
                 string cnt = mine ? a.units[u].ToString() : "~" + Mathf.Max(1, Mathf.RoundToInt(a.units[u] / 5f) * 5);
                 Text(x + 14, y + 2, cnt);
                 Tip(new Rect(x, y, 40, 12), Units.Get(u).Plural);
@@ -369,7 +369,7 @@ namespace PixelKingdom
             }
             if (a.settlers > 0)
             {
-                PixelIcons.Draw(new Rect(x, y, 12, 12), "cart", Palette.UIText);
+                Icon(new Rect(x, y, 12, 12), "cart", Palette.UIText);
                 Text(x + 14, y + 2, a.settlers + " Siedler");
             }
             y += 16;

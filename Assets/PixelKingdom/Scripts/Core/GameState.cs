@@ -24,6 +24,8 @@ namespace PixelKingdom
         public int nextTaxDay = 40;
         public float[] priceDrift = new float[ResInfo.Count];
         public string discovered = "";
+        public string trees = "";                       // Baumbestand (Abholzung)
+        public List<int> extraDeposits = new List<int>(); // Paare: Kachel, Art
 
         public List<FactionData> factions = new List<FactionData>();
         public List<SettlementData> settlements = new List<SettlementData>();
