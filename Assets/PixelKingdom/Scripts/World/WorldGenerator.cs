@@ -97,7 +97,7 @@ namespace PixelKingdom
 
             // --- Flüsse --------------------------------------------------------------
             int rivers = 0;
-            for (int attempt = 0; attempt < 600 && rivers < 72; attempt++)
+            for (int attempt = 0; attempt < 600 && rivers < 100; attempt++)
             {
                 int sx = rnd.Next(4, W - 4), sy = rnd.Next(4, H - 4);
                 int si = WorldMap.Idx(sx, sy);

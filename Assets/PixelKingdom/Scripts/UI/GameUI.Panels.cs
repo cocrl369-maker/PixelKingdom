@@ -18,7 +18,28 @@ namespace PixelKingdom
                 return;
             }
             var a = G.A(gm.SelArmy);
-            if (a != null) DrawArmy(a);
+            if (a != null) { DrawArmy(a); return; }
+            var poi = G.Poi(gm.SelPoi);
+            if (poi != null) DrawPoi(poi);
+        }
+
+        void DrawPoi(PoiData p)
+        {
+            var r = BottomPanel(380, 84);
+            Panel(r);
+            if (CloseButton(r)) gm.SelPoi = -1;
+            SpriteLib.DrawUI(new Rect(r.x + 6, r.y + 6, 44, 40), p.type == 0 ? "p_ruin" : "p_camp");
+            float x = r.x + 56, y = r.y + 7;
+            Text(x, y, "__" + Game.PoiName(p) + "__"); y += 13;
+            string desc = p.type == 0
+                ? (p.done ? "Hier wurde schon alles durchsucht." : "Alte Mauern aus vergessener Zeit. Ein Heer oder Späher kann sie erkunden – Gold, Waffen, Relikte oder alte Karten warten. Manchmal auch eine Falle.")
+                : $"Räuber plündern von hier aus die Gegend und machen den Leuten Angst. Hebt das Lager mit einem Heer aus! __Wachen__: ~{Mathf.Max(1, Mathf.RoundToInt(p.guards.Sum() / 5f) * 5)} Mann.";
+            Wrapped(new Rect(x, y, r.xMax - x - 8, 40), desc, Palette.UITextDim);
+            if (p.type == 0 && p.done) return;
+            var nearest = G.ArmiesOf(G.PlayerId).Where(a => a.units.Sum() > 0).OrderBy(a => (a.x - p.x) * (a.x - p.x) + (a.y - p.y) * (a.y - p.y)).FirstOrDefault();
+            string label = p.type == 0 ? "Nächstes Heer schicken" : "Nächstes Heer angreifen lassen";
+            if (Button(new Rect(r.xMax - 168, r.yMax - 19, 160, 14), label, nearest != null, nearest != null ? "Schickt " + nearest.name : "Ihr habt kein Heer im Feld. Stellt eines in einer Siedlung auf (Reiter 'Truppen').", "army"))
+                gm.SendToPoi(nearest, p);
         }
 
         Rect BottomPanel(float wantW, float h)
@@ -45,7 +66,12 @@ namespace PixelKingdom
             for (int i = 0; i < tabs.Length; i++)
             {
                 var tr = new Rect(r.x + 4 + i * 66, r.y - 15, 64, 16);
-                if (Button(tr, tabs[i], true, i == 1 ? "Gebäude errichten (B)" : null, null, SettlementTab == i)) SettlementTab = i;
+                if (Button(tr, tabs[i], true, i == 1 ? "Gebäude errichten (B)" : null, null, SettlementTab == i))
+                {
+                    SettlementTab = i;
+                    if (i == 2) G.Hint("tab_troops", "Truppen: Oben bildet ihr Soldaten aus – sie kommen aus der Bevölkerung. Rechts stellt ihr aus der Garnison ein Heer zusammen und lasst es mit 'Ausrücken' losziehen. Speere schlagen Ritter, Ritter schlagen Bogenschützen, Bogenschützen schlagen Speere.");
+                    if (i == 3) G.Hint("tab_market", "Der Markt: Tauscht Waren gegen Gold und umgekehrt. Ihr braucht dafür einen Markt oder einen Hafen.");
+                }
             }
             Panel(r);
             Mark("panel", new Rect(r.x, r.y - 15, r.width, r.height + 15));

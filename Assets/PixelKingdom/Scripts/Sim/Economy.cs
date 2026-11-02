@@ -82,6 +82,7 @@ namespace PixelKingdom
             if (f != null && f.res[(int)Res.Food] <= 1) R("Hunger", -25);
             if (S.day - s.conqueredDay < 120) R("Kürzlich erobert", -25f * (1f - (S.day - s.conqueredDay) / 120f));
             if (S.day - s.lastBattleDay < 20) R("Kampfhandlungen", -10);
+            if (NearBanditCamp(s)) R("Räuberplage", -6);
             if (f != null)
             {
                 R("Rang", f.rank * 1.5f);
@@ -91,6 +92,8 @@ namespace PixelKingdom
                 if (f.isPlayer && over > 0) R("Verwaltungslast", -over * 6);
                 if (f.isEmperor) R("Kaiserliche Garde", 12);
                 if (f.isPlayer && S.story.emperorDefeated) R("Befreiung vom Kaiser", 8);
+                if (EdictOn(f, Edicts.Wehrpflicht)) R("Wehrpflicht", -4);
+                if (EdictOn(f, Edicts.FreieBauern)) R("Freie Bauern", 6);
                 if (Season == Season.Winter) R("Winter", -3);
             }
             return Clamp(h, 0, 100);
@@ -107,7 +110,7 @@ namespace PixelKingdom
             var delta = Delta(f.id);
             float rankBonus = Ranks.Get(f.rank).ProductionBonus;
             float happyMod = 0.6f + s.happiness / 125f; // 0.6 .. 1.4
-            float seasonFood = Calendar.FoodMod[(int)Season];
+            float seasonFood = Calendar.FoodMod[(int)Season] * (EdictOn(f, Edicts.Erntedank) ? 1.1f : 1f);
 
             // Arbeitskräfte: Nahrung zuerst
             float workers = s.pop * 0.6f;
@@ -134,6 +137,7 @@ namespace PixelKingdom
                     if (d.Use[r] > 0) useFactor = Math.Min(useFactor, res[r] / (d.Use[r] * n * staff + 0.001f));
                 useFactor = Clamp(useFactor, 0, 1);
                 float eff = n * staff * terr * happyMod * (1f + rankBonus) * useFactor;
+                if (d.Type == BType.Bauernhof) eff *= 1f + 0.2f * Math.Min(2, s.buildings[(int)BType.Windmuehle]);
                 if (eff <= 0) continue;
                 for (int r = 0; r < ResInfo.Count; r++)
                 {
@@ -153,6 +157,14 @@ namespace PixelKingdom
             // Steuern
             float tax = s.pop * s.taxRate * 0.45f * (0.7f + s.happiness / 200f);
             if (f.isEmperor) tax *= 1.6f;
+            if (EdictOn(f, Edicts.Marktrecht) && HasMarket(f.id)) tax *= 1.15f;
+            if (EdictOn(f, Edicts.FreieBauern)) tax *= 0.8f;
+            if (EdictOn(f, Edicts.Erntedank)) Add(f, (int)Res.Gold, -1f, delta);
+            if (EdictOn(f, Edicts.Pilgerwege))
+            {
+                f.prestige += 0.5f * (s.buildings[(int)BType.Kapelle] + s.buildings[(int)BType.Kloster] + s.buildings[(int)BType.Kathedrale]);
+                Add(f, (int)Res.Food, -0.5f, delta);
+            }
             Add(f, (int)Res.Gold, tax, delta);
 
             // Verbrauch
@@ -525,6 +537,7 @@ namespace PixelKingdom
                 if (s.buildings[(int)BType.Mine] == 0 && Try(BType.Mine)) return BType.Mine;
                 if (s.buildings[(int)BType.Goldmine] == 0 && Try(BType.Goldmine)) return BType.Goldmine;
                 if (s.buildings[(int)BType.Schmiede] == 0 && s.buildings[(int)BType.Mine] > 0 && Try(BType.Schmiede)) return BType.Schmiede;
+                if (s.buildings[(int)BType.Windmuehle] == 0 && s.buildings[(int)BType.Bauernhof] >= 3 && Try(BType.Windmuehle)) return BType.Windmuehle;
                 if (s.buildings[(int)BType.Mauer] == 0 && s.pop > 70 && Try(BType.Mauer)) return BType.Mauer;
                 if (s.buildings[(int)BType.Archerie] == 0 && s.pop > 80 && Try(BType.Archerie)) return BType.Archerie;
                 if (s.buildings[(int)BType.Kapelle] == 0 && s.pop > 60 && Try(BType.Kapelle)) return BType.Kapelle;

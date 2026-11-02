@@ -47,7 +47,7 @@ namespace PixelKingdom
             if (emp != null && emp.alive && S.story.Has("emperor_war") && Rng.NextDouble() < 0.025)
             {
                 var cand = SettlementsOf(emp.id).Where(s => !s.isCapitalOfEmperor && s.garrison.Sum() < 25 &&
-                    SettlementsOf(p.id).Any(ps => Dist(ps.x, ps.y, s.x, s.y) < 38)).OrderBy(s => s.happiness).FirstOrDefault();
+                    SettlementsOf(p.id).Any(ps => Dist(ps.x, ps.y, s.x, s.y) < 45)).OrderBy(s => s.happiness).FirstOrDefault();
                 if (cand != null) QueueEvent(new PendingEvent { id = "uprising", a = cand.id });
             }
 
@@ -162,6 +162,13 @@ namespace PixelKingdom
                     v.Text = $"Ein Steuereintreiber in schwarzem Samt verliest ein Dekret: 'Seine Majestät Kaiser Malrik fordert den Zehnt: {(int)e.v} Gold.'";
                     v.Opt($"Zahlen ({(int)e.v} Gold)", gold >= e.v);
                     v.Opt("Verweigern (Kaiser erzürnt, Volk jubelt)");
+                    break;
+                case "camp_raid":
+                    v.Title = "Räuber!"; v.Icon = "skull";
+                    v.Text = $"Räuber aus dem Lager in den Wäldern überfallen die Höfe um {sn}. Ihr Anführer lässt ausrichten: '{(int)e.v} Gold, und wir ziehen weiter.' Solange das Lager steht, kommen sie wieder – hebt es mit einem Heer aus!";
+                    v.Opt($"Zahlen ({(int)e.v} Gold)", gold >= e.v);
+                    v.Opt("Plündern lassen (Nahrung und Holz gehen verloren)");
+                    v.Opt("Die Garnison schicken (Kampf)", s != null && s.garrison.Sum() > 0);
                     break;
                 case "punish":
                     v.Title = "Kaiserliche Strafexpedition"; v.Icon = "eagle";
@@ -307,6 +314,24 @@ namespace PixelKingdom
                         Notify("Ihr habt dem Kaiser die Stirn geboten. Das Volk spricht von euch – und Valdoran auch.", 1);
                     }
                     break;
+                case "camp_raid":
+                    {
+                        if (s == null) break;
+                        var camp = Poi(e.b);
+                        if (option == 0 && res[4] >= e.v) res[4] -= e.v;
+                        else if (option == 2 && camp != null && !camp.done)
+                        {
+                            float mine = Strength(s.garrison), theirs = Strength(camp.guards);
+                            if (mine > theirs * 0.8f || Rng.NextDouble() < mine / (theirs + 1f))
+                            {
+                                for (int u = 0; u < Units.Count; u++) camp.guards[u] = camp.guards[u] / 2;
+                                p.prestige += 5; Notify("Die Räuber wurden in die Wälder zurückgejagt.", 1);
+                            }
+                            else { for (int u = 0; u < Units.Count; u++) s.garrison[u] = s.garrison[u] * 3 / 4; res[0] *= 0.85f; Notify("Die Garnison wurde zurückgeschlagen.", 2); }
+                        }
+                        else { res[0] *= 0.85f; res[1] *= 0.85f; s.happiness -= 6; }
+                        break;
+                    }
                 case "punish":
                     if (s == null) break;
                     if (option == 0 && res[4] >= e.v) { res[4] -= e.v; ChangePressure(-20); }

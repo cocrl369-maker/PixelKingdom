@@ -14,7 +14,8 @@ namespace PixelKingdom
         readonly Dictionary<int, View> settlementViews = new Dictionary<int, View>();
         readonly Dictionary<int, View> armyViews = new Dictionary<int, View>();
         readonly QuadBatch qb = new QuadBatch(), sb = new QuadBatch();
-        Mesh borderMesh, pathMesh;
+        Mesh borderMesh, pathMesh, poiMesh, poiShadow;
+        int poiVersion = -1;
         bool bordersDirty = true;
         float refresh;
         int paletteIdx = -1;
@@ -29,12 +30,33 @@ namespace PixelKingdom
             settlementViews.Clear(); armyViews.Clear();
             QuadBatch.MakeObject("Grenzen", transform, spriteMat, out borderMesh);
             QuadBatch.MakeObject("Marschroute", transform, spriteMat, out pathMesh);
+            QuadBatch.MakeObject("Ruinen & Lager", transform, spriteMat, out poiMesh);
+            QuadBatch.MakeObject("Ruinen & Lager Schatten", transform, shadowMat, out poiShadow);
+            poiVersion = -1;
             bordersDirty = true; refresh = 0; paletteIdx = Palette.Index;
             RefreshSettlements(true);
         }
 
         public void MarkBordersDirty() => bordersDirty = true;
-        public void ForceRefresh() { foreach (var v in settlementViews.Values) v.sig = int.MinValue; foreach (var v in armyViews.Values) v.sig = int.MinValue; bordersDirty = true; }
+        void BuildPois()
+        {
+            poiVersion = game.PoisVersion;
+            qb.Clear(); sb.Clear();
+            var white = new Color32(255, 255, 255, 255);
+            var faded = new Color32(200, 195, 185, 255);
+            foreach (var p in game.Pois)
+            {
+                if (p.type == 1 && p.done) continue;
+                var sp = SpriteLib.Get(p.type == 0 ? "p_ruin" : "p_camp");
+                if (sp == null) continue;
+                float wx = p.x + 0.5f, wy = p.y + 0.3f;
+                qb.Add(sp, wx, wy, QuadBatch.DepthOf(wy), p.done ? faded : white);
+                if (sp.Shadow != null) sb.Add(sp.Shadow, wx, wy, ObjectRenderer.ShadowZ, white);
+            }
+            qb.ToMesh(poiMesh); sb.ToMesh(poiShadow);
+        }
+
+        public void ForceRefresh() { poiVersion = -1; foreach (var v in settlementViews.Values) v.sig = int.MinValue; foreach (var v in armyViews.Values) v.sig = int.MinValue; bordersDirty = true; }
 
         View Get(Dictionary<int, View> dict, int id, string name)
         {
@@ -53,6 +75,7 @@ namespace PixelKingdom
             refresh -= Time.unscaledDeltaTime;
             if (refresh <= 0) { refresh = 0.5f; RefreshSettlements(false); }
             if (bordersDirty) BuildBorders();
+            if (poiVersion != game.PoisVersion) BuildPois();
             UpdateArmies();
             BuildPath();
         }

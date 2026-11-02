@@ -186,6 +186,7 @@ namespace PixelKingdom
                     if (f.alive && !f.isPlayer && (S.day + f.id) % 3 == 0) AIEconomyOnly(f);
             }
             if (!Offline) EventsDay();
+            PoisDay();
             StoryDay();
             MarketDrift();
             CheckEliminations();

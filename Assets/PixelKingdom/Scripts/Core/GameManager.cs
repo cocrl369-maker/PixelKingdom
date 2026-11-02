@@ -33,7 +33,7 @@ namespace PixelKingdom
         public static readonly int[] Speeds = { 1, 2, 5 };
         public const float SecondsPerDay = 5f;
 
-        public int SelSettlement = -1, SelArmy = -1;
+        public int SelSettlement = -1, SelArmy = -1, SelPoi = -1;
         public enum Mode { None, PlaceSettlers, TargetArmy }
         public Mode CurrentMode;
         public int ModeSource = -1;
@@ -89,6 +89,8 @@ namespace PixelKingdom
             Entities = new GameObject("Siedlungen & Heere").AddComponent<EntityRenderer>();
             Entities.transform.SetParent(transform, false);
             UI = gameObject.AddComponent<GameUI>();
+            gameObject.AddComponent<AudioManager>();
+            Game.HintsEnabled = PlayerPrefs.GetInt("pk_hints", 1) == 1;
         }
 
         static Shader LoadShader(string res, string name)
@@ -229,6 +231,8 @@ namespace PixelKingdom
                 if (autosave <= 0) { autosave = 90f; SaveSystem.Save(Game); }
                 if (Game.CountSettlements(Game.PlayerId) == 0) GameOver = true;
                 if (Game.A(SelArmy) == null) SelArmy = -1;
+                var sp = Game.Poi(SelPoi);
+                if (sp == null || (sp.type == 1 && sp.done)) SelPoi = -1;
                 var ss = Game.St(SelSettlement);
                 if (ss == null) SelSettlement = -1;
             }
@@ -287,13 +291,13 @@ namespace PixelKingdom
 
         public void SelectSettlement(SettlementData s, bool focus = true)
         {
-            SelSettlement = s.id; SelArmy = -1;
+            SelSettlement = s.id; SelArmy = -1; SelPoi = -1;
             if (focus) CamCtrl.FocusOn(new Vector2(s.x + 0.5f, s.y + 0.5f));
         }
 
         public void SelectArmy(ArmyData a, bool focus = false)
         {
-            SelArmy = a.id; SelSettlement = -1;
+            SelArmy = a.id; SelSettlement = -1; SelPoi = -1;
             if (focus) CamCtrl.FocusOn(new Vector2(a.x, a.y));
         }
 
@@ -408,9 +412,12 @@ namespace PixelKingdom
                 if (d < bd) { bd = d; best = a; }
             }
             if (best != null) { SelectArmy(best); return; }
+            var poi = g.PoiNear(HoverPoint.x, HoverPoint.y, 0.9f);
+            if (poi != null && g.IsDiscovered(poi.x, poi.y) && SettlementNear(HoverPoint.x, HoverPoint.y, 1.2f) == null)
+            { SelPoi = poi.id; SelArmy = -1; SelSettlement = -1; return; }
             var s = SettlementNear(HoverPoint.x, HoverPoint.y, 1.4f);
             if (s != null && g.IsDiscovered(s.x, s.y)) { SelectSettlement(s, false); return; }
-            SelArmy = -1; SelSettlement = -1;
+            SelArmy = -1; SelSettlement = -1; SelPoi = -1;
         }
 
         public SettlementData SettlementNear(float x, float z, float r)
@@ -436,6 +443,12 @@ namespace PixelKingdom
                 else UI.Toast("Siedler ziehen dorthin und gründen einen neuen Ort.", 0);
                 return;
             }
+            var tp = g.PoiNear(HoverPoint.x, HoverPoint.y, 0.9f);
+            if (tp != null && s == null && g.IsDiscovered(tp.x, tp.y))
+            {
+                SendToPoi(a, tp);
+                return;
+            }
             if (s != null && g.IsDiscovered(s.x, s.y))
             {
                 if (s.faction == g.PlayerId)
@@ -453,6 +466,12 @@ namespace PixelKingdom
                 return;
             }
             if (!g.OrderMove(a, HoverX, HoverY, ArmyMission.Move, -1, out string why)) UI.Toast(why, 2);
+        }
+
+        public void SendToPoi(ArmyData a, PoiData p)
+        {
+            if (!Game.OrderMove(a, p.x, p.y, ArmyMission.Poi, p.id, out string why)) UI.Toast(why, 2);
+            else UI.Toast(p.type == 0 ? $"{a.name} zieht zur Ruine." : $"{a.name} greift das Räuberlager an.", p.type == 1 ? 3 : 0);
         }
 
         public void OrderAttack(ArmyData a, SettlementData s, bool raid)

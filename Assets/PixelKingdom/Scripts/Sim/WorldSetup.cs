@@ -75,7 +75,7 @@ namespace PixelKingdom
 
             // ---------------- Kaiser ----------------------------------------------------
             var eSite = home.OrderByDescending(s => Game.Dist(s.x, s.y, pSite.x, pSite.y) * 0.9f + s.score * 2f)
-                            .First(s => Free(s, 36));
+                            .First(s => Free(s, 44));
             taken.Add((eSite.x, eSite.y));
             var emp = NewFaction("Kaiserreich Valdor", "Kaiser Malrik der Eiserne", 0, 0);
             emp.isEmperor = true; emp.color = 13; emp.aggression = 0.85f; emp.greed = 0.95f; emp.honor = 0.1f; emp.ambition = 1f; emp.loyalty = 1f;
@@ -86,37 +86,37 @@ namespace PixelKingdom
             int empTowns = 0;
             foreach (var s in sites)
             {
-                if (empTowns >= 5) break;
-                if (s.cont != 0 || Game.Dist(s.x, s.y, eSite.x, eSite.y) > 38 || !Free(s, 12)) continue;
+                if (empTowns >= 7) break;
+                if (s.cont != 0 || Game.Dist(s.x, s.y, eSite.x, eSite.y) > 46 || !Free(s, 14)) continue;
                 taken.Add((s.x, s.y));
                 var st = NewSettlement(emp, s, 90 + r.Next(80), false); st.taxRate = 0.22f;
                 empTowns++;
             }
 
             // ---------------- Fürsten von Mittland ---------------------------------------
-            for (int k = 0; k < 8; k++)
+            for (int k = 0; k < 11; k++)
             {
-                var c = Pick(s => s.cont == 0 && Game.Dist(s.x, s.y, pSite.x, pSite.y) > 22 && Game.Dist(s.x, s.y, eSite.x, eSite.y) > 32, 26);
+                var c = Pick(s => s.cont == 0 && Game.Dist(s.x, s.y, pSite.x, pSite.y) > 26 && Game.Dist(s.x, s.y, eSite.x, eSite.y) > 38, 28);
                 if (c == null) break;
                 var f = NewFaction("", NameGen.Leader(r, 0), 0, 0);
                 var capS = NewSettlement(f, c, 55 + r.Next(70), true);
                 f.name = NameGen.RealmName(0, capS.name);
                 // Fürsten nahe dem Kaiser sind treuer
                 float de = Game.Dist(c.x, c.y, eSite.x, eSite.y);
-                f.loyalty = Clamp01(f.loyalty * 0.6f + (de < 75 ? 0.4f : 0.05f));
+                f.loyalty = Clamp01(f.loyalty * 0.6f + (de < 90 ? 0.4f : 0.05f));
                 int extra = r.Next(1, 3);
                 for (int e = 0; e < extra; e++)
                 {
-                    var s2 = Pick(s => s.cont == 0 && Game.Dist(s.x, s.y, c.x, c.y) < 20, 11);
+                    var s2 = Pick(s => s.cont == 0 && Game.Dist(s.x, s.y, c.x, c.y) < 24, 12);
                     if (s2 == null) break;
                     NewSettlement(f, s2, 25 + r.Next(35), false);
                 }
             }
 
             // ---------------- Freie Dörfer -------------------------------------------------
-            for (int k = 0; k < 7; k++)
+            for (int k = 0; k < 10; k++)
             {
-                var c = Pick(s => s.cont == 0 && Game.Dist(s.x, s.y, pSite.x, pSite.y) > 13, 13);
+                var c = Pick(s => s.cont == 0 && Game.Dist(s.x, s.y, pSite.x, pSite.y) > 15, 15);
                 if (c == null) break;
                 var f = NewFaction("", "Dorfältester " + NameGen.Leader(r, 0).Split(' ')[1], 0, 0);
                 f.isFree = true; f.aggression *= 0.2f; f.ambition *= 0.2f; f.loyalty *= 0.5f;
@@ -128,10 +128,10 @@ namespace PixelKingdom
             // ---------------- Übersee ---------------------------------------------------------
             for (int cont = 1; cont <= 3; cont++)
             {
-                int lords = cont == 3 ? 1 : 3;
+                int lords = cont == 3 ? 2 : 4;
                 for (int k = 0; k < lords; k++)
                 {
-                    var c = Pick(s => s.cont == cont, cont == 3 ? 10 : 22);
+                    var c = Pick(s => s.cont == cont, cont == 3 ? 12 : 24);
                     if (c == null) break;
                     var f = NewFaction("", NameGen.Leader(r, cont), cont, cont);
                     f.loyalty = 0; // kennen den Kaiser nicht
@@ -140,14 +140,14 @@ namespace PixelKingdom
                     int extra = r.Next(1, 4);
                     for (int e = 0; e < extra; e++)
                     {
-                        var s2 = Pick(s => s.cont == cont && Game.Dist(s.x, s.y, c.x, c.y) < 22, 10);
+                        var s2 = Pick(s => s.cont == cont && Game.Dist(s.x, s.y, c.x, c.y) < 26, 12);
                         if (s2 == null) break;
                         NewSettlement(f, s2, 30 + r.Next(50), false);
                     }
                 }
                 for (int k = 0; k < 2; k++)
                 {
-                    var c = Pick(s => s.cont == cont, 12);
+                    var c = Pick(s => s.cont == cont, 14);
                     if (c == null) break;
                     var f = NewFaction("", "Ältester " + NameGen.Leader(r, cont).Split(' ')[1], cont, cont);
                     f.isFree = true; f.aggression *= 0.2f; f.loyalty = 0;
@@ -179,6 +179,7 @@ namespace PixelKingdom
             cap.buildings[(int)BType.Kathedrale] = 1;
 
             g.InitRelations();
+            g.PlacePois();
         }
 
         static float Clamp01(float v) => v < 0 ? 0 : v > 1 ? 1 : v;

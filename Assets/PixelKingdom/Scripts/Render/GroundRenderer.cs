@@ -188,7 +188,7 @@ namespace PixelKingdom
             Vector2 view = cam != null ? cam.ViewSize : new Vector2(WorldMap.W, WorldMap.H);
             // Mobilgeräte: nur Chunks in Sichtnähe malen, entfernte wieder freigeben (Speicher)
             float reach = Mathf.Max(view.x, view.y) * 0.5f + CS * 1.5f;
-            if (LowMemory) Evict(focus, reach);
+            Evict(focus, reach);
 
             // Neue Aufträge vergeben (nächstgelegene zuerst)
             int maxParallel = Mathf.Max(1, System.Environment.ProcessorCount - 1);
@@ -218,13 +218,13 @@ namespace PixelKingdom
 
         /// <summary>Auf Mobilgeräten wird mit Texturspeicher gespart.</summary>
         public static bool LowMemory => Application.isMobilePlatform || SystemInfo.systemMemorySize < 4000;
-        const int MaxTexturesLowMem = 20;
+        static int MaxTextures => LowMemory ? 20 : 64;
 
         void Evict(Vector2 focus, float reach)
         {
             int painted = 0;
             foreach (var c in chunks) if (c.tex != null) painted++;
-            if (painted <= MaxTexturesLowMem) return;
+            if (painted <= MaxTextures) return;
             Chunk far = null; float fd = 0;
             foreach (var c in chunks)
             {

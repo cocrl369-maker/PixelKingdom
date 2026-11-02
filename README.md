@@ -97,16 +97,28 @@ Das Spiel ist für Android ausgelegt und bleibt am PC mit Tastatur und Maus spie
 - **Drei Farbpaletten**: Retro, Herbst und Terrakotta.
 
 ### Welt
-- **Prozedural und groß**: 400 × 280 Felder, aus einem Seed erzeugt. Dazu gehören:
+- **Prozedural und groß**: 480 × 336 Felder, aus einem Seed erzeugt. Dazu gehören:
   - der Heimatkontinent **Mittland**, die kalten **Nordlande**, das heiße **Südreich** und der Archipel **Inselbund**,
-  - zusammenhängende **Gebirgszüge** mit großen, mehrgipfligen Massiven und Schneegipfeln,
+  - lange, lückenlose **Gebirgsketten** aus großen, mehrgipfligen Massiven mit Schneegipfeln,
   - **Flüsse**, die bergab ins Meer fließen, sowie **Seen**, **Inseln**, Strände und Flachwasser,
   - **Klimazonen** mit Laub- und Nadelwald, Steppe, Wüste und fruchtbarem Schwemmland an Flüssen.
 - **Bodenschätze**: Eisen-, Gold- und Steinvorkommen liegen als Felsen auf der Karte.
 
+### Entdecken & Herrschen
+- **Ruinen**: Mit einem Heer oder Späher erkunden. Dort warten Gold, alte Waffen, heilige Relikte oder Landkarten – manchmal auch eine Falle.
+- **Räuberlager**: Sie überfallen Höfe in der Nähe und machen den Leuten Angst. Hebt sie mit einem Heer aus, dann gibt es Beute und Ansehen.
+- **Erlasse** (Reich-Übersicht): Wehrpflicht, Marktrecht, Erntedank, Freie Bauern, Pilgerwege. Jeder Rang erlaubt einen Erlass mehr.
+- **Ritterturniere** (mit Turnierplatz): Sie bringen Ansehen und Zufriedenheit, die Fürsten werden euch gewogener, und zwei fahrende Ritter bleiben bei euch.
+- **Meister Aldo, der Chronist**, erklärt im Dialogfeld am unteren Bildschirmrand jede Neuerung, sobald sie zum ersten Mal vorkommt: erstes Heer, Winter, Hunger, Markt, Ruinen, Räuber, Erlasse, Druck des Kaisers und mehr. Die Tipps lassen sich im Menü abschalten.
+
+### Musik & Klang
+- Ruhige mittelalterliche Musik, **komplett im Code komponiert und synthetisiert**: Laute, Flöte, Bordun und Rahmentrommel im dorischen Modus. Vier Stücke wechseln sich ab.
+- Dumpfer Holz-Klick bei jedem Knopfdruck.
+- Musik und Klänge lassen sich im Menü einzeln abschalten.
+
 ### Wirtschaft & Bürger
 - **6 Ressourcen**: Nahrung, Holz, Stein, Eisen, Gold und Waffen. Dazu kommen **Ansehen** und **Bevölkerung**.
-- **21 Gebäude** mit Standortbedingungen:
+- **24 Gebäude** mit Standortbedingungen, neu sind Windmühle (+20 % Ernte), Kloster und Turnierplatz:
   - Bauernhöfe brauchen fruchtbares Land, Fischer brauchen Wasser.
   - Steinbrüche brauchen Hügel; Steinvorkommen erhöhen den Ertrag.
   - Der Ertrag hängt vom Gelände im Stadtgebiet ab.
@@ -211,5 +223,5 @@ Die Simulation (`World/`, `Sim/`, `Data/`) und die Pixelkunst (`Art/`) sind **ko
 ## Hinweise
 
 - Die Unity-Teile wurden gegen die Unity-Referenzassemblies kompiliert. Die Simulation wurde ohne Unity mit Bot-Spielern über tausende Tage getestet, darunter Story, Kaiser-Sturz und Seefahrt. Gebäude, Icons und Kartenausschnitte wurden außerhalb von Unity als Vorschaubilder gerendert und geprüft.
-- Spielstände aus Versionen vor der größeren Welt werden nicht mehr geladen. Sie werden als `.alt-v1` gesichert, und es beginnt ein neues Spiel.
+- Spielstände aus älteren Versionen (kleinere Welt) werden nicht mehr geladen. Sie werden als `.alt-vN` gesichert, und es beginnt ein neues Spiel.
 - Der Spielstand liegt unter `Application.persistentDataPath/pixelkingdom_save.json`, eine Sicherung unter `.bak`.

@@ -124,8 +124,19 @@ namespace PixelKingdom
             minimapTimer = 0;
         }
 
-        public void OpenWindow(Window w) { Open = w; dipMessage = null; }
-        public void ToggleWindow(Window w) { Open = Open == w ? Window.None : w; dipMessage = null; }
+        public void OpenWindow(Window w) { Open = w; dipMessage = null; WindowHint(w); }
+        public void ToggleWindow(Window w) { Open = Open == w ? Window.None : w; dipMessage = null; WindowHint(Open); }
+
+        void WindowHint(Window w)
+        {
+            if (G == null) return;
+            switch (w)
+            {
+                case Window.Armies: G.Hint("win_armies", "Die Heerführung: Links stehen eure Heere und Garnisonen, rechts die Ziele in der Nähe. 'Erobern' nimmt eine Stadt ein, 'Überfall' plündert nur, 'Hin' marschiert ohne Angriff. Steht ein Heer in einer eigenen Stadt, tauscht ihr unten Truppen mit der Garnison."); break;
+                case Window.Diplomacy: G.Hint("win_diplo", "Die Diplomatie: Links die Herrscher, die ihr kennt, rechts ihr Wesen und was sie wollen. Fahrt über eine Aktion – dort steht, wie gut eure Aussichten sind und warum."); break;
+                case Window.Realm: G.Hint("win_realm", "Die Reich-Übersicht hat drei Reiter: 'Rang' zeigt, was für den nächsten Aufstieg fehlt. 'Erlasse & Feste' für Gesetze und Turniere. 'Siedlungen' listet alle eure Orte."); break;
+            }
+        }
 
         public bool CloseTopWindow()
         {
@@ -292,7 +303,7 @@ namespace PixelKingdom
         bool Clicked(Rect r, int button = 0)
         {
             var e = Event.current;
-            if (e.type == EventType.MouseDown && e.button == button && r.Contains(e.mousePosition)) { e.Use(); return true; }
+            if (e.type == EventType.MouseDown && e.button == button && r.Contains(e.mousePosition)) { e.Use(); AudioManager.Click(); return true; }
             return false;
         }
 
@@ -743,6 +754,20 @@ namespace PixelKingdom
                 Fill(new Rect(r.x, r.yMax - 1, r.width, 1), fc);
                 Text(r.x + 3, r.y + 1, t, Palette.UIText);
                 if (a.id == gm.SelArmy) { float bs = 1.6f * 16f * zoom / S; Brackets(new Rect(v.x - bs / 2, v.y + 4, bs, bs), 4, Palette.UIText); }
+            }
+            // Ruinen und Lager: kleine Beschriftung, Auswahl-Klammern
+            foreach (var poi in G.Pois)
+            {
+                if ((poi.type == 1 && poi.done) || !G.IsDiscovered(poi.x, poi.y)) continue;
+                if (!WorldToVirtual(new Vector3(poi.x + 0.5f, poi.y + 0.5f, 0), out var pv)) continue;
+                if (poi.id == gm.SelPoi) { float bs = 2.4f * 16f * zoom / S; Brackets(new Rect(pv.x - bs / 2, pv.y - bs * 0.7f, bs, bs), 4, Palette.UIText); }
+                if (zoom >= 2f)
+                {
+                    string t = Game.PoiName(poi);
+                    var lr = new Rect(Mathf.Round(pv.x - PixelFont.Width(t) / 2f - 3), Mathf.Round(pv.y + 8), PixelFont.Width(t) + 6, 10);
+                    Fill(lr, new Color(0, 0, 0, 0.4f));
+                    Text(lr.x + 3, lr.y + 1, t, poi.type == 1 ? Palette.UIGood : Palette.UIText);
+                }
             }
             // Mauszeiger-Kachel
             if (gm.HoverValid && (PKInput.UsingTouch || !MouseOverUI))

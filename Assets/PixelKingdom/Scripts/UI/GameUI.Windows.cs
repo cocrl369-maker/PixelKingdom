@@ -185,7 +185,13 @@ namespace PixelKingdom
         void DrawRealm()
         {
             var p = G.Player;
-            var c = WindowFrame("Euer Reich: " + p.name, 520, 320, false);
+            var c = WindowFrame("Euer Reich: " + p.name, 520, 330, false);
+            string[] tabs = { "Rang", "Erlasse & Feste", "Siedlungen" };
+            for (int t = 0; t < tabs.Length; t++)
+                if (Button(new Rect(c.x + t * 104, c.y, 100, 15), tabs[t], true, null, null, realmTab == t)) realmTab = t;
+            c = new Rect(c.x, c.y + 21, c.width, c.height - 21);
+            if (realmTab == 1) { DrawEdicts(c); return; }
+            if (realmTab == 2) { DrawRealmSettlements(c); return; }
             // Rangleiter
             float x = c.x, y = c.y;
             for (int i = 0; i < Ranks.Count; i++)
@@ -243,10 +249,15 @@ namespace PixelKingdom
                 $"Kriege: {G.AtWarCount(p.id)}",
             };
             for (int i = 0; i < stats.Length; i++) Text(x + (i % 3) * 120, y + (i / 3) * 11, stats[i]);
-            y += 26;
+        }
 
-            // Siedlungsliste
-            Text(x, y, "Siedlungen (Klick zum Hinspringen)", Palette.UITextDim); y += 11;
+        int realmTab;
+
+        void DrawRealmSettlements(Rect c)
+        {
+            var p = G.Player;
+            float x = c.x, y = c.y;
+            Text(x, y, "Klick auf eine Siedlung springt dorthin.", Palette.UITextDim); y += 12;
             var list = new Rect(x, y, c.width, c.yMax - y);
             Fill(list, Palette.UIPanelDark);
             var sets = G.SettlementsOf(p.id).ToList();
@@ -267,6 +278,35 @@ namespace PixelKingdom
             }
             GUI.EndGroup();
             rects.Add(list);
+        }
+
+        void DrawEdicts(Rect c)
+        {
+            float x = c.x, y = c.y;
+            Text(x, y, $"__Erlasse__ ({G.S.edicts.Count}/{G.MaxEdicts} aktiv) – Gesetze, die euer Reich prägen. Verkünden kostet {(int)Edicts.ChangeCost} Gold.", Palette.UISand);
+            y += 14;
+            for (int e = 0; e < Edicts.Count; e++)
+            {
+                bool on = G.S.edicts.Contains(e);
+                bool can = G.CanToggleEdict(e, out string why);
+                var row = new Rect(x, y, c.width, 26);
+                Fill(row, on ? Palette.UIPanelLight : Palette.UIPanelDark);
+                if (Button(new Rect(x + 4, y + 6, 74, 14), on ? "Aufheben" : "Verkünden", on || can, on ? "Erlass aufheben (kostenlos)" : (can ? "Erlass verkünden" : why), on ? "close" : "scroll", on))
+                    G.ToggleEdict(e);
+                Text(x + 86, y + 3, "__" + Edicts.Names[e] + "__" + (on ? "  (aktiv)" : ""), on ? Palette.UIGood : Palette.UIText);
+                var lines = PixelFont.Wrap(Edicts.Desc[e], (int)c.width - 92);
+                Text(x + 86, y + 14, lines[0] + (lines.Count > 1 ? " ..." : ""), Palette.UITextDim);
+                Tip(new Rect(x + 86, y, c.width - 86, 26), "__" + Edicts.Names[e] + "__\n" + Edicts.Desc[e] + (G.Player.rank < Edicts.MinRank[e] ? "\n__Ab Rang__: " + Ranks.Get(Edicts.MinRank[e]).Name : ""));
+                y += 28;
+            }
+            y += 6;
+            // Ritterturnier
+            Fill(new Rect(x, y, c.width, 1), Palette.UIPanelDark);
+            y += 6;
+            Text(x, y, "__Ritterturnier__", Palette.UISand);
+            Wrapped(new Rect(x, y + 12, c.width - 180, 40), $"Lanzen, Banner und Gäste aus dem ganzen Land: +25 Ansehen, +10 Zufriedenheit, bessere Beziehungen, 2 Ritter. Kostet {(int)Game.TournamentCost} Gold, alle 60 Tage.", Palette.UITextDim);
+            bool ok = G.CanTournament(out string twhy);
+            if (Button(new Rect(c.xMax - 170, y + 12, 170, 18), "Turnier ausrichten", ok, ok ? "Das Turnier beginnt sofort." : twhy, "flag", false, 1, true)) G.HoldTournament();
         }
 
         // ==================================================================
@@ -328,19 +368,25 @@ namespace PixelKingdom
         // ==================================================================
         void DrawMenu()
         {
-            var c = WindowFrame("Menü", 220, 190, true);
-            float y = c.y;
-            if (Button(new Rect(c.x, y, c.width, 16), "Weiterspielen")) Open = Window.None; y += 20;
-            if (Button(new Rect(c.x, y, c.width, 16), "Speichern (F5)", true, null, "save")) gm.SaveNow(); y += 20;
-            if (Button(new Rect(c.x, y, c.width, 16), "Palette: " + Palette.Name, true, null, "sun")) gm.CyclePalette(); y += 20;
+            var c = WindowFrame("Menü", 230, 252, true);
+            float y = c.y, bh = 16, gap = 4;
+            if (Button(new Rect(c.x, y, c.width, bh), "Weiterspielen", true, null, "play")) Open = Window.None; y += bh + gap;
+            if (Button(new Rect(c.x, y, c.width, bh), "Speichern (F5)", true, null, "save")) gm.SaveNow(); y += bh + gap + 4;
+            if (Button(new Rect(c.x, y, c.width, bh), "Musik: " + (AudioManager.MusicOn ? "An" : "Aus"), true, null, "horn", AudioManager.MusicOn)) AudioManager.MusicOn = !AudioManager.MusicOn; y += bh + gap;
+            if (Button(new Rect(c.x, y, c.width, bh), "Klänge: " + (AudioManager.SoundOn ? "An" : "Aus"), true, null, "check", AudioManager.SoundOn)) AudioManager.SoundOn = !AudioManager.SoundOn; y += bh + gap;
+            if (Button(new Rect(c.x, y, c.width, bh), "Tipps von Aldo: " + (Game.HintsEnabled ? "An" : "Aus"), true, "Meister Aldo erklärt Neues, sobald es zum ersten Mal vorkommt.", "book", Game.HintsEnabled))
+            { Game.HintsEnabled = !Game.HintsEnabled; PlayerPrefs.SetInt("pk_hints", Game.HintsEnabled ? 1 : 0); }
+            y += bh + gap;
+            if (Button(new Rect(c.x, y, c.width, bh), "Farben: " + Palette.Name, true, null, "sun")) gm.CyclePalette(); y += bh + gap;
             int extra = PlayerPrefs.GetInt("pk_uiscale", 0);
-            Text(c.x, y + 4, "UI-Größe");
-            if (Button(new Rect(c.x + 80, y, 30, 16), "-", S > 1)) PlayerPrefs.SetInt("pk_uiscale", extra - 1);
-            if (Button(new Rect(c.x + 114, y, 30, 16), "+", S < 8)) PlayerPrefs.SetInt("pk_uiscale", extra + 1);
-            y += 20;
-            if (Button(new Rect(c.x, y, c.width, 16), "Hilfe")) Open = Window.Help; y += 20;
-            if (Button(new Rect(c.x, y, c.width, 16), "Hauptmenü")) { Open = Window.None; gm.BackToMenu(); } y += 20;
-            if (Button(new Rect(c.x, y, c.width, 16), "Beenden")) { gm.SaveNow(); Application.Quit(); }
+            Text(c.x, y + 4, "Größe der Oberfläche");
+            if (Button(new Rect(c.xMax - 66, y, 30, bh), "-", S > 1)) PlayerPrefs.SetInt("pk_uiscale", extra - 1);
+            if (Button(new Rect(c.xMax - 32, y, 30, bh), "+", S < 8)) PlayerPrefs.SetInt("pk_uiscale", extra + 1);
+            y += bh + gap + 4;
+            if (Button(new Rect(c.x, y, c.width / 2 - 2, bh), "Hilfe")) Open = Window.Help;
+            if (Button(new Rect(c.x + c.width / 2 + 2, y, c.width / 2 - 2, bh), "Hauptmenü")) { Open = Window.None; gm.BackToMenu(); }
+            y += bh + gap;
+            if (Button(new Rect(c.x, y, c.width, bh), "Beenden")) { gm.SaveNow(); Application.Quit(); }
         }
 
         // ==================================================================

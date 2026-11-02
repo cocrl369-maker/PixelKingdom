@@ -20,6 +20,24 @@ namespace PixelKingdom
             return (h & 0xFFFF) / 65535f;
         }
 
+        static bool IsMountain(WorldMap map, int i) => map.biome[i] == Biome.Mountain || map.biome[i] == Biome.Snow;
+
+        /// <summary>Ist dieses Feld das höchste Gebirgsfeld seines 3x3-Blocks?</summary>
+        static bool IsBlockPeak(WorldMap map, int x, int y)
+        {
+            int bx = x / 3 * 3, by = y / 3 * 3;
+            int best = -1; float bh = float.MinValue;
+            for (int yy = by; yy < by + 3; yy++)
+                for (int xx = bx; xx < bx + 3; xx++)
+                {
+                    if (!WorldMap.In(xx, yy)) continue;
+                    int j = WorldMap.Idx(xx, yy);
+                    if (!IsMountain(map, j) || map.deposit[j] != 0) continue;
+                    if (map.h[j] > bh) { bh = map.h[j]; best = j; }
+                }
+            return best == WorldMap.Idx(x, y);
+        }
+
         public static void ForTile(WorldMap map, int x, int y, List<Placed> outList)
         {
             int i = WorldMap.Idx(x, y);
@@ -35,9 +53,9 @@ namespace PixelKingdom
             }
             if (b == Biome.Mountain || b == Biome.Snow)
             {
-                // Wenige, große Massive auf einem lockeren Raster statt eines Berges pro Kachel
-                int ox = (y / 4) % 2 == 0 ? 0 : 3;
-                if ((x + ox) % 6 == 0 && y % 4 == 0)
+                // Geschlossene Gebirgsketten: in jedem 3x3-Block steht ein Massiv auf dem höchsten Gebirgsfeld.
+                // Die Massive sind breiter als 3 Felder und überlappen sich daher lückenlos.
+                if (IsBlockPeak(map, x, y))
                 {
                     int dens = 0; bool snowy = b == Biome.Snow || map.h[i] > 0.88f;
                     for (int dy = -2; dy <= 2; dy++)
@@ -49,9 +67,8 @@ namespace PixelKingdom
                             if (nb == Biome.Mountain || nb == Biome.Snow) dens++;
                             if (nb == Biome.Snow) snowy = true;
                         }
-                    string n = dens >= 14 ? (snowy ? "m_huge" : "m_big") : dens >= 7 ? (snowy ? "m_big_s" : "m_big") : (snowy ? "m_mid_s" : "m_mid");
-                    if (dens < 3) n = snowy ? "m_snow0" : "m_rock0";
-                    outList.Add(new Placed(n, cx + (R(x, y, 3) - 0.5f) * 0.8f, y + 0.1f + R(x, y, 4) * 0.4f, false, false, R(x, y, 5) < 0.5f));
+                    string n = dens >= 16 ? (snowy ? "m_huge" : "m_big") : dens >= 8 ? (snowy ? "m_big_s" : "m_big") : (snowy ? "m_mid_s" : "m_mid");
+                    outList.Add(new Placed(n, cx + (R(x, y, 3) - 0.5f) * 0.5f, y + 0.1f + R(x, y, 4) * 0.3f, false, false, R(x, y, 5) < 0.5f));
                 }
                 else if (R(x, y, 6) < 0.12f) outList.Add(new Placed("r_rock", cx, y + 0.4f));
             }
@@ -208,6 +225,10 @@ namespace PixelKingdom
                 var t = Find((x, y) => Free(x - 1, y) && Free(x + 1, y) && Free(x, y + 1), true, 1.5f);
                 if (t.x >= 0) { Use(t.x - 1, t.y); Use(t.x + 1, t.y); Use(t.x, t.y + 1); Use(t.x - 1, t.y + 1); Use(t.x + 1, t.y + 1); Put("b_Kathedrale", t); }
             }
+            if (s.buildings[(int)BType.Kloster] > 0) Put("b_Kloster", Find((x, y) => Free(x + 1, y), false, 2.5f));
+            if (s.buildings[(int)BType.Turnierplatz] > 0) { var tt = Find((x, y) => Free(x - 1, y) && Free(x + 1, y), false, 2f); if (tt.x >= 0) { Use(tt.x - 1, tt.y); Use(tt.x + 1, tt.y); } Put("b_Turnierplatz", tt, true); }
+            for (int k = 0; k < Math.Min(2, s.buildings[(int)BType.Windmuehle]); k++)
+                Put("b_Windmuehle", Find((x, y) => map.biome[WorldMap.Idx(x, y)] == Biome.Fertile || map.biome[WorldMap.Idx(x, y)] == Biome.Grass, false, 2f));
             BType[] inner = { BType.Markt, BType.Taverne, BType.Kapelle, BType.Kaserne, BType.Archerie, BType.Stall, BType.Werkstatt, BType.Lagerhaus, BType.Schmiede, BType.Brunnen };
             foreach (var bt in inner)
                 for (int k = 0; k < Math.Min(3, s.buildings[(int)bt]); k++)

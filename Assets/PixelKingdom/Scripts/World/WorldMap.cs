@@ -7,9 +7,9 @@ namespace PixelKingdom
     /// <summary>Statische Weltkarte (aus dem Seed erzeugt) + veränderliche Laufzeitdaten (Besitz, Erkundung).</summary>
     public class WorldMap
     {
-        public const int W = 400, H = 280;
+        public const int W = 480, H = 336;
         /// <summary>Maßstab gegenüber der ursprünglichen Kartenplanung (320x224).</summary>
-        public const float Scale = 1.25f;
+        public const float Scale = 1.5f;
         public const float Sea = 0.40f;
         public static readonly string[] ContinentNames = { "Mittland", "Nordlande", "Südreich", "Inselbund" };
 

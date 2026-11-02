@@ -61,6 +61,7 @@ namespace PixelKingdom
         None = -1,
         Wohnhaus, Bauernhof, Fischerhuette, Holzfaeller, Steinbruch, Mine, Lagerhaus, Markt, Taverne,
         Kapelle, Brunnen, Schmiede, Kaserne, Archerie, Stall, Mauer, Burg, Hafen, Kathedrale, Werkstatt, Goldmine,
+        Windmuehle, Kloster, Turnierplatz,
     }
 
     public enum TerrainNeed { None, Coast, Forest, Hills, Mountain, Fertile, Iron, Gold }
@@ -140,6 +141,12 @@ namespace PixelKingdom
                 Cost = R(wood: 100, stone: 30, iron: 15, gold: 60), Days = 6, MinRank = 3, Max = 1 });
             Add(new BuildingDef { Type = BType.Goldmine, Name = "Goldmine", Icon = "gold", Desc = "Fördert Golderz. Braucht ein Goldvorkommen (funkelnde Felsen) im Gebiet.",
                 Cost = R(wood: 60, stone: 40, iron: 10, gold: 40), Days = 7, Jobs = 6, Prod = R(gold: 4.0f), Need = TerrainNeed.Gold, MinRank = 2, Max = 3 });
+            Add(new BuildingDef { Type = BType.Windmuehle, Name = "Windmühle", Icon = "farm", Desc = "Mahlt Korn: Bauernhöfe dieser Siedlung liefern 20% mehr (bis zu 2 Mühlen).",
+                Cost = R(wood: 45, stone: 15, gold: 20), Days = 4, Jobs = 1, Max = 2 });
+            Add(new BuildingDef { Type = BType.Kloster, Name = "Kloster", Icon = "chapel", Desc = "Mönche pflegen Kranke und schreiben Chroniken. Viel Ansehen und Zufriedenheit.",
+                Cost = R(wood: 60, stone: 90, gold: 80), Days = 10, Jobs = 3, Prod = R(food: 1.0f), Happiness = 5, Prestige = 0.8f, MinRank = 2, Max = 1 });
+            Add(new BuildingDef { Type = BType.Turnierplatz, Name = "Turnierplatz", Icon = "flag", Desc = "Ermöglicht Ritterturniere (Reich-Übersicht): Ansehen, gute Laune und Freunde.",
+                Cost = R(wood: 80, stone: 20, gold: 100), Days = 6, Happiness = 4, Prestige = 0.3f, MinRank = 3, Max = 1 });
         }
 
         public static BuildingDef Get(BType t) => All[(int)t];
@@ -204,7 +211,25 @@ namespace PixelKingdom
         public static readonly string[] Names = { "Neutral", "Krieg", "Waffenruhe", "Nichtangriff", "Bündnis" };
     }
 
-    public enum ArmyMission { Idle = 0, Move = 1, Attack = 2, Raid = 3, Return = 4, Found = 5, Explore = 6 }
+    public enum ArmyMission { Idle = 0, Move = 1, Attack = 2, Raid = 3, Return = 4, Found = 5, Explore = 6, Poi = 7 }
+
+    /// <summary>Erlasse: Gesetze, die das Reich in eine Richtung lenken. Je Rang ein Erlass mehr.</summary>
+    public static class Edicts
+    {
+        public const int Count = 5;
+        public const int Wehrpflicht = 0, Marktrecht = 1, Erntedank = 2, FreieBauern = 3, Pilgerwege = 4;
+        public static readonly string[] Names = { "Wehrpflicht", "Marktrecht", "Erntedank", "Freie Bauern", "Pilgerwege" };
+        public static readonly string[] Desc =
+        {
+            "Mehr Bürger verteidigen die Städte (+60% Aufgebot). Die Leute murren (-4 Zufriedenheit).",
+            "Händler zahlen gern: +15% Steuern, wenn ihr einen Markt habt.",
+            "Gemeinsame Ernte: +10% Nahrung. Das Fest kostet 1 Gold pro Siedlung und Tag.",
+            "Weniger Frondienst: +6 Zufriedenheit, aber 20% weniger Steuern.",
+            "Pilger bringen Ruhm: +0,5 Ansehen pro Tag je Kapelle, Kloster oder Kathedrale. Kostet 0,5 Nahrung pro Siedlung und Tag.",
+        };
+        public static readonly int[] MinRank = { 1, 1, 1, 2, 2 };
+        public const float ChangeCost = 30f;
+    }
 
     public enum Season { Fruehling, Sommer, Herbst, Winter }
 

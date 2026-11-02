@@ -25,7 +25,7 @@ namespace PixelKingdom
     /// </summary>
     public partial class Game
     {
-        const string Alda = "Alda, Chronistin";
+        const string Aldo = "Meister Aldo, Chronist";
         const string Bero = "Hauptmann Bero";
         const string Malrik = "Kaiser Malrik";
 
@@ -40,49 +40,49 @@ namespace PixelKingdom
             new Chapter
             {
                 Title = "Kapitel 1", Subtitle = "Ein bescheidener Anfang",
-                Intro = g => L((Alda, "advisor", "Willkommen, Vorsteher. Dies ist euer Dorf – ein paar Hütten, ein Acker, viel Hoffnung."),
-                               (Alda, "advisor", "Die Leute brauchen Holz, Nahrung und Dächer über dem Kopf. Wählt euer Dorf und öffnet den Reiter 'Bauen'."),
-                               (Alda, "advisor", "Niemand bedroht uns hier draußen. Lasst euch Zeit – ein starkes Dorf ist das beste Fundament.")),
+                Intro = g => L((Aldo, "advisor", "Willkommen, Vorsteher. Dies ist euer Dorf – ein paar Hütten, ein Acker, viel Hoffnung."),
+                               (Aldo, "advisor", "Die Leute brauchen Holz, Nahrung und Dächer über dem Kopf. Wählt euer Dorf und öffnet den Reiter 'Bauen'."),
+                               (Aldo, "advisor", "Niemand bedroht uns hier draußen. Lasst euch Zeit – ein starkes Dorf ist das beste Fundament.")),
                 Objectives = g => new List<Objective>
                 {
                     new Objective("Baut einen Holzfäller", g.CountBuildings(BType.Holzfaeller), 1),
                     new Objective("Habt 2 Bauernhöfe oder Fischerhütten", g.CountBuildings(BType.Bauernhof) + g.CountBuildings(BType.Fischerhuette), 2),
                     new Objective("Habt 4 Wohnhäuser", g.CountBuildings(BType.Wohnhaus), 4),
                 },
-                Outro = g => L((Alda, "advisor", "Das Dorf wächst. Rauch steigt aus den Kaminen, Kinder spielen am Bach.")),
+                Outro = g => L((Aldo, "advisor", "Das Dorf wächst. Rauch steigt aus den Kaminen, Kinder spielen am Bach.")),
                 Reward = g => { g.Player.res[(int)Res.Gold] += 60; g.Player.res[(int)Res.Wood] += 40; }, RewardText = "+60 Gold, +40 Holz",
             },
             // ---------------------------------------------------------------- 2
             new Chapter
             {
                 Title = "Kapitel 2", Subtitle = "Vom Dorf zur Gemeinde",
-                Intro = g => L((Alda, "advisor", "Um eine Städtegemeinde zu werden, braucht ihr mehr Bewohner und etwas Ansehen."),
-                               (Alda, "advisor", "Zufriedene Bürger bekommen mehr Kinder. Eine Taverne und ein Brunnen helfen. Achtet auf die Steuern!"),
-                               (Alda, "advisor", "Öffnet die Reich-Übersicht (R), sobald ihr bereit seid aufzusteigen.")),
+                Intro = g => L((Aldo, "advisor", "Um eine Städtegemeinde zu werden, braucht ihr mehr Bewohner und etwas Ansehen."),
+                               (Aldo, "advisor", "Zufriedene Bürger bekommen mehr Kinder. Eine Taverne und ein Brunnen helfen. Achtet auf die Steuern!"),
+                               (Aldo, "advisor", "Öffnet die Reich-Übersicht (R), sobald ihr bereit seid aufzusteigen.")),
                 Objectives = g => new List<Objective>
                 {
                     new Objective("Erreicht 45 Bewohner", g.TotalPop(g.PlayerId), 45),
                     new Objective("Steigt zur Städtegemeinde auf", g.Player.rank, 1),
                 },
-                Outro = g => L((Alda, "advisor", "Eine Gemeinde! Die Händler kommen nun gern zu uns."),
-                               (Alda, "advisor", "Doch die Alten warnen: Die Winter in diesem Tal sind lang und hart.")),
+                Outro = g => L((Aldo, "advisor", "Eine Gemeinde! Die Händler kommen nun gern zu uns."),
+                               (Aldo, "advisor", "Doch die Alten warnen: Die Winter in diesem Tal sind lang und hart.")),
                 Reward = g => { g.Player.res[(int)Res.Gold] += 50; }, RewardText = "+50 Gold",
             },
             // ---------------------------------------------------------------- 3 (neu)
             new Chapter
             {
                 Title = "Kapitel 3", Subtitle = "Vorräte für den Winter",
-                Intro = g => L((Alda, "advisor", "Im Winter tragen die Felder kaum. Wer nicht vorsorgt, hungert."),
-                               (Alda, "advisor", "Baut ein Lagerhaus, füllt die Speicher und sorgt für sauberes Wasser. Eine ruhige Zeit – nutzt sie.")),
+                Intro = g => L((Aldo, "advisor", "Im Winter tragen die Felder kaum. Wer nicht vorsorgt, hungert."),
+                               (Aldo, "advisor", "Baut ein Lagerhaus, füllt die Speicher und sorgt für sauberes Wasser. Eine ruhige Zeit – nutzt sie.")),
                 Objectives = g => new List<Objective>
                 {
                     new Objective("Baut ein Lagerhaus", g.CountBuildings(BType.Lagerhaus), 1),
                     new Objective("Baut einen Brunnen", g.CountBuildings(BType.Brunnen), 1),
                     new Objective("Lagert 200 Nahrung", g.Player.res[(int)Res.Food], 200),
                 },
-                Outro = g => L((Alda, "advisor", "Die Speicher sind voll. Diesen Winter wird niemand hungern."),
+                Outro = g => L((Aldo, "advisor", "Die Speicher sind voll. Diesen Winter wird niemand hungern."),
                                (Bero, "knight", "Herr, Reisende berichten von anderen Herren hinter den Wäldern. Und von den Steuereintreibern des Kaisers."),
-                               (Alda, "advisor", "Hier sind zwei Späher. Schickt sie hinaus – wir müssen wissen, wer unsere Nachbarn sind.")),
+                               (Aldo, "advisor", "Hier sind zwei Späher. Schickt sie hinaus – wir müssen wissen, wer unsere Nachbarn sind.")),
                 Reward = g => { var c = g.Capital(g.Player); if (c != null) c.garrison[(int)UType.Spaeher] += 2; g.Player.prestige += 10; },
                 RewardText = "2 Späher, +10 Ansehen",
             },
@@ -91,17 +91,17 @@ namespace PixelKingdom
             {
                 Title = "Kapitel 4", Subtitle = "Fremde Banner",
                 Intro = g => L((Bero, "knight", "Die Welt ist größer, als wir dachten. Fürsten, freie Dörfer, Räuber – jeder will etwas."),
-                               (Alda, "advisor", "Mit Gold und Worten gewinnt man Freunde. Mit Schwertern gewinnt man Land. Beides hat seinen Preis."),
-                               (Alda, "advisor", "Öffnet die Heerführung (Taste M), um Späher und Heere zu befehligen. Siedler gründen neue Orte.")),
+                               (Aldo, "advisor", "Mit Gold und Worten gewinnt man Freunde. Mit Schwertern gewinnt man Land. Beides hat seinen Preis."),
+                               (Aldo, "advisor", "Öffnet die Heerführung (Taste M), um Späher und Heere zu befehligen. Siedler gründen neue Orte.")),
                 Objectives = g => new List<Objective>
                 {
                     new Objective("Lernt 3 Herrscher kennen", g.S.factions.Count(f => f.knownToPlayer != 0), 3),
                     new Objective("Herrscht über 2 Siedlungen", g.CountSettlements(g.PlayerId), 2),
                     new Objective("Schließt einen Vertrag (Handel, Pakt, Bündnis)", g.Player.relations.Any(r => r.trade || r.status >= (int)DipStatus.Pact) ? 1 : 0, 1),
                 },
-                Outro = g => L((Alda, "advisor", "Eine Botschaft, heimlich überbracht. Sie stammt von Flüchtlingen aus dem Osten:"),
+                Outro = g => L((Aldo, "advisor", "Eine Botschaft, heimlich überbracht. Sie stammt von Flüchtlingen aus dem Osten:"),
                                ("Brief", "scroll", "'Kaiser Malrik nimmt uns alles. Die Ernte, die Söhne, das Saatgut. Wer sich wehrt, hängt am Galgen von Valdoran.'"),
-                               (Alda, "advisor", "Valdoran... die Hauptstadt des Kaisers. Noch sind wir ihm zu klein, um ihn zu kümmern.")),
+                               (Aldo, "advisor", "Valdoran... die Hauptstadt des Kaisers. Noch sind wir ihm zu klein, um ihn zu kümmern.")),
                 Reward = g => { g.Player.prestige += 25; g.RevealEmperorCapital(); }, RewardText = "+25 Ansehen, Lage von Valdoran",
             },
             // ---------------------------------------------------------------- 5 (neu)
@@ -110,7 +110,7 @@ namespace PixelKingdom
                 Title = "Kapitel 5", Subtitle = "Gilden und Handwerk",
                 Intro = g => L((Gilda, "advisor", "Gilda, Meisterin der Schmiedegilde. Ich habe gehört, euer Ort hat Erz in den Hügeln?"),
                                (Gilda, "advisor", "Gebt mir eine Mine, eine Schmiede und einen Markt – und ich mache aus euren Bauern ein Volk von Handwerkern."),
-                               (Alda, "advisor", "Eisen und Waffen werden wir brauchen. Früher oder später.")),
+                               (Aldo, "advisor", "Eisen und Waffen werden wir brauchen. Früher oder später.")),
                 Objectives = g => new List<Objective>
                 {
                     new Objective("Baut eine Eisenmine", g.CountBuildings(BType.Mine), 1),
@@ -119,15 +119,15 @@ namespace PixelKingdom
                     new Objective("Lagert 20 Waffen", g.Player.res[(int)Res.Weapons], 20),
                 },
                 Outro = g => L((Gilda, "advisor", "Hört ihr das? Hämmer und Ambosse. Das ist der Klang eines Volkes, das sich nicht mehr ducken muss."),
-                               (Alda, "advisor", "Die kaiserlichen Steuereintreiber kommen inzwischen öfter. Sie fragen nach euch.")),
+                               (Aldo, "advisor", "Die kaiserlichen Steuereintreiber kommen inzwischen öfter. Sie fragen nach euch.")),
                 Reward = g => { g.Player.res[(int)Res.Gold] += 120; g.Player.res[(int)Res.Iron] += 30; }, RewardText = "+120 Gold, +30 Eisen",
             },
             // ---------------------------------------------------------------- 6
             new Chapter
             {
                 Title = "Kapitel 6", Subtitle = "Das Joch des Kaisers",
-                Intro = g => L((Alda, "advisor", "Der Kaiser presst die Fürsten aus, und die Fürsten pressen ihr Volk. Manche sind ihm treu, andere hassen ihn."),
-                               (Alda, "advisor", "Achtet auf den 'Druck des Kaiserreichs' bei den Aufgaben. Zahlt ihr den Zehnt, sinkt er. Trotzt ihr ihm, steigt er."),
+                Intro = g => L((Aldo, "advisor", "Der Kaiser presst die Fürsten aus, und die Fürsten pressen ihr Volk. Manche sind ihm treu, andere hassen ihn."),
+                               (Aldo, "advisor", "Achtet auf den 'Druck des Kaiserreichs' bei den Aufgaben. Zahlt ihr den Zehnt, sinkt er. Trotzt ihr ihm, steigt er."),
                                (Bero, "knight", "Wir brauchen Mauern und eine Burg. Und Männer, die kämpfen können.")),
                 Objectives = g => new List<Objective>
                 {
@@ -135,7 +135,7 @@ namespace PixelKingdom
                     new Objective("Baut eine Burg", g.CountBuildings(BType.Burg), 1),
                     new Objective("Gewinnt 2 Schlachten", g.S.battlesWon, 2),
                 },
-                Outro = g => L((Alda, "advisor", "Euer Name wird in den Tavernen geflüstert. Die Unterdrückten schöpfen Hoffnung."),
+                Outro = g => L((Aldo, "advisor", "Euer Name wird in den Tavernen geflüstert. Die Unterdrückten schöpfen Hoffnung."),
                                (Malrik, "emperor", "Ein Graf, der sich für einen König hält? Ich habe größere Narren am Galgen gesehen.")),
                 Reward = g => { g.Player.prestige += 40; g.Player.res[(int)Res.Gold] += 150; }, RewardText = "+40 Ansehen, +150 Gold",
             },
@@ -143,9 +143,9 @@ namespace PixelKingdom
             new Chapter
             {
                 Title = "Kapitel 7", Subtitle = "Der Bund der Freien",
-                Intro = g => L((Alda, "advisor", "Allein können wir Malrik nicht besiegen. Sucht Verbündete unter jenen, die den Kaiser fürchten – oder macht sie zu einem Teil eures Reiches."),
+                Intro = g => L((Aldo, "advisor", "Allein können wir Malrik nicht besiegen. Sucht Verbündete unter jenen, die den Kaiser fürchten – oder macht sie zu einem Teil eures Reiches."),
                                (Bero, "knight", "Und wir brauchen ein richtiges Heer. Ritter. Speere. Bogenschützen."),
-                               (Alda, "advisor", "Wann ihr euch erhebt, entscheidet ihr – in den Aufgaben oder der Reich-Übersicht. Doch wartet ihr zu lange, schlägt der Kaiser von selbst zu.")),
+                               (Aldo, "advisor", "Wann ihr euch erhebt, entscheidet ihr – in den Aufgaben oder der Reich-Übersicht. Doch wartet ihr zu lange, schlägt der Kaiser von selbst zu.")),
                 Objectives = g => new List<Objective>
                 {
                     new Objective("Steigt zum Fürstentum auf", g.Player.rank, 3),
@@ -154,21 +154,21 @@ namespace PixelKingdom
                     new Objective("Erhebt euch gegen den Kaiser", g.S.story.Has("emperor_war") || g.S.story.emperorDefeated ? 1 : 0, 1),
                 },
                 Outro = g => L((Bero, "knight", "Die Würfel sind gefallen. Für das Volk!"),
-                               (Alda, "advisor", "Die kaiserlichen Städte stöhnen unter den Steuern. Befreien wir sie, jubeln uns ihre Bürger zu.")),
+                               (Aldo, "advisor", "Die kaiserlichen Städte stöhnen unter den Steuern. Befreien wir sie, jubeln uns ihre Bürger zu.")),
                 Reward = g => { g.Player.prestige += 30; }, RewardText = "+30 Ansehen",
             },
             // ---------------------------------------------------------------- 8
             new Chapter
             {
                 Title = "Kapitel 8", Subtitle = "Krone des Volkes",
-                Intro = g => L((Alda, "advisor", "Befreit kaiserliche Städte. Manche erheben sich auch von selbst, wenn man ihnen Gold für Waffen schickt."),
-                               (Alda, "advisor", "Und das Volk braucht eine Krone, hinter der es sich sammeln kann: Werdet König.")),
+                Intro = g => L((Aldo, "advisor", "Befreit kaiserliche Städte. Manche erheben sich auch von selbst, wenn man ihnen Gold für Waffen schickt."),
+                               (Aldo, "advisor", "Und das Volk braucht eine Krone, hinter der es sich sammeln kann: Werdet König.")),
                 Objectives = g => new List<Objective>
                 {
                     new Objective("Steigt zum Königreich auf", g.Player.rank, 4),
                     new Objective("Befreit 2 kaiserliche Städte", g.S.story.flags.Count(f => f == "liberated"), 2),
                 },
-                Outro = g => L((Alda, "advisor", "Ein König, vom Volk getragen. Malrik hat nur noch Valdoran und seine Garde."),
+                Outro = g => L((Aldo, "advisor", "Ein König, vom Volk getragen. Malrik hat nur noch Valdoran und seine Garde."),
                                (Malrik, "emperor", "Kommt nur. Valdorans Mauern sind noch nie gefallen.")),
                 Reward = g => { g.Player.prestige += 50; g.Player.res[(int)Res.Weapons] += 60; }, RewardText = "+50 Ansehen, +60 Waffen",
             },
@@ -177,12 +177,12 @@ namespace PixelKingdom
             {
                 Title = "Kapitel 9", Subtitle = "Sturm auf Valdoran",
                 Intro = g => L((Bero, "knight", "Valdoran. Doppelte Mauern, eine Burg, die kaiserliche Garde. Ohne Rammen kommen wir nicht hinein."),
-                               (Alda, "advisor", "Baut eine Belagerungswerkstatt. Sammelt euer größtes Heer. Und dann – beendet die Tyrannei.")),
+                               (Aldo, "advisor", "Baut eine Belagerungswerkstatt. Sammelt euer größtes Heer. Und dann – beendet die Tyrannei.")),
                 Objectives = g => new List<Objective>
                 {
                     new Objective("Erobert Valdoran", g.S.story.emperorDefeated ? 1 : 0, 1),
                 },
-                Outro = g => L((Alda, "advisor", "Valdoran ist gefallen! Doch Malrik selbst ist entkommen – mit einem Schiff, im Schutz der Nacht."),
+                Outro = g => L((Aldo, "advisor", "Valdoran ist gefallen! Doch Malrik selbst ist entkommen – mit einem Schiff, im Schutz der Nacht."),
                                (Kael, "knight", "Ich bin Kael, einst General des Kaisers. Ein Teil der Garde hört noch auf mich... und auf Malriks Gold."),
                                (Kael, "knight", "Ihr habt eine Stadt erobert, kein Reich. Wir werden sehen, wem das Land wirklich folgt.")),
                 Reward = g => { g.Player.prestige += 100; g.Player.res[(int)Res.Gold] += 600; }, RewardText = "+100 Ansehen, +600 Gold",
@@ -191,15 +191,15 @@ namespace PixelKingdom
             new Chapter
             {
                 Title = "Kapitel 10", Subtitle = "Der Thronstreit",
-                Intro = g => L((Alda, "advisor", "General Kael hält mit 'Malriks Getreuen' die letzten kaiserlichen Festungen. Ihr könnt sie bezwingen – oder mit Gold und Geduld Frieden schließen."),
-                               (Alda, "advisor", "Die freien Städte beobachten euch genau. Seid ihr ein neuer Tyrann – oder etwas Besseres?")),
+                Intro = g => L((Aldo, "advisor", "General Kael hält mit 'Malriks Getreuen' die letzten kaiserlichen Festungen. Ihr könnt sie bezwingen – oder mit Gold und Geduld Frieden schließen."),
+                               (Aldo, "advisor", "Die freien Städte beobachten euch genau. Seid ihr ein neuer Tyrann – oder etwas Besseres?")),
                 OnStart = g => g.SpawnLoyalists(),
                 Objectives = g => new List<Objective>
                 {
                     new Objective("Bezwingt Malriks Getreue oder schließt Frieden", g.LoyalistsResolved() ? 1 : 0, 1),
                     new Objective("Steigt zum Kaiserreich auf", g.Player.rank, 5),
                 },
-                Outro = g => L((Alda, "advisor", "Ein Kaiser – doch einer, der für sein Volk regiert. Die Häfen sind wieder sicher."),
+                Outro = g => L((Aldo, "advisor", "Ein Kaiser – doch einer, der für sein Volk regiert. Die Häfen sind wieder sicher."),
                                (Bero, "knight", "Kapitäne berichten von Ländern jenseits des Meeres. Nordlande. Südreich. Ein Inselbund.")),
                 Reward = g => { g.S.seafaring = true; g.Player.prestige += 60; }, RewardText = "Seefahrt freigeschaltet, +60 Ansehen",
             },
@@ -207,15 +207,15 @@ namespace PixelKingdom
             new Chapter
             {
                 Title = "Kapitel 11", Subtitle = "Neue Ufer",
-                Intro = g => L((Alda, "advisor", "Mit einem Hafen können eure Heere und Siedler über das Meer fahren. Wählt eine Armee und zielt aufs Wasser."),
-                               (Alda, "advisor", "Die Herrscher dort kennen euch nicht. Handelt, verbündet euch – oder erobert.")),
+                Intro = g => L((Aldo, "advisor", "Mit einem Hafen können eure Heere und Siedler über das Meer fahren. Wählt eine Armee und zielt aufs Wasser."),
+                               (Aldo, "advisor", "Die Herrscher dort kennen euch nicht. Handelt, verbündet euch – oder erobert.")),
                 Objectives = g => new List<Objective>
                 {
                     new Objective("Baut einen Hafen", g.CountBuildings(BType.Hafen), 1),
                     new Objective("Entdeckt einen anderen Kontinent", g.ContinentsSeen(), 1),
                     new Objective("Siedlung oder Verbündeter in Übersee", g.OverseasFootholds(), 1),
                 },
-                Outro = g => L((Alda, "advisor", "Euer Banner weht nun jenseits des Meeres."),
+                Outro = g => L((Aldo, "advisor", "Euer Banner weht nun jenseits des Meeres."),
                                ("Brief", "scroll", "'Malrik lebt. Er hat sich im Südreich eine Festung gekauft und wirbt Söldner an. Er will zurück.'")),
                 Reward = g => { g.Player.prestige += 80; }, RewardText = "+80 Ansehen",
             },
@@ -224,21 +224,21 @@ namespace PixelKingdom
             {
                 Title = "Kapitel 12", Subtitle = "Der Kaiser im Exil",
                 Intro = g => L((Malrik, "emperor", "Ihr dachtet, ihr wärt mich los? Gold kauft Mauern, und Mauern kaufen Zeit."),
-                               (Alda, "advisor", "Seine Exilfestung liegt im Südreich. Bringt ein Heer mit Rammen übers Meer – oder gewinnt die Emire als Verbündete.")),
+                               (Aldo, "advisor", "Seine Exilfestung liegt im Südreich. Bringt ein Heer mit Rammen übers Meer – oder gewinnt die Emire als Verbündete.")),
                 OnStart = g => g.SpawnExile(),
                 Objectives = g => new List<Objective>
                 {
                     new Objective("Erobert Malriks Exilfestung", g.ExileTaken() ? 1 : 0, 1),
                 },
                 Outro = g => L((Malrik, "emperor", "...So endet es also. Nicht durch einen Kaiser – durch ein Dorf."),
-                               (Alda, "advisor", "Malrik ist gefangen. Die Tyrannei ist endgültig vorbei.")),
+                               (Aldo, "advisor", "Malrik ist gefangen. Die Tyrannei ist endgültig vorbei.")),
                 Reward = g => { g.Player.prestige += 150; g.Player.res[(int)Res.Gold] += 800; }, RewardText = "+150 Ansehen, +800 Gold",
             },
             // ---------------------------------------------------------------- 13
             new Chapter
             {
                 Title = "Kapitel 13", Subtitle = "Herrscher der Welt",
-                Intro = g => L((Alda, "advisor", "Eine letzte Aufgabe: Eint die Kontinente. Ein Kontinent gilt als geeint, wenn jedes Reich dort euch gehört oder euer Verbündeter ist.")),
+                Intro = g => L((Aldo, "advisor", "Eine letzte Aufgabe: Eint die Kontinente. Ein Kontinent gilt als geeint, wenn jedes Reich dort euch gehört oder euer Verbündeter ist.")),
                 Objectives = g => new List<Objective>
                 {
                     new Objective("Mittland geeint", g.ContinentUnited(0), 1),
@@ -246,8 +246,8 @@ namespace PixelKingdom
                     new Objective("Südreich geeint", g.ContinentUnited(2), 1),
                     new Objective("Inselbund geeint", g.ContinentUnited(3), 1),
                 },
-                Outro = g => L((Alda, "advisor", "Es ist vollbracht. Von einem Dorf mit zwei Hütten zum Herrscher der Welt."),
-                               (Alda, "advisor", "Ich lege die Feder nieder. Doch euer Reich lebt weiter – regiert es weise.")),
+                Outro = g => L((Aldo, "advisor", "Es ist vollbracht. Von einem Dorf mit zwei Hütten zum Herrscher der Welt."),
+                               (Aldo, "advisor", "Ich lege die Feder nieder. Doch euer Reich lebt weiter – regiert es weise.")),
                 Reward = g => { g.Player.prestige += 500; }, RewardText = "Sieg!",
             },
         };
@@ -306,7 +306,7 @@ namespace PixelKingdom
             float before = S.story.pressure;
             S.story.pressure = Math.Min(cap, S.story.pressure + rise);
             float now = S.story.pressure;
-            if (before < 40 && now >= 40) Say(Alda, "advisor", "Die Spione des Kaisers zählen unsere Speicher. Der Druck aus Valdoran wächst.");
+            if (before < 40 && now >= 40) Say(Aldo, "advisor", "Die Spione des Kaisers zählen unsere Speicher. Der Druck aus Valdoran wächst.");
             if (before < 80 && now >= 80) Say(Malrik, "emperor", "Meine Geduld ist nicht unendlich. Beugt das Knie – oder ich beuge es euch.");
             if (now >= 100 && S.story.chapter >= ChapterUprising)
             {
@@ -323,9 +323,55 @@ namespace PixelKingdom
             }
         }
 
+        // ==================================================================
+        //  Hinweise: Meister Aldo erklärt Neues, sobald es zum ersten Mal vorkommt
+        // ==================================================================
+        public static bool HintsEnabled = true;
+
+        public void Hint(string key, string text)
+        {
+            if (!HintsEnabled || Headless) return;
+            string flag = "hint_" + key;
+            if (S.story.Has(flag)) return;
+            S.story.Set(flag);
+            Say(Aldo, "advisor", text);
+        }
+
+        void HintsDay()
+        {
+            if (!HintsEnabled || Headless || Offline) return;
+            var p = Player;
+            var mine = SettlementsOf(p.id).ToList();
+            if (mine.Count == 0) return;
+            if (S.day > 3 && ArmiesOf(p.id).Any(a => a.units.Sum() > 0 && a.units[(int)UType.Spaeher] < a.units.Sum()))
+                Hint("first_army", "Euer erstes Heer! Klickt es an und dann mit Rechtsklick auf ein Ziel (am Tablet: antippen). Am Mauszeiger steht, was passieren wird. Alle Heere findet ihr in der Heerführung (M).");
+            if (Season == Season.Winter && S.day % Calendar.DaysPerSeason < 3)
+                Hint("winter", "Der Winter ist da. Die Felder tragen kaum noch – jetzt zeigt sich, ob die Speicher voll sind. Fischer fangen auch im Winter.");
+            if (p.res[(int)Res.Food] < TotalPop(p.id) * 0.3f && Delta(p.id)[(int)Res.Food] < 0)
+                Hint("hunger", "Die Speicher leeren sich! Baut Bauernhöfe oder Fischerhütten, oder stellt die Rationen in der Dorf-Übersicht auf 'Knapp'.");
+            var sad = mine.FirstOrDefault(s => s.happiness < 30);
+            if (sad != null) Hint("unhappy", $"In {sad.name} murren die Leute. Senkt die Steuern, baut eine Taverne oder einen Brunnen. Fahrt über die Zufriedenheit, um die Gründe zu sehen.");
+            if (p.rank >= 1) Hint("edicts", "Als Städtegemeinde dürft ihr Erlasse verkünden: in der Reich-Übersicht (R) unter 'Erlasse'. Jeder Rang erlaubt einen Erlass mehr – wählt, was zu eurem Reich passt.");
+            if (mine.Count == 1 && mine[0].pop >= 34 && Ranks.Get(p.rank).MaxSettlements > 1)
+                Hint("settlers", "Euer Dorf ist groß genug, um Siedler auszusenden. In der Dorf-Übersicht: 'Siedler aussenden' und dann einen Ort auf der Karte wählen – am besten mit Wald, Wasser und fruchtbarem Land.");
+            if (CountBuildings(BType.Markt) > 0) Hint("market", "Der Markt ist fertig! Im Reiter 'Markt' eures Dorfes kauft und verkauft ihr Waren. Die Preise schwanken – kauft billig, verkauft teuer.");
+            if (CountBuildings(BType.Bauernhof) >= 3) Hint("mill", "Drei Bauernhöfe! Eine Windmühle in derselben Siedlung steigert ihre Ernte um ein Fünftel.");
+            if (CountBuildings(BType.Turnierplatz) > 0) Hint("tournament", "Der Turnierplatz steht. In der Reich-Übersicht (R) könnt ihr nun Ritterturniere ausrichten: Ansehen, gute Laune und Freunde unter den Fürsten.");
+            if (S.story.pressure > 12) Hint("pressure", "Seht ihr die Leiste 'Druck' unter den Aufgaben? Sie zeigt, wie sehr der Kaiser euch beobachtet. Zahlt ihr den Zehnt, sinkt sie. Trotzt ihr ihm, steigt sie.");
+            if (AtWarCount(p.id) > 0) Hint("war", "Krieg! Feindliche Heere sind rot markiert. Mauern, Garnisonen und das Bürgeraufgebot schützen eure Städte. Friedensangebote macht ihr in der Diplomatie (G).");
+            if (S.day % 2 == 0)
+                foreach (var poi in S.pois)
+                {
+                    if (!IsDiscovered(poi.x, poi.y)) continue;
+                    if (poi.type == 0 && !poi.done) Hint("ruin", "Dort liegen alte Ruinen! Schickt ein Heer oder einen Späher hin: Wählt es aus und klickt mit Rechtsklick auf die Ruine. Vielleicht findet ihr Gold – oder Schlimmeres.");
+                    if (poi.type == 1 && !poi.done) Hint("camp", "Ein Räuberlager! Solange es steht, überfallen die Räuber eure Höfe in der Nähe, und die Leute fürchten sich. Hebt es mit einem Heer aus – es gibt Beute.");
+                }
+        }
+
         void StoryDay()
         {
             PressureDay();
+            HintsDay();
             var ch = CurrentChapter;
             if (ch == null) return;
             if (!S.story.chapterIntroShown)
@@ -503,12 +549,12 @@ namespace PixelKingdom
             if (f.isEmperor && !S.story.Has("met_emperor"))
             {
                 S.story.Set("met_emperor");
-                Say(Alda, "advisor", "Das schwarze Banner mit dem eisernen Adler – das Kaiserreich Valdor. Seid vorsichtig.");
+                Say(Aldo, "advisor", "Das schwarze Banner mit dem eisernen Adler – das Kaiserreich Valdor. Seid vorsichtig.");
             }
             else if (!S.story.Has("met_first"))
             {
                 S.story.Set("met_first");
-                Say(Alda, "advisor", $"Wir sind {f.leader} begegnet ({f.name}). Öffnet die Diplomatie (D), um mit ihnen zu verhandeln.");
+                Say(Aldo, "advisor", $"Wir sind {f.leader} begegnet ({f.name}). Öffnet die Diplomatie (D), um mit ihnen zu verhandeln.");
             }
         }
 
@@ -518,15 +564,15 @@ namespace PixelKingdom
             if (t == BType.Hafen && S.seafaring && !S.story.Has("first_harbor"))
             {
                 S.story.Set("first_harbor");
-                Say(Alda, "advisor", "Der Hafen ist fertig! Eure Armeen können nun über das Meer segeln.");
+                Say(Aldo, "advisor", "Der Hafen ist fertig! Eure Armeen können nun über das Meer segeln.");
             }
         }
 
         void OnRankUp(int rank)
         {
             var rd = Ranks.Get(rank);
-            Say(Alda, "advisor", $"Es ist vollbracht: Ihr seid nun {rd.Ruler} – {rd.Name}. {rd.Desc}");
-            if (rank == (int)Rank.Kaiserreich) Say(Alda, "advisor", "Ein Kaiser – doch einer, der für sein Volk regiert. Möge die Geschichte gnädig urteilen.");
+            Say(Aldo, "advisor", $"Es ist vollbracht: Ihr seid nun {rd.Ruler} – {rd.Name}. {rd.Desc}");
+            if (rank == (int)Rank.Kaiserreich) Say(Aldo, "advisor", "Ein Kaiser – doch einer, der für sein Volk regiert. Möge die Geschichte gnädig urteilen.");
         }
 
         void OnSettlementFounded(SettlementData s) { }

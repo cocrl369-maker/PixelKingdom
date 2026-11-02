@@ -8,7 +8,7 @@ namespace PixelKingdom
     [Serializable]
     public class GameState
     {
-        public const int CurrentVersion = 2;   // 2 = größere Welt (400x280)
+        public const int CurrentVersion = 3;   // 3 = Welt 480x336, Ruinen, Räuberlager, Erlasse
         public int version = CurrentVersion;
         public int seed;
         public int day;
@@ -33,6 +33,9 @@ namespace PixelKingdom
         public List<ArmyData> armies = new List<ArmyData>();
         public List<LogEntry> log = new List<LogEntry>();
         public List<PendingEvent> events = new List<PendingEvent>();
+        public List<PoiData> pois = new List<PoiData>();
+        public List<int> edicts = new List<int>();
+        public int lastTournamentDay = -999;
         public StoryData story = new StoryData();
     }
 
@@ -121,6 +124,16 @@ namespace PixelKingdom
         public float morale = 1f;
         public int home = -1;
         public bool atSea;
+    }
+
+    /// <summary>Ort auf der Karte: 0 = Ruine, 1 = Räuberlager.</summary>
+    [Serializable]
+    public class PoiData
+    {
+        public int id, type, x, y, seed;
+        public bool done;
+        public int[] guards = new int[Units.Count];
+        public int nextRaid;
     }
 
     [Serializable]

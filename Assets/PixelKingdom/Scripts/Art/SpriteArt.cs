@@ -575,6 +575,120 @@ namespace PixelKingdom
             c.Set(x0 + 6, gy - 1, IronL); c.Set(x0 + 16, gy - 1, IronL);
         }
 
+        static void Windmuehle(PixelCanvas c, int cx, int gy)
+        {
+            // runder Turm, kegelförmig
+            for (int y = gy - 16; y <= gy; y++)
+            {
+                int half = 4 + (y - (gy - 16)) / 6;
+                for (int x = cx - half; x <= cx + half; x++) c.Set(x, y, x > cx + half / 2 ? PlasterD : Plaster);
+            }
+            c.HLine(cx - 6, cx + 6, gy, StoneD);
+            DoorAt(c, cx - 1, gy - 4, 3, 4, true);
+            Window(c, cx, gy - 11, 1, 2);
+            c.Tri(cx - 6, gy - 16, cx, gy - 23, cx + 6, gy - 16, RoofBrown.Mid);
+            c.Tri(cx, gy - 16, cx, gy - 23, cx + 6, gy - 16, RoofBrown.Dark);
+            // Flügel (X)
+            int hx = cx, hy = gy - 18;
+            for (int k = -11; k <= 11; k++)
+            {
+                c.Set(hx + k, hy + k, Beam); c.Set(hx + k, hy - k, Beam);
+                if (System.Math.Abs(k) > 3)
+                {
+                    int sgn = k > 0 ? 1 : -1;
+                    c.Set(hx + k, hy + k - sgn, Cloth); c.Set(hx + k + sgn, hy + k, Cloth);
+                    c.Set(hx + k, hy - k + sgn, Cloth); c.Set(hx + k - sgn, hy - k, Cloth);
+                }
+            }
+            c.Rect(hx - 1, hy - 1, 3, 3, Beam);
+        }
+
+        static void Kloster(PixelCanvas c, int cx, int gy)
+        {
+            // Kreuzgang-Mauer mit Klosterkirche
+            int w = 30, x0 = cx - w / 2;
+            Wall(c, x0, gy - 6, w, 7, WallStyle.Stone);
+            for (int k = 0; k < 6; k++) { c.Rect(x0 + 2 + k * 5, gy - 4, 3, 5, K); c.Set(x0 + 2 + k * 5, gy - 4, Px.Clear); c.Set(x0 + 4 + k * 5, gy - 4, Px.Clear); }
+            RoofArea(c, x0 - 1, gy - 10, w + 2, 4, RoofRed);
+            // Kirche dahinter
+            int kx = cx - 8;
+            Wall(c, kx, gy - 20, 16, 10, WallStyle.White);
+            RoofArea(c, kx - 1, gy - 26, 18, 6, RoofSlate, 2);
+            Wall(c, kx + 13, gy - 30, 6, 20, WallStyle.White);
+            c.Tri(kx + 12, gy - 30, kx + 16, gy - 38, kx + 20, gy - 30, RoofSlate.Mid);
+            c.Tri(kx + 16, gy - 30, kx + 16, gy - 38, kx + 20, gy - 30, RoofSlate.Dark);
+            c.VLine(kx + 16, gy - 42, gy - 38, Gold); c.HLine(kx + 15, kx + 17, gy - 41, Gold);
+            c.Ellipse(kx + 7, gy - 16, 2, 2, WinFrame); c.Set(kx + 7, gy - 16, Blue);
+            // Klostergarten
+            c.Rect(x0 - 6, gy - 2, 5, 3, H("#4E8A34")); c.Set(x0 - 5, gy - 2, Red); c.Set(x0 - 3, gy - 1, Gold);
+        }
+
+        static void Turnierplatz(PixelCanvas c, int cx, int gy)
+        {
+            // Schranken
+            c.HLine(cx - 18, cx + 18, gy - 3, LogL); c.HLine(cx - 18, cx + 18, gy - 2, LogD);
+            for (int x = cx - 18; x <= cx + 18; x += 6) c.VLine(x, gy - 5, gy, Log);
+            // Zelte mit Wimpeln
+            foreach (int tx in new[] { cx - 13, cx + 13 })
+            {
+                bool left = tx < cx;
+                c.Tri(tx - 6, gy - 4, tx, gy - 14, tx + 6, gy - 4, left ? Red : Blue);
+                c.Tri(tx, gy - 14, tx + 6, gy - 4, tx + 1, gy - 4, left ? Red.Mul(0.75f) : Blue.Mul(0.75f));
+                for (int y = gy - 12; y <= gy - 4; y += 3) c.HLine(tx - 5 + (gy - 4 - y) / 2, tx + 5 - (gy - 4 - y) / 2, y, Cloth);
+                c.Rect(tx - 1, gy - 8, 3, 4, K);
+                c.VLine(tx, gy - 19, gy - 14, Beam); c.Rect(tx + 1, gy - 19, 3, 2, Px.Tint);
+            }
+            // Tribüne in der Mitte
+            c.Rect(cx - 6, gy - 10, 13, 6, Plank); c.HLine(cx - 6, cx + 6, gy - 10, PlankL);
+            c.Rect(cx - 7, gy - 13, 15, 3, Px.Tint); c.HLine(cx - 7, cx + 7, gy - 11, Px.TintDark);
+            c.Set(cx - 4, gy - 9, Skin); c.Set(cx, gy - 9, Skin); c.Set(cx + 4, gy - 9, Skin);
+        }
+
+        static void Ruine(PixelCanvas c, int cx, int gy)
+        {
+            var moss = H("#5E8C45");
+            // zerfallene Mauerreste
+            Wall(c, cx - 14, gy - 9, 6, 10, WallStyle.Stone);
+            c.Rect(cx - 14, gy - 9, 2, 2, Px.Clear); c.Set(cx - 10, gy - 9, Px.Clear);
+            Wall(c, cx + 6, gy - 13, 7, 14, WallStyle.Stone);
+            c.Rect(cx + 10, gy - 13, 3, 3, Px.Clear); c.Set(cx + 6, gy - 13, Px.Clear);
+            // Bogen in der Mitte
+            Wall(c, cx - 6, gy - 16, 3, 17, WallStyle.Stone);
+            Wall(c, cx + 1, gy - 16, 3, 17, WallStyle.Stone);
+            c.Rect(cx - 6, gy - 18, 10, 3, Stone); c.HLine(cx - 6, cx + 3, gy - 18, StoneL);
+            c.Rect(cx - 3, gy - 15, 4, 16, Px.Clear);
+            // Geröll und Moos
+            Block(c, cx - 4, gy, 3); Block(c, cx + 2, gy, 2); Block(c, cx - 9, gy, 3);
+            for (int k = 0; k < 14; k++)
+            {
+                int x = cx - 14 + (int)(PixelCanvas.Rnd(k, 3, 41) * 27), y = gy - 17 + (int)(PixelCanvas.Rnd(k, 4, 41) * 17);
+                if (c.Opaque(x, y)) c.Set(x, y, moss);
+            }
+        }
+
+        static void Raeuberlager(PixelCanvas c, int cx, int gy)
+        {
+            var tent = H("#7A6A55"); var tentD = H("#5A4C3C");
+            // Palisade hinten
+            for (int x = cx - 16; x <= cx + 16; x += 2) { c.VLine(x, gy - 12, gy - 6, LogD); c.Set(x, gy - 13, LogL); }
+            // Zelte
+            foreach (int tx in new[] { cx - 9, cx + 8 })
+            {
+                c.Tri(tx - 7, gy, tx, gy - 11, tx + 7, gy, tent);
+                c.Tri(tx, gy - 11, tx + 7, gy, tx + 1, gy, tentD);
+                c.Tri(tx - 2, gy, tx, gy - 5, tx + 2, gy, K);
+            }
+            // Lagerfeuer
+            c.Rect(cx - 2, gy - 1, 5, 2, LogD);
+            c.Set(cx, gy - 3, FireL); c.Set(cx - 1, gy - 2, Fire); c.Set(cx + 1, gy - 2, Fire); c.Set(cx, gy - 2, FireL); c.Set(cx, gy - 4, Fire);
+            // Totenkopf-Fahne
+            c.VLine(cx + 16, gy - 20, gy, Beam);
+            c.Rect(cx + 17, gy - 20, 6, 5, H("#2A2A2A"));
+            c.Set(cx + 19, gy - 19, WhiteL); c.Set(cx + 20, gy - 19, WhiteL); c.Set(cx + 19, gy - 18, WhiteL); c.Set(cx + 20, gy - 18, WhiteL);
+            // Beutekiste
+            Crate(c, cx - 3, gy - 6);
+        }
+
         // ------------------------------------------------------------------
         //  Ortszentren
         // ------------------------------------------------------------------
@@ -993,6 +1107,11 @@ namespace PixelKingdom
             Add("b_Kathedrale", 72, Kathedrale);
             Add("b_Werkstatt", 48, Werkstatt);
             Add("b_Burg", 80, Burg);
+            Add("b_Windmuehle", 48, Windmuehle);
+            Add("p_ruin", 48, Ruine);
+            Add("p_camp", 56, Raeuberlager);
+            Add("b_Kloster", 64, Kloster);
+            Add("b_Turnierplatz", 64, Turnierplatz);
             Add("b_Mauer", 32, (c, x, y) => Tower(c, x, y, true));
             // Zentren
             Add("c_dorf", 48, Dorfhaus);

@@ -37,7 +37,7 @@ namespace PixelKingdom
             return b;
         }
 
-        public int Levy(SettlementData s) => (int)(s.pop * 0.06f);
+        public int Levy(SettlementData s) => (int)(s.pop * 0.06f * (EdictOn(F(s.faction), Edicts.Wehrpflicht) ? 1.6f : 1f));
 
         public float DefenseStrength(SettlementData s)
         {
@@ -157,6 +157,9 @@ namespace PixelKingdom
         {
             if (a.settlers > 0 && a.units.Sum() == 0)
                 return CanFoundAt(a.faction, tx, ty, out string why) ? "Hier eine Siedlung gründen" : "Gründen nicht möglich: " + why;
+            var poi = PoiNear(tx + 0.5f, ty + 0.5f, 0.9f);
+            if (poi != null && target == null && G_IsDisc(poi.x, poi.y))
+                return poi.type == 0 ? (poi.done ? "Ruine (bereits durchsucht)" : "Ruine erkunden") : "Räuberlager angreifen";
             if (target != null)
             {
                 if (target.faction == a.faction) return "In " + target.name + " einrücken (Garnison)";
@@ -168,6 +171,8 @@ namespace PixelKingdom
             if (Map.MoveCost(WorldMap.Idx(tx, ty), CanSail(a.faction)) == float.MaxValue) return "Dort kann das Heer nicht hin";
             return "Hierher marschieren";
         }
+
+        bool G_IsDisc(int x, int y) => IsDiscovered(x, y);
 
         public bool CanSendSettlers(SettlementData s, out string why)
         {
@@ -324,6 +329,12 @@ namespace PixelKingdom
                 case ArmyMission.Explore:
                     ExploreNext(a);
                     return;
+                case ArmyMission.Poi:
+                    {
+                        var poi = Poi(a.target);
+                        if (poi != null) VisitPoi(a, poi); else a.mission = (int)ArmyMission.Idle;
+                        return;
+                    }
                 default:
                     {
                         a.mission = (int)ArmyMission.Idle;

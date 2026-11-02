@@ -75,7 +75,7 @@ namespace PixelKingdom
                     var of = F(o.faction);
                     if (of.isEmperor && f.loyalty > 0.4f) continue;
                     float d = Dist(mine.x, mine.y, o.x, o.y);
-                    if (d > 32) continue;
+                    if (d > 38) continue;
                     float score = o.pop * 0.5f - d * 2f - DefenseStrength(o) * 0.1f + (of.isFree ? 10 : 0) - RelValue(f.id, o.faction) * 0.3f;
                     if (score > bestScore) { bestScore = score; best = o; }
                 }
@@ -188,7 +188,7 @@ namespace PixelKingdom
                 if (o.faction == PlayerId && InPeace) continue; // Friedenszeit
                 if (S.day - o.lastBattleDay < 25) continue; // Atempause nach einem Kampf
                 float d = Dist(src.x, src.y, o.x, o.y);
-                if (d > 68) continue;
+                if (d > 80) continue;
                 if (Map.cont[WorldMap.Idx(o.x, o.y)] != Map.cont[WorldMap.Idx(src.x, src.y)]) continue;
                 float def = DefenseStrength(o);
                 if (def > avail * 0.9f && !(f.aggression > 0.7f && def < avail * 1.6f)) continue;

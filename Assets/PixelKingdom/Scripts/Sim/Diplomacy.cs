@@ -166,7 +166,7 @@ namespace PixelKingdom
                 {
                     var s1 = list[i]; var s2 = list[j];
                     if (s1.faction == s2.faction) continue;
-                    if (Dist(s1.x, s1.y, s2.x, s2.y) < 27) neighbours.Add(Key(s1.faction, s2.faction));
+                    if (Dist(s1.x, s1.y, s2.x, s2.y) < 32) neighbours.Add(Key(s1.faction, s2.faction));
                 }
         }
 
