@@ -10,7 +10,7 @@ Die Karte ist 2D in Schrägansicht wie in alten Spielen. Räumlich wirkt sie dur
 
 ## Starten
 
-1. **Unity 2022.3 LTS** oder **Unity 6** installieren. Getestet wird gegen die API von Unity 2021.3+.
+1. **Unity 6** (empfohlen, z. B. 6000.6.5f1) oder **Unity 2022.3 LTS** installieren.
 2. Im Unity Hub: *Add → Add project from disk* und diesen Ordner wählen. Falls der Hub nach der Version fragt, eine installierte 2022.3- oder 6000.x-Version auswählen.
 3. Eine beliebige Szene öffnen (z.B. die leere Standardszene) und **Play** drücken.
 
