@@ -38,7 +38,21 @@ namespace PixelKingdom
 
         Texture2D minimap; float minimapTimer; Color32[] minimapPx;
 
-        void Awake() { gm = GetComponent<GameManager>(); PixelFont.Init(); }
+        void Awake() { gm = GetComponent<GameManager>(); PixelFont.Init(); LoadLanguage(); }
+
+        /// <summary>Sprache aus den Einstellungen laden (beim ersten Start: Systemsprache).</summary>
+        public static void LoadLanguage()
+        {
+            int def = Application.systemLanguage == SystemLanguage.German ? 0 : 1;
+            Loc.Set((Loc.Lang)PlayerPrefs.GetInt("pk_lang", def));
+        }
+
+        void SetLanguage(Loc.Lang l)
+        {
+            Loc.Set(l);
+            PlayerPrefs.SetInt("pk_lang", (int)l);
+            PlayerPrefs.Save();
+        }
 
         // ------------------------------------------------------------------
         //  Zustand für den GameManager
@@ -84,21 +98,21 @@ namespace PixelKingdom
             if (!PKInput.UsingTouch) return true;
             if (armed == id && Time.unscaledTime - armedTime < 5f) { armed = null; pinTip = null; return true; }
             armed = id; armedTime = Time.unscaledTime;
-            PinTip((tip ?? "") + "\n> __Nochmal tippen zum Bestätigen__");
+            PinTip((tip ?? "") + Loc.T("\n> __Nochmal tippen zum Bestätigen__"));
             return false;
         }
 
         public void ShowTileInfo(int x, int y)
         {
             int ti = WorldMap.Idx(x, y);
-            if (!G.Map.disc[ti]) { PinTip("Unerforschtes Gebiet"); return; }
+            if (!G.Map.disc[ti]) { PinTip(Loc.T("Unerforschtes Gebiet")); return; }
             string info = "__" + G.Map.BiomeName(ti) + "__";
             string dep = WorldMap.DepositName(G.Map.deposit[ti]);
-            if (dep != null) info += "\n__Vorkommen__: " + dep;
-            if (G.Map.trees[ti] > 0) info += $"\n{G.Map.trees[ti]} Bäume";
-            else if (G.Map.baseTrees[ti] > 0) info += "\nabgeholzt (wächst nach)";
+            if (dep != null) info += Loc.T("\n__Vorkommen__: ") + dep;
+            if (G.Map.trees[ti] > 0) info += Loc.F("\n{0} Bäume", (G.Map.trees[ti]));
+            else if (G.Map.baseTrees[ti] > 0) info += Loc.T("\nabgeholzt (wächst nach)");
             int o = G.Map.owner[ti];
-            if (o >= 0) { var of = G.F(o); if (of != null) info += "\n" + (of.isPlayer ? "Euer Land" : of.name); }
+            if (o >= 0) { var of = G.F(o); if (of != null) info += "\n" + (of.isPlayer ? Loc.T("Euer Land") : of.name); }
             PinTip(info);
         }
 
@@ -141,9 +155,9 @@ namespace PixelKingdom
             if (G == null) return;
             switch (w)
             {
-                case Window.Armies: G.Hint("win_armies", "Die Heerführung: Links stehen eure Heere und Garnisonen, rechts die Ziele in der Nähe. 'Erobern' nimmt eine Stadt ein, 'Überfall' plündert nur, 'Hin' marschiert ohne Angriff. Steht ein Heer in einer eigenen Stadt, tauscht ihr unten Truppen mit der Garnison."); break;
-                case Window.Diplomacy: G.Hint("win_diplo", "Die Diplomatie: Links die Herrscher, die ihr kennt, rechts ihr Wesen und was sie wollen. Fahrt über eine Aktion – dort steht, wie gut eure Aussichten sind und warum."); break;
-                case Window.Realm: G.Hint("win_realm", "Die Reich-Übersicht hat drei Reiter: 'Rang' zeigt, was für den nächsten Aufstieg fehlt. 'Erlasse & Feste' für Gesetze und Turniere. 'Siedlungen' listet alle eure Orte."); break;
+                case Window.Armies: G.Hint("win_armies", Loc.T("Die Heerführung: Links stehen eure Heere und Garnisonen, rechts die Ziele in der Nähe. 'Erobern' nimmt eine Stadt ein, 'Überfall' plündert nur, 'Hin' marschiert ohne Angriff. Steht ein Heer in einer eigenen Stadt, tauscht ihr unten Truppen mit der Garnison.")); break;
+                case Window.Diplomacy: G.Hint("win_diplo", Loc.T("Die Diplomatie: Links die Herrscher, die ihr kennt, rechts ihr Wesen und was sie wollen. Fahrt über eine Aktion – dort steht, wie gut eure Aussichten sind und warum.")); break;
+                case Window.Realm: G.Hint("win_realm", Loc.T("Die Reich-Übersicht hat drei Reiter: 'Rang' zeigt, was für den nächsten Aufstieg fehlt. 'Erlasse & Feste' für Gesetze und Turniere. 'Siedlungen' listet alle eure Orte.")); break;
             }
         }
 
@@ -237,7 +251,7 @@ namespace PixelKingdom
             DrawToasts();
             DrawSelectionPanel();
             DrawModeHint();
-            if (gm.Paused && !IsBlocking) Centered(VH * 0.18f, "- PAUSE -", Palette.UIPanelDark, 2);
+            if (gm.Paused && !IsBlocking) Centered(VH * 0.18f, Loc.T("- PAUSE -"), Palette.UIPanelDark, 2);
         }
 
         /// <summary>Oberste Ebene: Fenster, Dialoge, Ereignisse, Einführung, Info-Kärtchen.</summary>
@@ -435,9 +449,9 @@ namespace PixelKingdom
             Panel(left);
             Icon(new Rect(9, 9, 12, 12), "crown", Palette.UIText);
             Text(25, 8, Ranks.Get(p.rank).Name, Palette.UIText);
-            Text(25, 19, $"Tag {G.S.day + 1}", Palette.UITextDim);
-            Text(70, 19, Calendar.SeasonNames[(int)G.Season] + " J" + Calendar.Year(G.S.day), Palette.UITextDim);
-            Tip(left, $"__{p.name}__\n__Datum__: {G.DateString()}\n__Ansehen__: {(int)p.prestige}\nKlick: Reich-Übersicht (R)");
+            Text(25, 19, Loc.F("Tag {0}", (G.S.day + 1)), Palette.UITextDim);
+            Text(70, 19, Loc.F("{0} J{1}", Calendar.SeasonNames[(int)G.Season], Calendar.Year(G.S.day)), Palette.UITextDim);
+            Tip(left, Loc.F("__{0}__\n__Datum__: {1}\n__Ansehen__: {2}\nKlick: Reich-Übersicht (R)", (p.name), (G.DateString()), ((int)p.prestige)));
             if (Clicked(left)) ToggleWindow(Window.Realm);
 
             // Mitte: Kacheln
@@ -465,14 +479,14 @@ namespace PixelKingdom
                 if (i < ResInfo.Count)
                 {
                     val = Num(p.res[i]);
-                    tip = $"__{ResInfo.Name(i)}__\n__Vorrat__: {(int)p.res[i]}" + (i != (int)Res.Gold ? $" / {(int)cap}" : "") + $"\n__Pro Tag__: {Signed(d[i])}";
+                    tip = Loc.F("__{0}__\n__Vorrat__: {1}", (ResInfo.Name(i)), ((int)p.res[i])) + (i != (int)Res.Gold ? $" / {(int)cap}" : "") + Loc.F("\n__Pro Tag__: {0}", (Signed(d[i])));
                     if (i != (int)Res.Gold) frac = p.res[i] / cap;
                     if (d[i] < -0.05f) col = Palette.UIGood;
-                    if (i == (int)Res.Food && d[i] < 0) tip += "\n__Achtung__: Nahrung nimmt ab!";
+                    if (i == (int)Res.Food && d[i] < 0) tip += Loc.T("\n__Achtung__: Nahrung nimmt ab!");
                 }
-                else if (i == 6) { val = Num(pop); tip = $"__Bevölkerung__: {(int)pop}\n__Soldaten__: {G.TotalSoldiers(p.id)}"; }
-                else if (i == 7) { val = ((int)happy).ToString(); tip = "__Zufriedenheit__\nDurchschnitt aller Siedlungen. Unter 25 drohen Abwanderung und Aufstände."; frac = happy / 100f; }
-                else { val = Num(p.prestige); tip = "__Ansehen__\nNötig für Rangaufstiege und Diplomatie."; }
+                else if (i == 6) { val = Num(pop); tip = Loc.F("__Bevölkerung__: {0}\n__Soldaten__: {1}", ((int)pop), (G.TotalSoldiers(p.id))); }
+                else if (i == 7) { val = ((int)happy).ToString(); tip = Loc.T("__Zufriedenheit__\nDurchschnitt aller Siedlungen. Unter 25 drohen Abwanderung und Aufstände."); frac = happy / 100f; }
+                else { val = Num(p.prestige); tip = Loc.T("__Ansehen__\nNötig für Rangaufstiege und Diplomatie."); }
                 // Balken unter dem Icon (wie im Vorbild)
                 if (frac >= 0) Bar(new Rect(r.x + 3, r.yMax - 4, r.width - 6, 2), frac, Palette.UIText, Palette.UIPanelDark);
                 var lr = new Rect(r.x - 2, r.yMax + 1, r.width + 4, 10);
@@ -484,16 +498,16 @@ namespace PixelKingdom
 
             // Rechts: Geschwindigkeit & Menü
             float bx = VW - 4 - 22;
-            if (Button(new Rect(bx, 4, 22, 18), "", true, "Menü (Esc)", "gear")) OpenWindow(Window.Menu);
+            if (Button(new Rect(bx, 4, 22, 18), "", true, Loc.T("Menü (Esc)"), "gear")) OpenWindow(Window.Menu);
             bx -= 26;
             for (int s = 3; s >= 1; s--)
             {
                 bool sel = !gm.Paused && gm.Speed == s;
-                if (Button(new Rect(bx, 4, 22, 18), s == 1 ? "1x" : s == 2 ? "2x" : "5x", true, $"Geschwindigkeit ({s})", null, sel)) { gm.Speed = s; gm.Paused = false; }
+                if (Button(new Rect(bx, 4, 22, 18), s == 1 ? "1x" : s == 2 ? "2x" : "5x", true, Loc.F("Geschwindigkeit ({0})", (s)), null, sel)) { gm.Speed = s; gm.Paused = false; }
                 bx -= 24;
             }
             Mark("speed", new Rect(bx, 4, VW - 4 - bx, 18));
-            if (Button(new Rect(bx, 4, 22, 18), "", true, "Pause (Leertaste)", gm.Paused ? "play" : "pause", gm.Paused)) gm.Paused = !gm.Paused;
+            if (Button(new Rect(bx, 4, 22, 18), "", true, Loc.T("Pause (Leertaste)"), gm.Paused ? "play" : "pause", gm.Paused)) gm.Paused = !gm.Paused;
         }
 
         // ------------------------------------------------------------------
@@ -504,11 +518,11 @@ namespace PixelKingdom
             float y = 40;
             (string icon, string tip, Window w)[] items =
             {
-                ("crown", "Reich & Rang (R)", Window.Realm),
-                ("army", "Heerführung (M): Heere befehligen und verwalten", Window.Armies),
-                ("handshake", "Diplomatie (G)", Window.Diplomacy),
-                ("book", "Chronik (L)", Window.Log),
-                ("scroll", "Hilfe (F1)", Window.Help),
+                ("crown", Loc.T("Reich & Rang (R)"), Window.Realm),
+                ("army", Loc.T("Heerführung (M): Heere befehligen und verwalten"), Window.Armies),
+                ("handshake", Loc.T("Diplomatie (G)"), Window.Diplomacy),
+                ("book", Loc.T("Chronik (L)"), Window.Log),
+                ("scroll", Loc.T("Hilfe (F1)"), Window.Help),
             };
             bool armiesKnown = G.ArmiesOf(G.PlayerId).Any() || G.TotalSoldiers(G.PlayerId) > 0 || G.Player.rank >= 1;
             bool diploKnown = G.Factions.Any(f => !f.isPlayer && f.alive && f.knownToPlayer != 0);
@@ -519,7 +533,7 @@ namespace PixelKingdom
                 if (Button(new Rect(4, y, 22, 20), "", true, it.tip, it.icon, Open == it.w)) ToggleWindow(it.w);
                 y += 23;
             }
-            if (Button(new Rect(4, y, 22, 20), "", true, "Zur Hauptstadt (H)", "house")) gm.FocusHome();
+            if (Button(new Rect(4, y, 22, 20), "", true, Loc.T("Zur Hauptstadt (H)"), "house")) gm.FocusHome();
             Mark("side", new Rect(4, 40, 22, y + 20 - 40));
         }
 
@@ -553,7 +567,7 @@ namespace PixelKingdom
                 gm.CamCtrl.JumpTo(new Vector2(mx, mz));
                 LastUIPress = Time.unscaledTime;
             }
-            Tip(r, "Weltkarte – klicken zum Springen");
+            Tip(r, Loc.T("Weltkarte – klicken zum Springen"));
         }
 
         void UpdateMinimap()
@@ -637,7 +651,7 @@ namespace PixelKingdom
             Panel(r);
             Mark("quest", r);
             PixelIcons.Draw(new Rect(x + 5, y + 4, 12, 12), "book", Palette.UIText);
-            string head = ch == null ? "Freies Spiel – die Welt gehört euch" : ch.Title + ": " + ch.Subtitle;
+            string head = ch == null ? Loc.T("Freies Spiel – die Welt gehört euch") : ch.Title + ": " + ch.Subtitle;
             if (PixelFont.Width(head) > w - 26) head = ch != null ? ch.Subtitle : head;
             Text(x + 21, y + 6, head, Palette.UIText);
             if (Clicked(new Rect(x, y, w, 16))) questOpen = !questOpen;
@@ -653,33 +667,33 @@ namespace PixelKingdom
                 foreach (var line in objLines[k]) { Text(x + 19, oy + 1, line, o.Done ? Palette.UITextDim : Palette.UIText); oy += 10; }
                 oy += 2;
             }
-            Tip(new Rect(x, y, w, oy - y), "__Aufgaben__\nDas aktuelle Kapitel der Geschichte. Ziele werden automatisch geprüft. Ihr bestimmt das Tempo – nichts davon läuft euch weg. Klick auf den Titel klappt ein/aus.");
+            Tip(new Rect(x, y, w, oy - y), Loc.T("__Aufgaben__\nDas aktuelle Kapitel der Geschichte. Ziele werden automatisch geprüft. Ihr bestimmt das Tempo – nichts davon läuft euch weg. Klick auf den Titel klappt ein/aus."));
             if (G.InPeace)
             {
                 Icon(new Rect(x + 5, oy, 12, 12), "dove", Palette.UIGood);
-                Text(x + 21, oy + 2, $"Friedenszeit: noch {G.PeaceDaysLeft} Tage", Palette.UIGood);
-                Tip(new Rect(x, oy, w, 12), "__Friedenszeit__\nNiemand greift euch an. Zeit, das Dorf auszubauen. Nach jedem Kapitel beginnt eine neue Friedenszeit.");
+                Text(x + 21, oy + 2, Loc.F("Friedenszeit: noch {0} Tage", (G.PeaceDaysLeft)), Palette.UIGood);
+                Tip(new Rect(x, oy, w, 12), Loc.T("__Friedenszeit__\nNiemand greift euch an. Zeit, das Dorf auszubauen. Nach jedem Kapitel beginnt eine neue Friedenszeit."));
                 oy += 13;
             }
             if (showPressure)
             {
                 float pr = G.S.story.pressure;
                 Icon(new Rect(x + 5, oy, 12, 12), "eagle", Palette.UIText);
-                Text(x + 21, oy + 2, "Druck", Palette.UIText);
+                Text(x + 21, oy + 2, Loc.T("Druck"), Palette.UIText);
                 Bar(new Rect(x + 52, oy + 4, w - 60, 5), pr / 100f, pr >= 80 ? Palette.UIBad : pr >= 50 ? Palette.UIGood : Palette.UISand);
-                Tip(new Rect(x, oy, w, 12), $"__Druck des Kaiserreichs__: {(int)pr}/100\nSteigt langsam mit eurem Wachstum und wenn ihr dem Kaiser trotzt. Sinkt, wenn ihr den Zehnt zahlt oder Geschenke schickt.\n__Ab 50__: Strafexpeditionen\n__Bei 100__: Der Kaiser erklärt den Krieg (ab Kapitel {Game.ChapterUprising + 1})");
+                Tip(new Rect(x, oy, w, 12), Loc.F("__Druck des Kaiserreichs__: {0}/100\nSteigt langsam mit eurem Wachstum und wenn ihr dem Kaiser trotzt. Sinkt, wenn ihr den Zehnt zahlt oder Geschenke schickt.\n__Ab 50__: Strafexpeditionen\n__Bei 100__: Der Kaiser erklärt den Krieg (ab Kapitel {1})", ((int)pr), (Game.ChapterUprising + 1)));
                 oy += 13;
             }
             else if (war)
             {
                 Icon(new Rect(x + 5, oy, 12, 12), "sword", Palette.UIGood);
-                Text(x + 21, oy + 2, "Krieg gegen den Kaiser!", Palette.UIGood);
+                Text(x + 21, oy + 2, Loc.T("Krieg gegen den Kaiser!"), Palette.UIGood);
                 oy += 13;
             }
             if (G.CanChallengeEmperor)
             {
-                if (Button(new Rect(x + 5, oy - 1, w - 10, 13), "Gegen den Kaiser erheben", true,
-                    "__Aufstand__\nIhr entscheidet, wann der Krieg gegen Kaiser Malrik beginnt. Kaisertreue Fürsten werden sich gegen euch stellen, Kaiserfeinde werden euch mögen.", "sword", false, 1, true))
+                if (Button(new Rect(x + 5, oy - 1, w - 10, 13), Loc.T("Gegen den Kaiser erheben"), true,
+                    Loc.T("__Aufstand__\nIhr entscheidet, wann der Krieg gegen Kaiser Malrik beginnt. Kaisertreue Fürsten werden sich gegen euch stellen, Kaiserfeinde werden euch mögen."), "sword", false, 1, true))
                     G.ChallengeEmperor();
                 oy += 13;
             }
@@ -749,8 +763,8 @@ namespace PixelKingdom
                     if (f != null && !mine)
                     {
                         var st = G.Status(G.PlayerId, f.id);
-                        if (st == DipStatus.War) sub += " KRIEG";
-                        else if (st == DipStatus.Alliance) sub += " verbündet";
+                        if (st == DipStatus.War) sub += Loc.T(" KRIEG");
+                        else if (st == DipStatus.Alliance) sub += Loc.T(" verbündet");
                     }
                     var subR = new Rect(Mathf.Round(v.x - PixelFont.Width(sub) / 2f) - 2, r.yMax, PixelFont.Width(sub) + 4, 10);
                     Fill(subR, new Color(0, 0, 0, 0.35f));
@@ -807,7 +821,7 @@ namespace PixelKingdom
                     string prev = G.OrderPreview(selA, gm.HoverX, gm.HoverY, ts, PKInput.Key(PKKey.Shift) || gm.RaidMode);
                     if (prev != null)
                     {
-                        string lbl = (PKInput.UsingTouch ? "Tippen: " : gm.CurrentMode == GameManager.Mode.TargetArmy ? "Klick: " : "Rechtsklick: ") + prev;
+                        string lbl = (PKInput.UsingTouch ? Loc.T("Tippen: ") : gm.CurrentMode == GameManager.Mode.TargetArmy ? Loc.T("Klick: ") : Loc.T("Rechtsklick: ")) + prev;
                         var pr = new Rect(Mathf.Round(pv.x + 10), Mathf.Round(pv.y + 8), PixelFont.Width(lbl) + 8, 12);
                         if (pr.xMax > VW - 4) pr.x = VW - 4 - pr.width;
                         Fill(pr, new Color(Palette.UIPanelDark.r, Palette.UIPanelDark.g, Palette.UIPanelDark.b, 0.9f));
@@ -821,10 +835,10 @@ namespace PixelKingdom
                     string info = G.Map.BiomeName(ti);
                     string dep = WorldMap.DepositName(G.Map.deposit[ti]);
                     if (dep != null) info += " - " + dep;
-                    if (G.Map.trees[ti] > 0) info += $" - {G.Map.trees[ti]} Bäume";
+                    if (G.Map.trees[ti] > 0) info += Loc.F(" - {0} Bäume", (G.Map.trees[ti]));
                     else if (G.Map.baseTrees[ti] > 0) info += " - abgeholzt";
                     int o = G.Map.owner[ti];
-                    if (o >= 0) { var of = G.F(o); if (of != null) info += " - " + (of.isPlayer ? "euer Land" : of.name); }
+                    if (o >= 0) { var of = G.F(o); if (of != null) info += " - " + (of.isPlayer ? Loc.T("euer Land") : of.name); }
                     float mw = Mathf.Min(160, VW * 0.17f), mh = mw * WorldMap.H / WorldMap.W;
                     var ir = new Rect(4, VH - mh - 22, PixelFont.Width(info) + 10, 13);
                     Fill(ir, new Color(Palette.UIPanelDark.r, Palette.UIPanelDark.g, Palette.UIPanelDark.b, 0.9f));
@@ -870,14 +884,14 @@ namespace PixelKingdom
                 bool prod = fn != null || way < 0.999f;
                 if (prod)
                 {
-                    lines.Add($"Ertrag hier: {Game.Rating(site * way)} ({Game.Diff(site * way)})");
+                    lines.Add(Loc.F("Ertrag hier: {0} ({1})", (Game.Rating(site * way)), (Game.Diff(site * way))));
                     var parts = new List<string>();
                     if (fn != null) parts.Add($"{fn}: {Game.Diff(site)}");
-                    if (way < 0.999f) parts.Add($"langer Weg: {Game.Diff(way)}");
+                    if (way < 0.999f) parts.Add(Loc.F("langer Weg: {0}", (Game.Diff(way))));
                     lines.Add(string.Join(", ", parts));
                 }
-                else lines.Add("Guter Bauplatz");
-                if (G.Map.owner[WorldMap.Idx(gm.HoverX, gm.HoverY)] < 0) lines.Add("Niemandsland - Nachbarn könnten Ärger machen");
+                else lines.Add(Loc.T("Guter Bauplatz"));
+                if (G.Map.owner[WorldMap.Idx(gm.HoverX, gm.HoverY)] < 0) lines.Add(Loc.T("Niemandsland - Nachbarn könnten Ärger machen"));
                 lc = Palette.UIGood;
             }
             else { lines.Add(why); lc = Palette.UIBad; }
@@ -928,8 +942,8 @@ namespace PixelKingdom
             if (PixelFont.Width(title) > w - 30) title = title.Substring(0, Mathf.Max(4, title.Length * (int)(w - 30) / Mathf.Max(1, PixelFont.Width(title)) - 1)) + ".";
             Text(r.x + 6, r.y + 4, title, Palette.UIText);
             int d = Mathf.Max(1, Mathf.CeilToInt(gm.OrderDays));
-            Text(r.x + 6, r.y + 15, $"{a.name}: Marsch ~{d} {(d == 1 ? "Tag" : "Tage")}", Palette.UITextDim);
-            if (Button(new Rect(r.xMax - 16, r.y + 3, 13, 12), "", true, "Abbrechen", "close")) { gm.CloseOrderMenu(); return; }
+            Text(r.x + 6, r.y + 15, Loc.F("{0}: Marsch ~{1} {2}", (a.name), (d), ((d == 1 ? Loc.T("Tag") : Loc.T("Tage")))), Palette.UITextDim);
+            if (Button(new Rect(r.xMax - 16, r.y + 3, 13, 12), "", true, Loc.T("Abbrechen"), "close")) { gm.CloseOrderMenu(); return; }
             float oy = r.y + 32;
             foreach (var o in opts)
             {
@@ -941,7 +955,7 @@ namespace PixelKingdom
                 }
                 oy += rowH;
             }
-            if (Button(new Rect(r.x + 6, r.yMax - 17, w - 12, 13), "Abbrechen")) gm.CloseOrderMenu();
+            if (Button(new Rect(r.x + 6, r.yMax - 17, w - 12, 13), Loc.T("Abbrechen"))) gm.CloseOrderMenu();
         }
 
         /// <summary>Eck-Klammern wie im Vorbild um die Auswahl.</summary>
@@ -960,18 +974,18 @@ namespace PixelKingdom
             string hint = null;
             if (gm.CurrentMode == GameManager.Mode.TargetArmy)
             {
-                hint = (PKInput.UsingTouch ? "Tippt" : "Klickt") + " auf das Ziel für das Heer: Gelände, eigene Stadt oder Feind  (" + (PKInput.UsingTouch ? "Zurück" : "Esc") + ": abbrechen)";
+                hint = (PKInput.UsingTouch ? Loc.T("Tippt") : Loc.T("Klickt")) + Loc.T(" auf das Ziel für das Heer: Gelände, eigene Stadt oder Feind  (") + (PKInput.UsingTouch ? Loc.T("Zurück") : Loc.T("Esc")) + Loc.T(": abbrechen)");
             }
             else if (gm.CurrentMode == GameManager.Mode.PlaceBuilding)
             {
                 var d = Buildings.Get(gm.PlaceType);
-                hint = (PKInput.UsingTouch ? "Tippt zweimal auf ein Feld für: " : "Linksklick auf ein Feld für: ") + d.Name
-                     + (PKInput.UsingTouch ? "  (Zurück: abbrechen)" : "  (Esc/Rechtsklick: abbrechen, Shift: mehrere)")
-                     + "\nGrün = mehr Ertrag als üblich, Gelb = weniger. Die Angabe vergleicht mit einem normalen " + d.Name + ".";
+                hint = (PKInput.UsingTouch ? Loc.T("Tippt zweimal auf ein Feld für: ") : Loc.T("Linksklick auf ein Feld für: ")) + d.Name
+                     + (PKInput.UsingTouch ? Loc.T("  (Zurück: abbrechen)") : Loc.T("  (Esc/Rechtsklick: abbrechen, Shift: mehrere)"))
+                     + Loc.T("\nGrün = mehr Ertrag als üblich, Gelb = weniger. Die Angabe vergleicht mit einem normalen ") + d.Name + ".";
             }
             else if (gm.CurrentMode == GameManager.Mode.PlaceSettlers)
             {
-                hint = PKInput.UsingTouch ? "Tippt auf den Ort für die neue Siedlung  (Zurück: abbrechen)" : "Linksklick: Ort für die neue Siedlung wählen  (Esc: abbrechen)";
+                hint = PKInput.UsingTouch ? Loc.T("Tippt auf den Ort für die neue Siedlung  (Zurück: abbrechen)") : Loc.T("Linksklick: Ort für die neue Siedlung wählen  (Esc: abbrechen)");
                 if (gm.HoverValid && !G.CanFoundAt(G.PlayerId, gm.HoverX, gm.HoverY, out string why)) hint += "\n" + why;
             }
             else
@@ -979,8 +993,8 @@ namespace PixelKingdom
                 var a = G.A(gm.SelArmy);
                 if (a != null && a.faction == G.PlayerId && a.path.Count == 0)
                     hint = PKInput.UsingTouch
-                        ? (a.settlers > 0 && a.units.Sum() == 0 ? "Tippt auf den Ort zum Siedeln" : "Tippt auf ein Ziel. Lange drücken auf eine Stadt: Überfall")
-                        : (a.settlers > 0 && a.units.Sum() == 0 ? "Rechtsklick: Ort zum Siedeln wählen" : "Rechtsklick: Ziel – Gelände, eigene Stadt oder Feind (Shift: Überfall)");
+                        ? (a.settlers > 0 && a.units.Sum() == 0 ? Loc.T("Tippt auf den Ort zum Siedeln") : Loc.T("Tippt auf ein Ziel. Lange drücken auf eine Stadt: Überfall"))
+                        : (a.settlers > 0 && a.units.Sum() == 0 ? Loc.T("Rechtsklick: Ort zum Siedeln wählen") : Loc.T("Rechtsklick: Ziel – Gelände, eigene Stadt oder Feind (Shift: Überfall)"));
             }
             if (hint == null) return;
             var lines = hint.Split('\n');

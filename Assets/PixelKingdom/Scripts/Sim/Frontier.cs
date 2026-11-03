@@ -20,11 +20,11 @@ namespace PixelKingdom
         {
             var d = Techs.All[t]; var p = Player;
             why = null;
-            if (S.techs.Contains(t)) { why = "Bereits erforscht"; return false; }
-            if (S.researching >= 0) { why = "Die Gelehrten sind beschäftigt: " + Techs.All[S.researching].Name; return false; }
-            if (p.rank < d.MinRank) { why = "Benötigt Rang: " + Ranks.Get(d.MinRank).Name; return false; }
-            if (d.Needs != BType.None && CountBuildings(d.Needs) == 0) { why = "Benötigt: " + Buildings.Get(d.Needs).Name; return false; }
-            if (p.res[(int)Res.Gold] < d.Gold || p.res[(int)Res.Wood] < d.Wood || p.res[(int)Res.Stone] < d.Stone || p.res[(int)Res.Iron] < d.Iron) { why = "Nicht genug Ressourcen"; return false; }
+            if (S.techs.Contains(t)) { why = Loc.T("Bereits erforscht"); return false; }
+            if (S.researching >= 0) { why = Loc.T("Die Gelehrten sind beschäftigt: ") + Techs.All[S.researching].Name; return false; }
+            if (p.rank < d.MinRank) { why = Loc.T("Benötigt Rang: ") + Ranks.Get(d.MinRank).Name; return false; }
+            if (d.Needs != BType.None && CountBuildings(d.Needs) == 0) { why = Loc.T("Benötigt: ") + Buildings.Get(d.Needs).Name; return false; }
+            if (p.res[(int)Res.Gold] < d.Gold || p.res[(int)Res.Wood] < d.Wood || p.res[(int)Res.Stone] < d.Stone || p.res[(int)Res.Iron] < d.Iron) { why = Loc.T("Nicht genug Ressourcen"); return false; }
             return true;
         }
 
@@ -34,7 +34,7 @@ namespace PixelKingdom
             var d = Techs.All[t]; var p = Player;
             p.res[(int)Res.Gold] -= d.Gold; p.res[(int)Res.Wood] -= d.Wood; p.res[(int)Res.Stone] -= d.Stone; p.res[(int)Res.Iron] -= d.Iron;
             S.researching = t; S.researchLeft = d.Days;
-            Notify($"Die Gelehrten beginnen: {d.Name}", 0);
+            Notify(Loc.F("Die Gelehrten beginnen: {0}", (d.Name)), 0);
         }
 
         /// <summary>Klöster und Kapellen beschleunigen die Gelehrten.</summary>
@@ -48,8 +48,8 @@ namespace PixelKingdom
             int t = S.researching;
             S.researching = -1;
             if (!S.techs.Contains(t)) S.techs.Add(t);
-            Notify($"Erforscht: {Techs.All[t].Name}! {Techs.All[t].Desc}", 1);
-            Hint("first_tech", "Euer erstes Wissen! Was erforscht ist, wirkt für immer und überall in eurem Reich. Neue Kenntnisse werden mit höherem Rang und neuen Gebäuden möglich.");
+            Notify(Loc.F("Erforscht: {0}! {1}", (Techs.All[t].Name), (Techs.All[t].Desc)), 1);
+            Hint("first_tech", Loc.T("Euer erstes Wissen! Was erforscht ist, wirkt für immer und überall in eurem Reich. Neue Kenntnisse werden mit höherem Rang und neuen Gebäuden möglich."));
         }
 
         /// <summary>Ertragsbonus durch Wissen für ein Gebäude.</summary>
@@ -133,19 +133,19 @@ namespace PixelKingdom
             var o = St(e.a); var s = St(e.c);
             if (o == null || s == null || F(o.faction) == null)
             {
-                v.Title = "Grenzstreit"; v.Icon = "handshake";
-                v.Text = "Der Streit um das Grenzland hat sich von selbst erledigt.";
-                v.Opt("Gut so");
+                v.Title = Loc.T("Grenzstreit"); v.Icon = "handshake";
+                v.Text = Loc.T("Der Streit um das Grenzland hat sich von selbst erledigt.");
+                v.Opt(Loc.T("Gut so"));
                 return false;
             }
             var of = F(o.faction);
             var bt = BuildingAt(s, e.b / 1000, e.b % 1000);
-            string what = bt.HasValue ? Buildings.Get(bt.Value).Name : "Außenposten";
-            v.Title = "Grenzstreit"; v.Icon = "handshake";
-            v.Text = $"Ein Bote aus {o.name} ({of.name}) beschwert sich: Euer {what} stehe auf Land, das seit jeher ihre Hirten und Holzfäller nutzen. 'Zahlt für die Weiderechte – oder zieht ab!'";
-            v.Opt($"Entschädigung zahlen ({(int)e.v} Gold, sie sind zufrieden)", Player.res[(int)Res.Gold] >= e.v);
-            v.Opt("Auf eurem Recht bestehen (Beziehung sinkt, +Ansehen)");
-            v.Opt($"Den {what} räumen (Beziehung steigt)", bt.HasValue);
+            string what = bt.HasValue ? Buildings.Get(bt.Value).Name : Loc.T("Außenposten");
+            v.Title = Loc.T("Grenzstreit"); v.Icon = "handshake";
+            v.Text = Loc.F("Ein Bote aus {0} ({1}) beschwert sich: Euer {2} stehe auf Land, das seit jeher ihre Hirten und Holzfäller nutzen. 'Zahlt für die Weiderechte – oder zieht ab!'", (o.name), (of.name), (what));
+            v.Opt(Loc.F("Entschädigung zahlen ({0} Gold, sie sind zufrieden)", ((int)e.v)), Player.res[(int)Res.Gold] >= e.v);
+            v.Opt(Loc.T("Auf eurem Recht bestehen (Beziehung sinkt, +Ansehen)"));
+            v.Opt(Loc.F("Den {0} räumen (Beziehung steigt)", (what)), bt.HasValue);
             return true;
         }
 
@@ -156,7 +156,7 @@ namespace PixelKingdom
             var p = Player;
             int x = e.b / 1000, y = e.b % 1000;
             if (option == 0 && p.res[(int)Res.Gold] >= e.v) { p.res[(int)Res.Gold] -= e.v; ModRel(p.id, o.faction, 6); }
-            else if (option == 2 && BuildingAt(s, x, y).HasValue) { RemoveBuildingAt(s, x, y); ModRel(p.id, o.faction, 10); Notify("Der Außenposten wurde geräumt.", 0); }
+            else if (option == 2 && BuildingAt(s, x, y).HasValue) { RemoveBuildingAt(s, x, y); ModRel(p.id, o.faction, 10); Notify(Loc.T("Der Außenposten wurde geräumt."), 0); }
             else { ModRel(p.id, o.faction, -12); p.prestige += 3; }
         }
 
@@ -213,8 +213,8 @@ namespace PixelKingdom
                 S.pois.Add(new PoiData { id = NewId(), type = 2, x = x, y = y, seed = Rng.Next(), nextRaid = S.day + 50 + Rng.Next(30) });
                 PoisVersion++;
                 Reveal(x, y, 2);
-                Notify($"Fahrendes Volk lagert unweit von {home.name}.", 1);
-                Hint("nomads", "Fahrendes Volk! Gaukler, Händler und Kesselflicker ohne festen Wohnsitz ziehen durchs Niemandsland. Schickt ein Heer oder einen Späher hin: Man kann mit ihnen handeln – oder sie einladen, sich bei euch niederzulassen. Lange bleiben sie nicht.");
+                Notify(Loc.F("Fahrendes Volk lagert unweit von {0}.", (home.name)), 1);
+                Hint("nomads", Loc.T("Fahrendes Volk! Gaukler, Händler und Kesselflicker ohne festen Wohnsitz ziehen durchs Niemandsland. Schickt ein Heer oder einen Späher hin: Man kann mit ihnen handeln – oder sie einladen, sich bei euch niederzulassen. Lange bleiben sie nicht."));
                 return;
             }
         }
@@ -234,7 +234,7 @@ namespace PixelKingdom
             a.mission = (int)ArmyMission.Idle;
             var f = F(a.faction);
             if (!f.isPlayer) return;
-            if (Dist((int)a.x, (int)a.y, p.x, p.y) > 3) { Notify("Das fahrende Volk ist schon weitergezogen.", 0); return; }
+            if (Dist((int)a.x, (int)a.y, p.x, p.y) > 3) { Notify(Loc.T("Das fahrende Volk ist schon weitergezogen."), 0); return; }
             SettlementData near = null; float bd = float.MaxValue;
             foreach (var s in SettlementsOf(f.id)) { float d = Dist(s.x, s.y, p.x, p.y); if (d < bd) { bd = d; near = s; } }
             QueueEvent(new PendingEvent { id = "nomads", a = near != null ? near.id : -1, b = p.id });
@@ -243,12 +243,12 @@ namespace PixelKingdom
         bool NomadsView(PendingEvent e, EventView v)
         {
             var s = St(e.a);
-            v.Title = "Fahrendes Volk"; v.Icon = "cart";
-            v.Text = "Bunte Planwagen, ein Feuer, Fiedelklänge. Die Älteste mustert eure Leute: 'Wir haben Salz, Felle und Geschichten aus fernen Ländern. Und wer weiß – vielleicht sind wir des Wanderns müde.'";
-            v.Opt("Handeln (40 Gold: Waren und Kunde von fernen Orten)", Player.res[(int)Res.Gold] >= 40);
-            v.Opt(s != null ? $"Einladen, in {s.name} zu bleiben (+10 Bewohner, -25 Nahrung)" : "Einladen, zu bleiben", s != null);
-            v.Opt("Sie in Frieden weiterziehen lassen");
-            v.Opt("Vertreiben (Ruhe im Land, aber die Leute murren)");
+            v.Title = Loc.T("Fahrendes Volk"); v.Icon = "cart";
+            v.Text = Loc.T("Bunte Planwagen, ein Feuer, Fiedelklänge. Die Älteste mustert eure Leute: 'Wir haben Salz, Felle und Geschichten aus fernen Ländern. Und wer weiß – vielleicht sind wir des Wanderns müde.'");
+            v.Opt(Loc.T("Handeln (40 Gold: Waren und Kunde von fernen Orten)"), Player.res[(int)Res.Gold] >= 40);
+            v.Opt(s != null ? Loc.F("Einladen, in {0} zu bleiben (+10 Bewohner, -25 Nahrung)", (s.name)) : Loc.T("Einladen, zu bleiben"), s != null);
+            v.Opt(Loc.T("Sie in Frieden weiterziehen lassen"));
+            v.Opt(Loc.T("Vertreiben (Ruhe im Land, aber die Leute murren)"));
             return true;
         }
 
@@ -261,14 +261,14 @@ namespace PixelKingdom
                 p.res[(int)Res.Gold] -= 40;
                 p.res[(int)Res.Food] += 35; p.res[(int)Res.Wood] += 25; p.res[(int)Res.Iron] += 8;
                 if (n != null) Reveal(n.x, n.y, 22);
-                Notify("Ihr handelt mit dem fahrenden Volk: Salz, Felle, Eisen – und eine Karte der Umgebung.", 1);
+                Notify(Loc.T("Ihr handelt mit dem fahrenden Volk: Salz, Felle, Eisen – und eine Karte der Umgebung."), 1);
             }
             else if (option == 1 && s != null)
             {
                 s.pop += 10; p.res[(int)Res.Food] = Math.Max(0, p.res[(int)Res.Food] - 25);
                 foreach (var x in SettlementsOf(p.id)) x.happiness = Math.Min(100, x.happiness + 2);
                 RemoveNomads(n);
-                Notify($"Das fahrende Volk lässt sich in {s.name} nieder.", 1);
+                Notify(Loc.F("Das fahrende Volk lässt sich in {0} nieder.", (s.name)), 1);
             }
             else if (option == 3)
             {

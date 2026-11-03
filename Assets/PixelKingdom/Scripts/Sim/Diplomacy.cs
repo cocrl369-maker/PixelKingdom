@@ -13,7 +13,7 @@ namespace PixelKingdom
         public bool Possible = true;
         public string Blocker;
         public List<string> Reasons = new List<string>();
-        public string Chance => !Possible ? "unmöglich" : Score >= 25 ? "sicher" : Score >= 0 ? "wahrscheinlich" : Score >= -20 ? "fraglich" : "keine Chance";
+        public string Chance => !Possible ? Loc.T("unmöglich") : Score >= 25 ? Loc.T("sicher") : Score >= 0 ? Loc.T("wahrscheinlich") : Score >= -20 ? Loc.T("fraglich") : Loc.T("keine Chance");
     }
 
     public partial class Game
@@ -187,80 +187,80 @@ namespace PixelKingdom
             float ratio = myStr / theirStr;
 
             void R(string text, float v) { e.Score += v; if (Math.Abs(v) >= 1) e.Reasons.Add((v > 0 ? "+" : "") + (int)Math.Round(v) + " " + text); }
-            R("Beziehung", rel.value * 0.6f);
+            R(Loc.T("Beziehung"), rel.value * 0.6f);
 
             switch (act)
             {
                 case DipAction.Gift:
                     e.Cost = GiftAmount(f);
-                    e.Score = 100; e.Reasons.Clear(); e.Reasons.Add("Geschenke werden immer angenommen");
+                    e.Score = 100; e.Reasons.Clear(); e.Reasons.Add(Loc.T("Geschenke werden immer angenommen"));
                     break;
                 case DipAction.Trade:
-                    if (st == DipStatus.War) { e.Possible = false; e.Blocker = "Ihr seid im Krieg"; break; }
-                    if (rel.trade) { e.Possible = false; e.Blocker = "Besteht bereits"; break; }
-                    if (!HasMarket(p.id)) { e.Possible = false; e.Blocker = "Ihr braucht einen Markt"; break; }
-                    R("Händlergeist", f.greed * 20);
-                    R("Grundhaltung", 5);
+                    if (st == DipStatus.War) { e.Possible = false; e.Blocker = Loc.T("Ihr seid im Krieg"); break; }
+                    if (rel.trade) { e.Possible = false; e.Blocker = Loc.T("Besteht bereits"); break; }
+                    if (!HasMarket(p.id)) { e.Possible = false; e.Blocker = Loc.T("Ihr braucht einen Markt"); break; }
+                    R(Loc.T("Händlergeist"), f.greed * 20);
+                    R(Loc.T("Grundhaltung"), 5);
                     break;
                 case DipAction.Pact:
-                    if (st == DipStatus.War) { e.Possible = false; e.Blocker = "Zuerst Frieden schließen"; break; }
-                    if (st >= DipStatus.Pact) { e.Possible = false; e.Blocker = "Besteht bereits"; break; }
-                    R("Eure Stärke", Clamp((ratio - 1f) * 10, -10, 15));
-                    R("Angriffslust", -f.aggression * 15);
-                    R("Ehre", f.honor * 8);
-                    R("Grundhaltung", -5);
+                    if (st == DipStatus.War) { e.Possible = false; e.Blocker = Loc.T("Zuerst Frieden schließen"); break; }
+                    if (st >= DipStatus.Pact) { e.Possible = false; e.Blocker = Loc.T("Besteht bereits"); break; }
+                    R(Loc.T("Eure Stärke"), Clamp((ratio - 1f) * 10, -10, 15));
+                    R(Loc.T("Angriffslust"), -f.aggression * 15);
+                    R(Loc.T("Ehre"), f.honor * 8);
+                    R(Loc.T("Grundhaltung"), -5);
                     break;
                 case DipAction.Alliance:
-                    if (st == DipStatus.War) { e.Possible = false; e.Blocker = "Zuerst Frieden schließen"; break; }
-                    if (st == DipStatus.Alliance) { e.Possible = false; e.Blocker = "Besteht bereits"; break; }
+                    if (st == DipStatus.War) { e.Possible = false; e.Blocker = Loc.T("Zuerst Frieden schließen"); break; }
+                    if (st == DipStatus.Alliance) { e.Possible = false; e.Blocker = Loc.T("Besteht bereits"); break; }
                     e.Cost = AllianceCost(f);
-                    R("Mitgift (" + (int)e.Cost + " Gold)", 25);
-                    R("Bündnisse sind ernst", -40);
-                    R("Ehre", f.honor * 10);
-                    R("Eure Stärke", Clamp((ratio - 1f) * 8, -15, 15));
-                    if (EnemiesOf(p.id).Any(x => AtWar(f.id, x.id))) R("Gemeinsamer Feind", 20);
+                    R(Loc.T("Mitgift (") + (int)e.Cost + Loc.T(" Gold)"), 25);
+                    R(Loc.T("Bündnisse sind ernst"), -40);
+                    R(Loc.T("Ehre"), f.honor * 10);
+                    R(Loc.T("Eure Stärke"), Clamp((ratio - 1f) * 8, -15, 15));
+                    if (EnemiesOf(p.id).Any(x => AtWar(f.id, x.id))) R(Loc.T("Gemeinsamer Feind"), 20);
                     var emp = Emperor;
-                    if (emp != null && emp.alive && AtWar(p.id, emp.id) && !f.isEmperor) R("Treue zum Kaiser", -f.loyalty * 50 + 15);
-                    if (f.ambition > 0.6f && p.rank > f.rank) R("Neid", -(p.rank - f.rank) * 6);
+                    if (emp != null && emp.alive && AtWar(p.id, emp.id) && !f.isEmperor) R(Loc.T("Treue zum Kaiser"), -f.loyalty * 50 + 15);
+                    if (f.ambition > 0.6f && p.rank > f.rank) R(Loc.T("Neid"), -(p.rank - f.rank) * 6);
                     break;
                 case DipAction.Annex:
-                    if (st == DipStatus.War) { e.Possible = false; e.Blocker = "Nicht im Krieg"; break; }
-                    if (f.isEmperor) { e.Possible = false; e.Blocker = "Der Kaiser beugt sich niemandem"; break; }
-                    if (p.rank <= f.rank && !f.isFree) { e.Possible = false; e.Blocker = "Euer Rang muss höher sein"; break; }
-                    if (CountSettlements(p.id) + CountSettlements(f.id) > Ranks.Get(p.rank).MaxSettlements + 2) { e.Possible = false; e.Blocker = "Zu viele Siedlungen für euren Rang"; break; }
+                    if (st == DipStatus.War) { e.Possible = false; e.Blocker = Loc.T("Nicht im Krieg"); break; }
+                    if (f.isEmperor) { e.Possible = false; e.Blocker = Loc.T("Der Kaiser beugt sich niemandem"); break; }
+                    if (p.rank <= f.rank && !f.isFree) { e.Possible = false; e.Blocker = Loc.T("Euer Rang muss höher sein"); break; }
+                    if (CountSettlements(p.id) + CountSettlements(f.id) > Ranks.Get(p.rank).MaxSettlements + 2) { e.Possible = false; e.Blocker = Loc.T("Zu viele Siedlungen für euren Rang"); break; }
                     e.Cost = AnnexCost(f);
-                    R("Großzügiges Angebot", 20);
-                    R("Unabhängigkeit", f.isFree ? -15 : -45);
-                    R("Euer Ansehen", Clamp((p.prestige - f.prestige) / 20f, -15, 25));
-                    R("Machtverhältnis", Clamp((ratio - 1.5f) * 10, -20, 25));
-                    R("Ehrgeiz", -f.ambition * 20);
-                    if (st == DipStatus.Alliance) R("Verbündete", 15);
+                    R(Loc.T("Großzügiges Angebot"), 20);
+                    R(Loc.T("Unabhängigkeit"), f.isFree ? -15 : -45);
+                    R(Loc.T("Euer Ansehen"), Clamp((p.prestige - f.prestige) / 20f, -15, 25));
+                    R(Loc.T("Machtverhältnis"), Clamp((ratio - 1.5f) * 10, -20, 25));
+                    R(Loc.T("Ehrgeiz"), -f.ambition * 20);
+                    if (st == DipStatus.Alliance) R(Loc.T("Verbündete"), 15);
                     break;
                 case DipAction.War:
-                    if (st == DipStatus.War) { e.Possible = false; e.Blocker = "Bereits im Krieg"; break; }
-                    if (st == DipStatus.Truce) { e.Possible = false; e.Blocker = "Waffenruhe noch " + (30 - (S.day - rel.since)) + " Tage"; break; }
+                    if (st == DipStatus.War) { e.Possible = false; e.Blocker = Loc.T("Bereits im Krieg"); break; }
+                    if (st == DipStatus.Truce) { e.Possible = false; e.Blocker = Loc.T("Waffenruhe noch ") + (30 - (S.day - rel.since)) + Loc.T(" Tage"); break; }
                     e.Score = 100; e.Reasons.Clear();
-                    if (st == DipStatus.Pact) e.Reasons.Add("Vertragsbruch: alle sind empört (-15)");
-                    if (st == DipStatus.Alliance) e.Reasons.Add("Verrat am Verbündeten: alle sind entsetzt (-30)");
-                    foreach (var a in AlliesOf(f.id)) if (!a.isPlayer) e.Reasons.Add("Verbündeter tritt bei: " + a.name);
+                    if (st == DipStatus.Pact) e.Reasons.Add(Loc.T("Vertragsbruch: alle sind empört (-15)"));
+                    if (st == DipStatus.Alliance) e.Reasons.Add(Loc.T("Verrat am Verbündeten: alle sind entsetzt (-30)"));
+                    foreach (var a in AlliesOf(f.id)) if (!a.isPlayer) e.Reasons.Add(Loc.T("Verbündeter tritt bei: ") + a.name);
                     break;
                 case DipAction.Peace:
-                    if (st != DipStatus.War) { e.Possible = false; e.Blocker = "Kein Krieg"; break; }
-                    if (f.isEmperor && S.story.chapter >= 5) { e.Possible = false; e.Blocker = "Der Kaiser will euren Kopf"; break; }
-                    R("Kriegsmüdigkeit", f.warWeariness * 0.8f);
-                    R("Machtverhältnis", Clamp((ratio - 1f) * 20, -30, 30));
-                    R("Angriffslust", -f.aggression * 20);
-                    R("Kriegsdauer", Math.Min(15, (S.day - rel.since) * 0.2f));
-                    var cl = St(f.claim); if (cl != null && cl.faction == p.id) R("Gebietsanspruch", -15);
+                    if (st != DipStatus.War) { e.Possible = false; e.Blocker = Loc.T("Kein Krieg"); break; }
+                    if (f.isEmperor && S.story.chapter >= 5) { e.Possible = false; e.Blocker = Loc.T("Der Kaiser will euren Kopf"); break; }
+                    R(Loc.T("Kriegsmüdigkeit"), f.warWeariness * 0.8f);
+                    R(Loc.T("Machtverhältnis"), Clamp((ratio - 1f) * 20, -30, 30));
+                    R(Loc.T("Angriffslust"), -f.aggression * 20);
+                    R(Loc.T("Kriegsdauer"), Math.Min(15, (S.day - rel.since) * 0.2f));
+                    var cl = St(f.claim); if (cl != null && cl.faction == p.id) R(Loc.T("Gebietsanspruch"), -15);
                     break;
                 case DipAction.Tribute:
-                    if (st == DipStatus.War || st == DipStatus.Alliance) { e.Possible = false; e.Blocker = st == DipStatus.War ? "Im Krieg" : "Verbündete"; break; }
+                    if (st == DipStatus.War || st == DipStatus.Alliance) { e.Possible = false; e.Blocker = st == DipStatus.War ? Loc.T("Im Krieg") : Loc.T("Verbündete"); break; }
                     e.Cost = -(float)Math.Round(Math.Min(f.res[(int)Res.Gold] * 0.4f, 30 + TotalPop(f.id) * 0.5f));
-                    R("Machtverhältnis", Clamp((ratio - 2f) * 20, -40, 30));
-                    R("Stolz", -f.honor * 15 - f.aggression * 15);
+                    R(Loc.T("Machtverhältnis"), Clamp((ratio - 2f) * 20, -40, 30));
+                    R(Loc.T("Stolz"), -f.honor * 15 - f.aggression * 15);
                     break;
             }
-            if (e.Possible && e.Cost > 0 && p.res[(int)Res.Gold] < e.Cost) { e.Possible = false; e.Blocker = "Nicht genug Gold (" + (int)e.Cost + ")"; }
+            if (e.Possible && e.Cost > 0 && p.res[(int)Res.Gold] < e.Cost) { e.Possible = false; e.Blocker = Loc.T("Nicht genug Gold (") + (int)e.Cost + ")"; }
             return e;
         }
 
@@ -276,40 +276,40 @@ namespace PixelKingdom
                     p.res[(int)Res.Gold] -= e.Cost;
                     f.res[(int)Res.Gold] += e.Cost;
                     ModRel(p.id, f.id, 8 + f.greed * 10);
-                    if (f.isEmperor) { ChangePressure(-12); return "Der Kaiser nimmt das Geschenk an. Der Druck aus Valdoran lässt etwas nach."; }
-                    return $"{f.leader} nimmt das Geschenk dankend an.";
+                    if (f.isEmperor) { ChangePressure(-12); return Loc.T("Der Kaiser nimmt das Geschenk an. Der Druck aus Valdoran lässt etwas nach."); }
+                    return Loc.F("{0} nimmt das Geschenk dankend an.", (f.leader));
                 case DipAction.Trade:
-                    if (!yes) { ModRel(p.id, f.id, -2); return $"{f.leader} lehnt ab: 'Wir brauchen eure Waren nicht.'"; }
+                    if (!yes) { ModRel(p.id, f.id, -2); return Loc.F("{0} lehnt ab: 'Wir brauchen eure Waren nicht.'", (f.leader)); }
                     SetTrade(p.id, f.id, true); ModRel(p.id, f.id, 5);
-                    return "Handelsabkommen geschlossen! (+Gold pro Tag)";
+                    return Loc.T("Handelsabkommen geschlossen! (+Gold pro Tag)");
                 case DipAction.Pact:
-                    if (!yes) { ModRel(p.id, f.id, -3); return $"{f.leader} lehnt ab: 'Wir trauen euch nicht.'"; }
+                    if (!yes) { ModRel(p.id, f.id, -3); return Loc.F("{0} lehnt ab: 'Wir trauen euch nicht.'", (f.leader)); }
                     SetStatus(p.id, f.id, DipStatus.Pact); ModRel(p.id, f.id, 8);
-                    return "Nichtangriffspakt geschlossen.";
+                    return Loc.T("Nichtangriffspakt geschlossen.");
                 case DipAction.Alliance:
-                    if (!yes) { ModRel(p.id, f.id, -4); return $"{f.leader} lehnt ab: 'Ein Bündnis? Noch nicht.'"; }
+                    if (!yes) { ModRel(p.id, f.id, -4); return Loc.F("{0} lehnt ab: 'Ein Bündnis? Noch nicht.'", (f.leader)); }
                     p.res[(int)Res.Gold] -= e.Cost; f.res[(int)Res.Gold] += e.Cost;
                     SetStatus(p.id, f.id, DipStatus.Alliance); ModRel(p.id, f.id, 15);
                     foreach (var s in SettlementsOf(f.id)) Reveal(s.x, s.y, Radius(s) + 2);
                     OnAlliance(f);
-                    return $"Bündnis mit {f.name} besiegelt!";
+                    return Loc.F("Bündnis mit {0} besiegelt!", (f.name));
                 case DipAction.Annex:
-                    if (!yes) { ModRel(p.id, f.id, -8); return $"{f.leader} ist empört: 'Wir sind nicht käuflich!'"; }
+                    if (!yes) { ModRel(p.id, f.id, -8); return Loc.F("{0} ist empört: 'Wir sind nicht käuflich!'", (f.leader)); }
                     p.res[(int)Res.Gold] -= e.Cost;
                     AnnexFaction(f);
-                    return $"{f.name} schließt sich eurem Reich an!";
+                    return Loc.F("{0} schließt sich eurem Reich an!", (f.name));
                 case DipAction.War:
                     DeclareWar(p.id, f.id);
-                    return $"Ihr habt {f.name} den Krieg erklärt!";
+                    return Loc.F("Ihr habt {0} den Krieg erklärt!", (f.name));
                 case DipAction.Peace:
-                    if (!yes) return $"{f.leader}: 'Niemals! Wir kämpfen weiter.'";
+                    if (!yes) return Loc.F("{0}: 'Niemals! Wir kämpfen weiter.'", (f.leader));
                     MakePeace(p.id, f.id);
-                    return $"Frieden mit {f.name}. 30 Tage Waffenruhe.";
+                    return Loc.F("Frieden mit {0}. 30 Tage Waffenruhe.", (f.name));
                 case DipAction.Tribute:
-                    if (!yes) { ModRel(p.id, f.id, -15); return $"{f.leader}: 'Holt es euch doch!'"; }
+                    if (!yes) { ModRel(p.id, f.id, -15); return Loc.F("{0}: 'Holt es euch doch!'", (f.leader)); }
                     float g = -e.Cost;
                     f.res[(int)Res.Gold] -= g; p.res[(int)Res.Gold] += g; ModRel(p.id, f.id, -20);
-                    return $"{f.leader} zahlt zähneknirschend {(int)g} Gold.";
+                    return Loc.F("{0} zahlt zähneknirschend {1} Gold.", (f.leader), ((int)g));
             }
             return "";
         }
@@ -327,7 +327,7 @@ namespace PixelKingdom
             for (int r = 0; r < ResInfo.Count; r++) p.res[r] += f.res[r];
             f.alive = false;
             p.prestige += 20;
-            Notify($"{f.name} ist nun Teil eures Reiches.", 1);
+            Notify(Loc.F("{0} ist nun Teil eures Reiches.", (f.name)), 1);
             OnAnnexed(f);
         }
 
@@ -351,14 +351,14 @@ namespace PixelKingdom
                 if (RelValue(ally.id, b) > 20 || ally.honor > 0.5f)
                 {
                     SetStatus(ally.id, a, DipStatus.War);
-                    if (ally.isPlayer) Notify($"Bündnisfall! Ihr steht nun mit {fb.name} im Krieg gegen {fa.name}.", 3);
-                    else if (fa.isPlayer || fb.isPlayer) Notify($"{ally.name} tritt an der Seite von {fb.name} in den Krieg ein.", 3);
+                    if (ally.isPlayer) Notify(Loc.F("Bündnisfall! Ihr steht nun mit {0} im Krieg gegen {1}.", (fb.name), (fa.name)), 3);
+                    else if (fa.isPlayer || fb.isPlayer) Notify(Loc.F("{0} tritt an der Seite von {1} in den Krieg ein.", (ally.name), (fb.name)), 3);
                 }
             }
-            if (fa.isPlayer || fb.isPlayer) Notify($"KRIEG: {fa.name} gegen {fb.name}!", 3);
+            if (fa.isPlayer || fb.isPlayer) Notify(Loc.F("KRIEG: {0} gegen {1}!", (fa.name), (fb.name)), 3);
             // Wer dem Kaiser selbst den Krieg erklärt, hat sich erhoben
             if (fa.isPlayer && fb.isEmperor && !S.story.Has("emperor_war")) StartEmperorWar();
-            else if (fa.knownToPlayer != 0 || fb.knownToPlayer != 0) Notify($"{fa.name} erklärt {fb.name} den Krieg.", 0);
+            else if (fa.knownToPlayer != 0 || fb.knownToPlayer != 0) Notify(Loc.F("{0} erklärt {1} den Krieg.", (fa.name), (fb.name)), 0);
         }
 
         public void MakePeace(int a, int b)
@@ -375,7 +375,7 @@ namespace PixelKingdom
                     if (t != null && (t.faction == a || t.faction == b) && t.faction != ar.faction) SendHome(ar);
                 }
             }
-            if (F(a).isPlayer || F(b).isPlayer) Notify($"Frieden zwischen {F(a).name} und {F(b).name}.", 1);
+            if (F(a).isPlayer || F(b).isPlayer) Notify(Loc.F("Frieden zwischen {0} und {1}.", (F(a).name), (F(b).name)), 1);
         }
     }
 }

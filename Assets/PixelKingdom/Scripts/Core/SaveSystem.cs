@@ -26,7 +26,7 @@ namespace PixelKingdom
             }
             catch (Exception e)
             {
-                Debug.LogWarning("PixelKingdom: Speichern fehlgeschlagen: " + e.Message);
+                Debug.LogWarning(Loc.T("PixelKingdom: Speichern fehlgeschlagen: ") + e.Message);
                 return false;
             }
         }
@@ -44,14 +44,14 @@ namespace PixelKingdom
                         // Spielstand einer älteren Version (andere Kartengröße): beiseitelegen statt kaputt zu laden
                         File.Copy(path, path + ".alt-v" + s.version, true);
                         File.Delete(path);
-                        Debug.Log("PixelKingdom: Alter Spielstand (Version " + s.version + ") wurde gesichert und wird nicht mehr geladen.");
+                        Debug.Log(Loc.T("PixelKingdom: Alter Spielstand (Version ") + s.version + Loc.T(") wurde gesichert und wird nicht mehr geladen."));
                         continue;
                     }
                     if (s != null && s.factions != null && s.factions.Count > 0) return s;
                 }
                 catch (Exception e)
                 {
-                    Debug.LogWarning("PixelKingdom: Laden fehlgeschlagen (" + path + "): " + e.Message);
+                    Debug.LogWarning(Loc.T("PixelKingdom: Laden fehlgeschlagen (") + path + "): " + e.Message);
                 }
             }
             return null;

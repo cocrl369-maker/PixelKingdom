@@ -82,7 +82,7 @@ namespace PixelKingdom
             var a = new ArmyData
             {
                 id = NewId(), faction = s.faction, x = s.x + 0.5f, y = s.y + 0.5f, home = s.id, settlers = settlers,
-                name = settlers > 0 ? "Siedler aus " + s.name : (units[(int)UType.Spaeher] == total ? "Späher aus " + s.name : "Heer aus " + s.name),
+                name = settlers > 0 ? Loc.T("Siedler aus ") + s.name : (units[(int)UType.Spaeher] == total ? Loc.T("Späher aus ") + s.name : Loc.T("Heer aus ") + s.name),
             };
             for (int u = 0; u < Units.Count; u++) { a.units[u] = units[u]; s.garrison[u] -= units[u]; }
             AddArmy(a);
@@ -96,7 +96,7 @@ namespace PixelKingdom
             var path = Pathfinder.Find(Map, sx, sy, tx, ty, CanSail(a.faction));
             if (path == null)
             {
-                why = S.seafaring || a.faction != S.playerFaction ? "Kein Weg dorthin." : "Kein Weg dorthin (über das Meer braucht ihr Schiffe).";
+                why = S.seafaring || a.faction != S.playerFaction ? Loc.T("Kein Weg dorthin.") : Loc.T("Kein Weg dorthin (über das Meer braucht ihr Schiffe).");
                 return false;
             }
             a.path = path; a.pathIndex = 1; a.mission = (int)mission; a.target = target; a.targetX = tx; a.targetY = ty;
@@ -132,7 +132,7 @@ namespace PixelKingdom
             var half = new int[Units.Count];
             for (int u = 0; u < Units.Count; u++) { half[u] = a.units[u] / 2; total += half[u]; }
             if (total == 0) return null;
-            var b = new ArmyData { id = NewId(), faction = a.faction, x = a.x + 0.3f, y = a.y - 0.3f, home = a.home, morale = a.morale, name = a.name + " (geteilt)" };
+            var b = new ArmyData { id = NewId(), faction = a.faction, x = a.x + 0.3f, y = a.y - 0.3f, home = a.home, morale = a.morale, name = a.name + Loc.T(" (geteilt)") };
             for (int u = 0; u < Units.Count; u++) { b.units[u] = half[u]; a.units[u] -= half[u]; }
             AddArmy(b);
             return b;
@@ -157,22 +157,22 @@ namespace PixelKingdom
         public string OrderPreview(ArmyData a, int tx, int ty, SettlementData target, bool raid)
         {
             if (a.settlers > 0 && a.units.Sum() == 0)
-                return CanFoundAt(a.faction, tx, ty, out string why) ? "Hier eine Siedlung gründen" : "Gründen nicht möglich: " + why;
+                return CanFoundAt(a.faction, tx, ty, out string why) ? Loc.T("Hier eine Siedlung gründen") : Loc.T("Gründen nicht möglich: ") + why;
             var poi = PoiNear(tx + 0.5f, ty + 0.5f, 0.9f);
             if (poi != null && target == null && G_IsDisc(poi.x, poi.y))
-                return poi.type == 0 ? (poi.done ? "Ruine (bereits durchsucht)" : "Ruine erkunden") : poi.type == 1 ? "Räuberlager angreifen" : "Fahrendes Volk besuchen";
+                return poi.type == 0 ? (poi.done ? Loc.T("Ruine (bereits durchsucht)") : Loc.T("Ruine erkunden")) : poi.type == 1 ? Loc.T("Räuberlager angreifen") : Loc.T("Fahrendes Volk besuchen");
             if (target != null)
             {
-                if (target.faction == a.faction) return "In " + target.name + " einrücken (Garnison)";
+                if (target.faction == a.faction) return Loc.T("In ") + target.name + Loc.T(" einrücken (Garnison)");
                 var f = F(target.faction);
-                if (!AtWar(a.faction, target.faction)) return (raid ? "Überfall auf " : "Angriff auf ") + target.name + " – erst Krieg erklären!";
-                return (raid ? "Überfall auf " : "Erobern: ") + target.name + " (" + f.name + ")";
+                if (!AtWar(a.faction, target.faction)) return (raid ? Loc.T("Überfall auf ") : Loc.T("Angriff auf ")) + target.name + Loc.T(" – erst Krieg erklären!");
+                return (raid ? Loc.T("Überfall auf ") : Loc.T("Erobern: ")) + target.name + " (" + f.name + ")";
             }
             if (!WorldMap.In(tx, ty)) return null;
             int ti = WorldMap.Idx(tx, ty);
-            if (Map.biome[ti] == Biome.Mountain || Map.biome[ti] == Biome.Snow) return "Gebirge – unpassierbar";
-            if (Map.MoveCost(ti, CanSail(a.faction)) == float.MaxValue) return "Dort kann das Heer nicht hin";
-            return "Hierher marschieren";
+            if (Map.biome[ti] == Biome.Mountain || Map.biome[ti] == Biome.Snow) return Loc.T("Gebirge – unpassierbar");
+            if (Map.MoveCost(ti, CanSail(a.faction)) == float.MaxValue) return Loc.T("Dort kann das Heer nicht hin");
+            return Loc.T("Hierher marschieren");
         }
 
         bool G_IsDisc(int x, int y) => IsDiscovered(x, y);
@@ -182,9 +182,9 @@ namespace PixelKingdom
             var f = F(s.faction);
             why = null;
             int pending = S.armies.Count(a => a.faction == f.id && a.settlers > 0);
-            if (CountSettlements(f.id) + pending >= Ranks.Get(f.rank).MaxSettlements) { why = $"Euer Rang erlaubt nur {Ranks.Get(f.rank).MaxSettlements} Siedlungen"; return false; }
-            if (s.pop < 34) { why = "Mind. 34 Bewohner nötig"; return false; }
-            if (!CanAfford(f, SettlerCost)) { why = "Kosten: 40 Nahrung, 50 Holz, 30 Gold"; return false; }
+            if (CountSettlements(f.id) + pending >= Ranks.Get(f.rank).MaxSettlements) { why = Loc.F("Euer Rang erlaubt nur {0} Siedlungen", (Ranks.Get(f.rank).MaxSettlements)); return false; }
+            if (s.pop < 34) { why = Loc.T("Mind. 34 Bewohner nötig"); return false; }
+            if (!CanAfford(f, SettlerCost)) { why = Loc.T("Kosten: 40 Nahrung, 50 Holz, 30 Gold"); return false; }
             return true;
         }
 
@@ -193,12 +193,12 @@ namespace PixelKingdom
         public bool CanFoundAt(int fid, int x, int y, out string why)
         {
             why = null;
-            if (!WorldMap.In(x, y)) { why = "Außerhalb der Karte"; return false; }
+            if (!WorldMap.In(x, y)) { why = Loc.T("Außerhalb der Karte"); return false; }
             int i = WorldMap.Idx(x, y);
-            if (fid == S.playerFaction && !Map.disc[i]) { why = "Unerforschtes Gebiet"; return false; }
-            if (!Map.Buildable(i)) { why = "Hier kann man nicht siedeln"; return false; }
-            if (Map.owner[i] >= 0 && Map.owner[i] != fid) { why = "Gebiet gehört bereits jemandem"; return false; }
-            foreach (var s in S.settlements) if (Dist(s.x, s.y, x, y) < 8f) { why = "Zu nah an " + s.name; return false; }
+            if (fid == S.playerFaction && !Map.disc[i]) { why = Loc.T("Unerforschtes Gebiet"); return false; }
+            if (!Map.Buildable(i)) { why = Loc.T("Hier kann man nicht siedeln"); return false; }
+            if (Map.owner[i] >= 0 && Map.owner[i] != fid) { why = Loc.T("Gebiet gehört bereits jemandem"); return false; }
+            foreach (var s in S.settlements) if (Dist(s.x, s.y, x, y) < 8f) { why = Loc.T("Zu nah an ") + s.name; return false; }
             return true;
         }
 
@@ -207,7 +207,7 @@ namespace PixelKingdom
             if (!CanSendSettlers(s, out why)) return null;
             if (!CanFoundAt(s.faction, tx, ty, out why)) return null;
             var f = F(s.faction);
-            var a = new ArmyData { id = NewId(), faction = s.faction, x = s.x + 0.5f, y = s.y + 0.5f, home = s.id, settlers = 12, name = "Siedler aus " + s.name };
+            var a = new ArmyData { id = NewId(), faction = s.faction, x = s.x + 0.5f, y = s.y + 0.5f, home = s.id, settlers = 12, name = Loc.T("Siedler aus ") + s.name };
             AddArmy(a);
             if (!OrderMove(a, tx, ty, ArmyMission.Found, -1, out why)) { RemoveArmy(a); return null; }
             Pay(f, SettlerCost);
@@ -221,7 +221,7 @@ namespace PixelKingdom
             var f = F(a.faction);
             if (!CanFoundAt(a.faction, x, y, out string why))
             {
-                if (f.isPlayer) Notify("Gründung gescheitert: " + why, 2);
+                if (f.isPlayer) Notify(Loc.T("Gründung gescheitert: ") + why, 2);
                 a.mission = (int)ArmyMission.Idle;
                 return;
             }
@@ -236,7 +236,7 @@ namespace PixelKingdom
             AddSettlement(st);
             RemoveArmy(a);
             RecomputeTerritory();
-            if (f.isPlayer) { Reveal(x, y, 9); Notify($"{st.name} wurde gegründet!", 1); f.prestige += 10; }
+            if (f.isPlayer) { Reveal(x, y, 9); Notify(Loc.F("{0} wurde gegründet!", (st.name)), 1); f.prestige += 10; }
             OnSettlementFounded(st);
         }
 
@@ -315,7 +315,7 @@ namespace PixelKingdom
                         if (st.faction == a.faction) { MergeIntoGarrison(a, st); return; }
                         if (!AtWar(a.faction, st.faction))
                         {
-                            if (f.isPlayer) Notify($"Euer Heer steht vor {st.name}, aber ihr seid nicht im Krieg mit {F(st.faction).name}.", 0);
+                            if (f.isPlayer) Notify(Loc.F("Euer Heer steht vor {0}, aber ihr seid nicht im Krieg mit {1}.", (st.name), (F(st.faction).name)), 0);
                             return;
                         }
                         bool raid = m == ArmyMission.Raid || (F(st.faction).isPlayer && PlayerProtected)
@@ -371,7 +371,7 @@ namespace PixelKingdom
                 if (OrderMove(a, tx, ty, ArmyMission.Explore, -1, out _)) return;
             }
             a.mission = (int)ArmyMission.Idle;
-            if (a.faction == S.playerFaction) Notify($"{a.name}: Hier gibt es nichts Neues mehr zu entdecken.", 0);
+            if (a.faction == S.playerFaction) Notify(Loc.F("{0}: Hier gibt es nichts Neues mehr zu entdecken.", (a.name)), 0);
         }
 
         public void SendHome(ArmyData a)
@@ -459,7 +459,7 @@ namespace PixelKingdom
             var af = F(a.faction); var df = F(st.faction);
             var rep = new BattleReport
             {
-                Title = raid ? "Überfall auf " + st.name : "Belagerung von " + st.name, Place = st.name,
+                Title = raid ? Loc.T("Überfall auf ") + st.name : Loc.T("Belagerung von ") + st.name, Place = st.name,
                 Attacker = af.name, Defender = df.name, PlayerAttacker = af.isPlayer,
             };
             Array.Copy(a.units, rep.AttStart, Units.Count);
@@ -506,13 +506,13 @@ namespace PixelKingdom
                         df.res[r] -= take; af.res[r] += take; loot[r] = take;
                     }
                     st.happiness -= 15; st.pop *= 0.95f;
-                    rep.Outcome = "Das Umland wurde geplündert: " + LootText(loot);
+                    rep.Outcome = Loc.T("Das Umland wurde geplündert: ") + LootText(loot);
                     ModRel(af.id, df.id, -10);
                     SendHome(a);
                 }
                 else
                 {
-                    rep.Outcome = st.name + " wurde erobert!";
+                    rep.Outcome = st.name + Loc.T(" wurde erobert!");
                     Conquer(a, st, df);
                 }
             }
@@ -520,7 +520,7 @@ namespace PixelKingdom
             {
                 df.prestige += 6;
                 a.morale = Math.Max(0.5f, a.morale - 0.2f);
-                rep.Outcome = "Der Angriff wurde abgewehrt.";
+                rep.Outcome = Loc.T("Der Angriff wurde abgewehrt.");
                 if (a.units.Sum() > 0) SendHome(a); else RemoveArmy(a);
             }
             if (af.isPlayer || df.isPlayer)
@@ -537,7 +537,7 @@ namespace PixelKingdom
         {
             var parts = new List<string>();
             for (int r = 0; r < ResInfo.Count; r++) if (loot[r] >= 1) parts.Add((int)loot[r] + " " + ResInfo.Name(r));
-            return parts.Count == 0 ? "nichts" : string.Join(", ", parts);
+            return parts.Count == 0 ? Loc.T("nichts") : string.Join(", ", parts);
         }
 
         void Conquer(ArmyData a, SettlementData st, FactionData oldF)
@@ -552,7 +552,7 @@ namespace PixelKingdom
             if (liberated)
             {
                 st.happiness = 55; st.taxRate = 0.08f;
-                Notify($"Die Bürger von {st.name} jubeln: Befreit vom Kaiser!", 1);
+                Notify(Loc.F("Die Bürger von {0} jubeln: Befreit vom Kaiser!", (st.name)), 1);
             }
             else
             {
@@ -567,7 +567,7 @@ namespace PixelKingdom
             var af = F(a.faction); var bf = F(b.faction);
             var rep = new BattleReport
             {
-                Title = "Feldschlacht", Place = Map.BiomeName(WorldMap.Idx((int)a.x, (int)a.y)), Attacker = af.name, Defender = bf.name,
+                Title = Loc.T("Feldschlacht"), Place = Map.BiomeName(WorldMap.Idx((int)a.x, (int)a.y)), Attacker = af.name, Defender = bf.name,
                 PlayerAttacker = af.isPlayer,
             };
             Array.Copy(a.units, rep.AttStart, Units.Count);
@@ -594,7 +594,7 @@ namespace PixelKingdom
                 bool pw = F(winner.faction).isPlayer;
                 if (pw) S.battlesWon++; else S.battlesLost++;
                 if (!Offline) Reports.Enqueue(rep);
-                Notify("Feldschlacht: " + rep.Outcome, pw ? 1 : 2);
+                Notify(Loc.T("Feldschlacht: ") + rep.Outcome, pw ? 1 : 2);
             }
             OnBattle(af, bf, won);
         }

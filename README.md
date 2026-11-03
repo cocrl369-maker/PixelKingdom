@@ -49,8 +49,9 @@ Das Spiel ist für Android ausgelegt und bleibt am PC mit Tastatur und Maus spie
 | Aktion | Geste |
 |---|---|
 | Auswählen | Tippen auf Siedlung oder Heer |
-| Heer befehligen | Heer gewählt → auf ein Ziel tippen (Tippen auf das Heer selbst wählt ab) |
-| Überfall statt Eroberung | lange auf die feindliche Stadt drücken oder im Heer-Panel „Angriffsart“ umstellen |
+| Heer befehligen | Heer gewählt → auf ein Ziel tippen → **Befehlsmenü** mit Weg, Marschdauer und allen Befehlen (Erobern, Überfall, Einrücken, Hinziehen …) |
+| Listen und Bauleiste | seitlich bzw. hoch/runter wischen |
+| Sprache | Hauptmenü oben rechts (Deutsch/English) oder Menü → „Sprache / Language“ |
 | Karte verschieben | mit einem Finger ziehen |
 | Zoomen | zwei Finger (Pinch) |
 | Geländeinfo (Vorkommen, Bäume) | lange drücken |
@@ -71,8 +72,8 @@ Das Spiel ist für Android ausgelegt und bleibt am PC mit Tastatur und Maus spie
 | Karte bewegen | WASD / Pfeiltasten / rechte oder mittlere Maustaste ziehen |
 | Zoomen (pixelgenaue Stufen) | Mausrad oder Q / E |
 | Auswählen | Linksklick auf Siedlung oder Heer |
-| Heer befehligen | Rechtsklick auf Gelände, eigene Stadt (Garnison) oder Feind (Angriff) |
-| Überfall statt Eroberung | Shift + Rechtsklick auf eine feindliche Stadt |
+| Heer befehligen | Rechtsklick auf ein Ziel: bei Gelände marschiert das Heer sofort, bei Städten und Orten öffnet sich das Befehlsmenü |
+| Überfall statt Eroberung | Shift + Rechtsklick auf eine feindliche Stadt (oder im Befehlsmenü wählen) |
 | Pause / Tempo | Leertaste / 1, 2, 3 |
 | Reich / Heerführung / Diplomatie / Chronik / Hilfe | R / M / G / L / F1 |
 | Nächste Siedlung / Hauptstadt | Tab / H |
@@ -118,7 +119,7 @@ Das Spiel ist für Android ausgelegt und bleibt am PC mit Tastatur und Maus spie
 - **Meister Aldo, der Chronist**, erklärt im Dialogfeld am unteren Bildschirmrand jede Neuerung, sobald sie zum ersten Mal vorkommt: erstes Heer, Winter, Hunger, Markt, Ruinen, Räuber, Erlasse, Druck des Kaisers und mehr. Die Tipps lassen sich im Menü abschalten.
 
 ### Musik & Klang
-- Ruhige mittelalterliche Musik, **komplett im Code komponiert und synthetisiert**: Laute, Flöte, Bordun und Rahmentrommel im dorischen Modus. Vier Stücke wechseln sich ab.
+- Ruhige, sanfte mittelalterliche Musik, **komplett im Code komponiert und synthetisiert**: Harfe/Laute, Flöte, weiche Flächen und Bordun in wechselnden Kirchentonarten. **12 Stücke** (zusammen etwa 26 Minuten) in vier Stilen wechseln sich ab, mit Pausen dazwischen. Immer nur das nächste Stück wird vorbereitet, das spart Speicher.
 - Dumpfer Holz-Klick bei jedem Knopfdruck.
 - Musik und Klänge lassen sich im Menü einzeln abschalten.
 
@@ -183,6 +184,9 @@ Das Spiel ist für Android ausgelegt und bleibt am PC mit Tastatur und Maus spie
 - **Druck des Kaiserreichs** (Leiste unter den Aufgaben): Er steigt langsam mit eurem Wachstum und wenn ihr den Zehnt verweigert. Zahlen und Geschenke senken ihn.
   - Ab 50 drohen Strafexpeditionen. Ihr könnt Buße zahlen, plündern lassen oder kämpfen.
   - Ab Kapitel 7 bestimmt ihr selbst, wann ihr euch erhebt (Knopf „Gegen den Kaiser erheben“). Wartet ihr zu lange, erklärt der Kaiser bei 100 von sich aus den Krieg.
+
+### Sprachen
+- **Deutsch und Englisch**. Beim ersten Start gilt die Systemsprache; umschalten im Hauptmenü oder im Spielmenü, jederzeit und ohne Neustart.
 
 ### Einstieg
 - **Einführung beim ersten Spiel**: Die Oberfläche wird Schritt für Schritt hervorgehoben und kurz erklärt – Vorräte, Rang, Tempo, Schnellzugriff, Aufgaben, Weltkarte, Dorf und Bauen. Sie lässt sich überspringen und über die Hilfe (F1) erneut aufrufen.

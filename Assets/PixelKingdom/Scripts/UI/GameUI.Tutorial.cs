@@ -33,20 +33,20 @@ namespace PixelKingdom
         TutStep[] Steps()
         {
             bool touch = PKInput.UsingTouch;
-            string hover = touch ? "Tippt darauf" : "Fahrt mit der Maus darüber";
-            string click = touch ? "Tippen" : "Ein Klick";
+            string hover = touch ? Loc.T("Tippt darauf") : Loc.T("Fahrt mit der Maus darüber");
+            string click = touch ? Loc.T("Tippen") : Loc.T("Ein Klick");
             return new[]
             {
-                new TutStep(null, "Willkommen in Pixel Kingdom!", "Eine kurze Einführung in die Oberfläche – in 8 Schritten. Ihr könnt sie jederzeit überspringen und später in der Hilfe erneut ansehen."),
-                new TutStep("resources", "Vorräte", $"Nahrung, Holz, Stein, Eisen, Gold, Waffen, dazu Bewohner, Zufriedenheit und Ansehen. Der kleine Balken zeigt, wie voll das Lager ist. {hover}, um zu sehen, wie viel pro Tag dazukommt."),
-                new TutStep("rank", "Rang & Datum", $"Euer Rang (Dorf, Städtegemeinde, ... Königreich) und der aktuelle Tag. {click} öffnet die Reich-Übersicht: Dort seht ihr, was für den nächsten Aufstieg fehlt."),
-                new TutStep("speed", "Zeit & Menü", "Pause und Tempo (1x, 2x, 5x). Das Zahnrad öffnet das Menü: Speichern, Farben, UI-Größe, Hauptmenü."),
-                new TutStep("side", "Schnellzugriff", "Von oben nach unten: Reich, Heerführung (eure Heere befehligen), Diplomatie (andere Herrscher), Chronik (was geschah), Hilfe, zur Hauptstadt springen."),
-                new TutStep("quest", "Aufgaben", "Die Ziele des aktuellen Kapitels. Ihr bestimmt das Tempo. Darunter: die Friedenszeit (niemand greift euch an) und später der Druck des Kaiserreichs."),
-                new TutStep("map", "Weltkarte", $"{click} springt an diese Stelle. Unerforschtes Land ist Pergament – schickt Späher los, um es zu entdecken."),
-                new TutStep("panel", "Euer Dorf", "Hier verwaltet ihr eine Siedlung. Übersicht: Bewohner, Zufriedenheit, Steuern, Rationen und der Verwalter, der automatisch baut. Dazu die Reiter Bauen, Truppen und Markt."),
-                new TutStep("panel", "Bauen", $"Jede Karte ist ein Gebäude. Darunter stehen die Kosten (N = Nahrung, H = Holz, S = Stein, E = Eisen, G = Gold). Graue Karten sind noch gesperrt – {hover.ToLower()}, um zu sehen warum."),
-                new TutStep(null, "Los geht's!", "Baut zuerst einen Holzfäller, Bauernhöfe und Wohnhäuser. Die Hilfe (F1) erklärt alles Weitere. Viel Erfolg!"),
+                new TutStep(null, Loc.T("Willkommen in Pixel Kingdom!"), Loc.T("Eine kurze Einführung in die Oberfläche – in 8 Schritten. Ihr könnt sie jederzeit überspringen und später in der Hilfe erneut ansehen.")),
+                new TutStep("resources", Loc.T("Vorräte"), Loc.F("Nahrung, Holz, Stein, Eisen, Gold, Waffen, dazu Bewohner, Zufriedenheit und Ansehen. Der kleine Balken zeigt, wie voll das Lager ist. {0}, um zu sehen, wie viel pro Tag dazukommt.", (hover))),
+                new TutStep("rank", Loc.T("Rang & Datum"), Loc.F("Euer Rang (Dorf, Städtegemeinde, ... Königreich) und der aktuelle Tag. {0} öffnet die Reich-Übersicht: Dort seht ihr, was für den nächsten Aufstieg fehlt.", (click))),
+                new TutStep("speed", Loc.T("Zeit & Menü"), Loc.T("Pause und Tempo (1x, 2x, 5x). Das Zahnrad öffnet das Menü: Speichern, Sprache, UI-Größe, Hauptmenü.")),
+                new TutStep("side", Loc.T("Schnellzugriff"), Loc.T("Von oben nach unten: Reich, Heerführung (eure Heere befehligen), Diplomatie (andere Herrscher), Chronik (was geschah), Hilfe, zur Hauptstadt springen.")),
+                new TutStep("quest", Loc.T("Aufgaben"), Loc.T("Die Ziele des aktuellen Kapitels. Ihr bestimmt das Tempo. Darunter: die Friedenszeit (niemand greift euch an) und später der Druck des Kaiserreichs.")),
+                new TutStep("map", Loc.T("Weltkarte"), Loc.F("{0} springt an diese Stelle. Unerforschtes Land ist Pergament – schickt Späher los, um es zu entdecken.", (click))),
+                new TutStep("panel", Loc.T("Euer Dorf"), Loc.T("Hier verwaltet ihr eine Siedlung. Übersicht: Bewohner, Zufriedenheit, Steuern, Rationen und der Verwalter, der automatisch baut. Dazu die Reiter Bauen, Truppen und Markt.")),
+                new TutStep("panel", Loc.T("Bauen"), Loc.F("Jede Karte ist ein Gebäude. Darunter stehen die Kosten (N = Nahrung, H = Holz, S = Stein, E = Eisen, G = Gold). Graue Karten sind noch gesperrt – {0}, um zu sehen warum.", (hover.ToLower()))),
+                new TutStep(null, Loc.T("Los geht's!"), Loc.T("Baut zuerst einen Holzfäller, Bauernhöfe und Wohnhäuser. Die Hilfe (F1) erklärt alles Weitere. Viel Erfolg!")),
             };
         }
 
@@ -61,7 +61,7 @@ namespace PixelKingdom
             {
                 var cap = G.Capital(G.Player);
                 if (cap != null && gm.SelSettlement != cap.id) gm.SelectSettlement(cap);
-                SettlementTab = st.Title == "Bauen" ? 1 : 0;
+                SettlementTab = st.Title == Loc.T("Bauen") ? 1 : 0;
             }
 
             modalThisFrame = true; modalNow = true;
@@ -107,9 +107,9 @@ namespace PixelKingdom
 
             float by = box.yMax - 20;
             bool last = tutStep == steps.Length - 1;
-            if (Button(new Rect(box.xMax - 78, by, 70, 15), last ? "Spielen!" : "Weiter", true, null, last ? "play" : "arrow")) { tutStep++; if (tutStep >= steps.Length) EndTutorial(); }
-            if (tutStep > 0 && Button(new Rect(box.xMax - 152, by, 70, 15), "Zurück")) tutStep--;
-            if (!last && Button(new Rect(box.x + 8, by, 80, 15), "Überspringen")) EndTutorial();
+            if (Button(new Rect(box.xMax - 78, by, 70, 15), last ? Loc.T("Spielen!") : Loc.T("Weiter"), true, null, last ? "play" : "arrow")) { tutStep++; if (tutStep >= steps.Length) EndTutorial(); }
+            if (tutStep > 0 && Button(new Rect(box.xMax - 152, by, 70, 15), Loc.T("Zurück"))) tutStep--;
+            if (!last && Button(new Rect(box.x + 8, by, 80, 15), Loc.T("Überspringen"))) EndTutorial();
             if (Event.current.type == EventType.KeyDown && (Event.current.keyCode == KeyCode.Return || Event.current.keyCode == KeyCode.Space))
             {
                 tutStep++; if (tutStep >= steps.Length) EndTutorial();

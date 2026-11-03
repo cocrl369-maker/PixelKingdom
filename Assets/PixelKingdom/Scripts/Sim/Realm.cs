@@ -11,7 +11,7 @@ namespace PixelKingdom
         public IReadOnlyList<PoiData> Pois => S.pois;
         public PoiData Poi(int id) { foreach (var p in S.pois) if (p.id == id) return p; return null; }
 
-        public static string PoiName(PoiData p) => p.type == 0 ? (p.done ? "Erkundete Ruine" : "Alte Ruine") : p.type == 1 ? "Räuberlager" : "Fahrendes Volk";
+        public static string PoiName(PoiData p) => p.type == 0 ? (p.done ? Loc.T("Erkundete Ruine") : Loc.T("Alte Ruine")) : p.type == 1 ? Loc.T("Räuberlager") : Loc.T("Fahrendes Volk");
 
         public PoiData PoiNear(float x, float y, float r)
         {
@@ -78,28 +78,28 @@ namespace PixelKingdom
             if (p.type == 2) { VisitNomads(a, p); return; }
             if (p.type == 0)
             {
-                if (p.done) { if (f.isPlayer) Notify("Die Ruine wurde bereits durchsucht.", 0); return; }
+                if (p.done) { if (f.isPlayer) Notify(Loc.T("Die Ruine wurde bereits durchsucht."), 0); return; }
                 p.done = true; PoisVersion++;
                 if (!f.isPlayer) return;
                 var rr = new Random(p.seed);
                 double roll = rr.NextDouble();
                 string msg;
-                if (roll < 0.38) { int g = 80 + rr.Next(140); f.res[(int)Res.Gold] += g; msg = $"In den Ruinen lag ein vergessener Schatz: {g} Gold!"; }
-                else if (roll < 0.58) { f.res[(int)Res.Iron] += 25; f.res[(int)Res.Weapons] += 15; msg = "Eine alte Waffenkammer: 25 Eisen und 15 Waffen."; }
-                else if (roll < 0.76) { f.prestige += 20; foreach (var s in SettlementsOf(f.id)) s.happiness = Math.Min(100, s.happiness + 6); S.relics++; msg = "Ein heiliges Relikt! Das Volk pilgert herbei (+20 Ansehen, +Zufriedenheit). In einem Kloster aufbewahrt, bringt es dauerhaft Pilger und Gold."; }
-                else if (roll < 0.9) { Reveal(p.x, p.y, 28); msg = "Eine alte Landkarte zeigt die Umgebung."; }
+                if (roll < 0.38) { int g = 80 + rr.Next(140); f.res[(int)Res.Gold] += g; msg = Loc.F("In den Ruinen lag ein vergessener Schatz: {0} Gold!", (g)); }
+                else if (roll < 0.58) { f.res[(int)Res.Iron] += 25; f.res[(int)Res.Weapons] += 15; msg = Loc.T("Eine alte Waffenkammer: 25 Eisen und 15 Waffen."); }
+                else if (roll < 0.76) { f.prestige += 20; foreach (var s in SettlementsOf(f.id)) s.happiness = Math.Min(100, s.happiness + 6); S.relics++; msg = Loc.T("Ein heiliges Relikt! Das Volk pilgert herbei (+20 Ansehen, +Zufriedenheit). In einem Kloster aufbewahrt, bringt es dauerhaft Pilger und Gold."); }
+                else if (roll < 0.9) { Reveal(p.x, p.y, 28); msg = Loc.T("Eine alte Landkarte zeigt die Umgebung."); }
                 else
                 {
                     for (int u = 0; u < Units.Count; u++) a.units[u] -= a.units[u] / 5;
-                    msg = "Eine Falle! Einsturz in den Gewölben – einige Männer sind verloren.";
+                    msg = Loc.T("Eine Falle! Einsturz in den Gewölben – einige Männer sind verloren.");
                 }
-                Notify("Ruine: " + msg, 1);
+                Notify(Loc.T("Ruine: ") + msg, 1);
                 Say(Aldo, "advisor", msg);
                 return;
             }
             // Räuberlager
             if (p.done) return;
-            var rep = new BattleReport { Title = "Angriff auf ein Räuberlager", Place = "Räuberlager", Attacker = f.name, Defender = "Räuber", PlayerAttacker = f.isPlayer };
+            var rep = new BattleReport { Title = Loc.T("Angriff auf ein Räuberlager"), Place = Loc.T("Räuberlager"), Attacker = f.name, Defender = Loc.T("Räuber"), PlayerAttacker = f.isPlayer };
             Array.Copy(a.units, rep.AttStart, Units.Count);
             Array.Copy(p.guards, rep.DefStart, Units.Count);
             var att = ToF(a.units); var def = ToF(p.guards);
@@ -112,17 +112,17 @@ namespace PixelKingdom
                 p.done = true; PoisVersion++;
                 int loot = 100 + new Random(p.seed).Next(160);
                 f.res[(int)Res.Gold] += loot; f.res[(int)Res.Weapons] += 10; f.prestige += 15;
-                rep.Outcome = $"Das Lager ist ausgehoben! Beute: {loot} Gold und 10 Waffen.";
+                rep.Outcome = Loc.F("Das Lager ist ausgehoben! Beute: {0} Gold und 10 Waffen.", (loot));
                 foreach (var s in S.settlements) if (Dist(s.x, s.y, p.x, p.y) < 14) s.happiness = Math.Min(100, s.happiness + 8);
                 if (f.isPlayer) S.battlesWon++;
             }
             else
             {
-                rep.Outcome = "Die Räuber haben den Angriff abgewehrt.";
+                rep.Outcome = Loc.T("Die Räuber haben den Angriff abgewehrt.");
                 if (f.isPlayer) S.battlesLost++;
             }
             if (a.units.Sum() > 0) SendHome(a); else RemoveArmy(a);
-            if (f.isPlayer) { if (!Offline) Reports.Enqueue(rep); Notify("Räuberlager: " + rep.Outcome, won ? 1 : 2); }
+            if (f.isPlayer) { if (!Offline) Reports.Enqueue(rep); Notify(Loc.T("Räuberlager: ") + rep.Outcome, won ? 1 : 2); }
         }
 
         /// <summary>Räuberlager plündern die Umgebung und werden langsam stärker.</summary>
@@ -139,7 +139,7 @@ namespace PixelKingdom
                 if (target == null || InPeace) continue;
                 if (WatchtowerNear(p.x, p.y, 12) && Rng.NextDouble() < 0.5)
                 {
-                    Notify($"Die Wächter auf dem Wachturm sahen die Räuber kommen – {target.name} war gewarnt, der Überfall blieb aus.", 1);
+                    Notify(Loc.F("Die Wächter auf dem Wachturm sahen die Räuber kommen – {0} war gewarnt, der Überfall blieb aus.", (target.name)), 1);
                     continue;
                 }
                 QueueEvent(new PendingEvent { id = "camp_raid", a = target.id, b = p.id, v = (float)Math.Round(30 + Player.res[(int)Res.Gold] * 0.1f) });
@@ -163,19 +163,19 @@ namespace PixelKingdom
         {
             why = null;
             if (S.edicts.Contains(e)) return true;
-            if (Player.rank < Edicts.MinRank[e]) { why = "Benötigt Rang: " + Ranks.Get(Edicts.MinRank[e]).Name; return false; }
-            if (S.edicts.Count >= MaxEdicts) { why = MaxEdicts == 0 ? "Erst ab Städtegemeinde" : $"Euer Rang erlaubt nur {MaxEdicts} Erlass(e)"; return false; }
-            if (Player.res[(int)Res.Gold] < Edicts.ChangeCost) { why = $"Verkünden kostet {(int)Edicts.ChangeCost} Gold"; return false; }
+            if (Player.rank < Edicts.MinRank[e]) { why = Loc.T("Benötigt Rang: ") + Ranks.Get(Edicts.MinRank[e]).Name; return false; }
+            if (S.edicts.Count >= MaxEdicts) { why = MaxEdicts == 0 ? Loc.T("Erst ab Städtegemeinde") : Loc.F("Euer Rang erlaubt nur {0} Erlass(e)", (MaxEdicts)); return false; }
+            if (Player.res[(int)Res.Gold] < Edicts.ChangeCost) { why = Loc.F("Verkünden kostet {0} Gold", ((int)Edicts.ChangeCost)); return false; }
             return true;
         }
 
         public void ToggleEdict(int e)
         {
-            if (S.edicts.Contains(e)) { S.edicts.Remove(e); Notify($"Erlass aufgehoben: {Edicts.Names[e]}", 0); return; }
+            if (S.edicts.Contains(e)) { S.edicts.Remove(e); Notify(Loc.F("Erlass aufgehoben: {0}", (Edicts.Names[e])), 0); return; }
             if (!CanToggleEdict(e, out _)) return;
             Player.res[(int)Res.Gold] -= Edicts.ChangeCost;
             S.edicts.Add(e);
-            Notify($"Erlass verkündet: {Edicts.Names[e]}", 1);
+            Notify(Loc.F("Erlass verkündet: {0}", (Edicts.Names[e])), 1);
         }
 
         // ------------------------------------------------------------------
@@ -187,9 +187,9 @@ namespace PixelKingdom
         public bool CanTournament(out string why)
         {
             why = null;
-            if (CountBuildings(BType.Turnierplatz) == 0) { why = "Ihr braucht einen Turnierplatz"; return false; }
-            if (TournamentCooldown > 0) { why = $"Das nächste Turnier ist in {TournamentCooldown} Tagen möglich"; return false; }
-            if (Player.res[(int)Res.Gold] < TournamentCost) { why = $"Ein Turnier kostet {(int)TournamentCost} Gold"; return false; }
+            if (CountBuildings(BType.Turnierplatz) == 0) { why = Loc.T("Ihr braucht einen Turnierplatz"); return false; }
+            if (TournamentCooldown > 0) { why = Loc.F("Das nächste Turnier ist in {0} Tagen möglich", (TournamentCooldown)); return false; }
+            if (Player.res[(int)Res.Gold] < TournamentCost) { why = Loc.F("Ein Turnier kostet {0} Gold", ((int)TournamentCost)); return false; }
             return true;
         }
 
@@ -205,9 +205,9 @@ namespace PixelKingdom
             foreach (var f in guests) ModRel(p.id, f.id, 8);
             var cap = Capital(p);
             if (cap != null) cap.garrison[(int)UType.Ritter] += 2;
-            string winner = guests.Count > 0 ? "ein Ritter aus " + guests[Rng.Next(guests.Count)].name : "einer eurer eigenen Ritter";
-            Notify($"Ritterturnier! Sieger: {winner}. +25 Ansehen, {guests.Count} Gäste sind euch nun gewogener.", 1);
-            Say(Aldo, "advisor", $"Was für ein Turnier! Lanzen splitterten, das Volk jubelte – und am Ende siegte {winner}. Zwei fahrende Ritter bleiben in euren Diensten.");
+            string winner = guests.Count > 0 ? Loc.T("ein Ritter aus ") + guests[Rng.Next(guests.Count)].name : Loc.T("einer eurer eigenen Ritter");
+            Notify(Loc.F("Ritterturnier! Sieger: {0}. +25 Ansehen, {1} Gäste sind euch nun gewogener.", (winner), (guests.Count)), 1);
+            Say(Aldo, "advisor", Loc.F("Was für ein Turnier! Lanzen splitterten, das Volk jubelte – und am Ende siegte {0}. Zwei fahrende Ritter bleiben in euren Diensten.", (winner)));
         }
     }
 }

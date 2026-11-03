@@ -201,7 +201,7 @@ namespace PixelKingdom
             units[(int)UType.Spaeher] = 0;
             var a = FormArmy(src, units);
             if (a == null) return;
-            a.name = (f.isEmperor ? "Kaiserliches Heer" : "Heer von " + f.name);
+            a.name = (f.isEmperor ? Loc.T("Kaiserliches Heer") : Loc.T("Heer von ") + f.name);
             bool raid = DefenseStrength(target) > Strength(a.units) * 0.8f;
             // Anfängerschutz: die letzte Siedlung eines kleinen Spielerreichs wird nur geplündert
             if (F(target.faction).isPlayer && PlayerProtected) raid = true;
@@ -211,7 +211,7 @@ namespace PixelKingdom
                 return;
             }
             if (F(target.faction).isPlayer)
-                Notify($"Späher melden: {a.name} ({a.units.Sum()} Mann) marschiert auf {target.name}!", 3);
+                Notify(Loc.F("Späher melden: {0} ({1} Mann) marschiert auf {2}!", (a.name), (a.units.Sum()), (target.name)), 3);
         }
 
         void ProposeToPlayer(FactionData f)

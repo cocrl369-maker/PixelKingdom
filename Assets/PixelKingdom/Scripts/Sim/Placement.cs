@@ -87,17 +87,17 @@ namespace PixelKingdom
         {
             switch (t)
             {
-                case BType.Bauernhof: return "Boden";
-                case BType.Holzfaeller: return "Bäume";
-                case BType.Steinbruch: return "Fels";
-                case BType.Mine: case BType.Goldmine: return "Erz";
-                case BType.Fischerhuette: return "Wasser";
+                case BType.Bauernhof: return Loc.T("Boden");
+                case BType.Holzfaeller: return Loc.T("Bäume");
+                case BType.Steinbruch: return Loc.T("Fels");
+                case BType.Mine: case BType.Goldmine: return Loc.T("Erz");
+                case BType.Fischerhuette: return Loc.T("Wasser");
             }
             return null;
         }
 
         /// <summary>Kurze Bewertung eines Ertragsfaktors (1 = so viel wie ein normales Gebäude).</summary>
-        public static string Rating(float f) => f >= 1.2f ? "sehr gut" : f >= 1f ? "gut" : f >= 0.8f ? "mittel" : f >= 0.6f ? "schwach" : "sehr schwach";
+        public static string Rating(float f) => f >= 1.2f ? Loc.T("sehr gut") : f >= 1f ? Loc.T("gut") : f >= 0.8f ? Loc.T("mittel") : f >= 0.6f ? Loc.T("schwach") : Loc.T("sehr schwach");
 
         /// <summary>Abweichung vom normalen Ertrag als Text, z.B. "+12 %" oder "-20 %".</summary>
         public static string Diff(float f)
@@ -119,48 +119,48 @@ namespace PixelKingdom
         {
             why = null;
             if (tileBuilding == null) RebuildOccupancy();
-            if (!WorldMap.In(x, y)) { why = "Außerhalb der Karte"; return false; }
+            if (!WorldMap.In(x, y)) { why = Loc.T("Außerhalb der Karte"); return false; }
             int i = WorldMap.Idx(x, y);
             var f = F(s.faction);
-            if (f.isPlayer && !ignoreFog && !Map.disc[i]) { why = "Unerforschtes Gebiet"; return false; }
+            if (f.isPlayer && !ignoreFog && !Map.disc[i]) { why = Loc.T("Unerforschtes Gebiet"); return false; }
             bool mineType = t == BType.Mine || t == BType.Goldmine || t == BType.Steinbruch;
-            if (Map.IsWater(i) || Map.river[i]) { why = "Im Wasser kann man nicht bauen"; return false; }
-            if (Map.biome[i] == Biome.Mountain || Map.biome[i] == Biome.Snow) { why = "Zu steil – Gebirge"; return false; }
-            if (Map.deposit[i] != 0 && !mineType) { why = "Hier liegt ein Erzvorkommen – nur für Minen"; return false; }
-            if (tileBuilding[i] != -1) { why = tileBuilding[i] == -2 ? "Hier ist schon etwas" : "Der Platz ist belegt"; return false; }
+            if (Map.IsWater(i) || Map.river[i]) { why = Loc.T("Im Wasser kann man nicht bauen"); return false; }
+            if (Map.biome[i] == Biome.Mountain || Map.biome[i] == Biome.Snow) { why = Loc.T("Zu steil – Gebirge"); return false; }
+            if (Map.deposit[i] != 0 && !mineType) { why = Loc.T("Hier liegt ein Erzvorkommen – nur für Minen"); return false; }
+            if (tileBuilding[i] != -1) { why = tileBuilding[i] == -2 ? Loc.T("Hier ist schon etwas") : Loc.T("Der Platz ist belegt"); return false; }
             int own = Map.owner[i];
-            if (own >= 0 && own != s.faction) { var o = F(own); why = "Gebiet von " + (o != null ? o.name : "Fremden"); return false; }
+            if (own >= 0 && own != s.faction) { var o = F(own); why = Loc.T("Gebiet von ") + (o != null ? o.name : Loc.T("Fremden")); return false; }
             float d = Dist(s.x, s.y, x, y);
-            if (!IsRemote(t) && d > TownRadius(s)) { why = "Muss in der Stadt stehen (nah am Zentrum)"; return false; }
-            if (d > MaxRemote) { why = $"Zu weit weg von {s.name} (max. {MaxRemote} Felder)"; return false; }
+            if (!IsRemote(t) && d > TownRadius(s)) { why = Loc.T("Muss in der Stadt stehen (nah am Zentrum)"); return false; }
+            if (d > MaxRemote) { why = Loc.F("Zu weit weg von {0} (max. {1} Felder)", (s.name), (MaxRemote)); return false; }
             switch (t)
             {
                 case BType.Bauernhof:
-                    if (!(Map.biome[i] == Biome.Fertile || Map.biome[i] == Biome.Grass || Map.biome[i] == Biome.Steppe)) { why = "Braucht Wiese oder fruchtbares Land"; return false; }
+                    if (!(Map.biome[i] == Biome.Fertile || Map.biome[i] == Biome.Grass || Map.biome[i] == Biome.Steppe)) { why = Loc.T("Braucht Wiese oder fruchtbares Land"); return false; }
                     break;
                 case BType.Holzfaeller:
-                    if (!Near(x, y, 2, j => Map.trees[j] > 0)) { why = "Braucht Bäume in der Nähe"; return false; }
+                    if (!Near(x, y, 2, j => Map.trees[j] > 0)) { why = Loc.T("Braucht Bäume in der Nähe"); return false; }
                     break;
                 case BType.Fischerhuette:
-                    if (!Near(x, y, 1, j => Map.IsWater(j) || Map.river[j])) { why = "Muss am Wasser stehen"; return false; }
+                    if (!Near(x, y, 1, j => Map.IsWater(j) || Map.river[j])) { why = Loc.T("Muss am Wasser stehen"); return false; }
                     break;
                 case BType.Hafen:
-                    if (!Near(x, y, 1, j => Map.IsSea(j))) { why = "Muss an der Meeresküste stehen"; return false; }
+                    if (!Near(x, y, 1, j => Map.IsSea(j))) { why = Loc.T("Muss an der Meeresküste stehen"); return false; }
                     break;
                 case BType.Steinbruch:
-                    if (!Near(x, y, 1, j => Map.biome[j] == Biome.Hills || Map.biome[j] == Biome.Mountain || Map.biome[j] == Biome.Snow || Map.deposit[j] == WorldMap.DepStone)) { why = "Braucht Hügel, Fels oder ein Steinvorkommen"; return false; }
+                    if (!Near(x, y, 1, j => Map.biome[j] == Biome.Hills || Map.biome[j] == Biome.Mountain || Map.biome[j] == Biome.Snow || Map.deposit[j] == WorldMap.DepStone)) { why = Loc.T("Braucht Hügel, Fels oder ein Steinvorkommen"); return false; }
                     break;
                 case BType.Mine:
-                    if (!Near(x, y, 1, j => Map.deposit[j] == WorldMap.DepIron)) { why = "Muss an einem Eisenvorkommen stehen"; return false; }
+                    if (!Near(x, y, 1, j => Map.deposit[j] == WorldMap.DepIron)) { why = Loc.T("Muss an einem Eisenvorkommen stehen"); return false; }
                     break;
                 case BType.Goldmine:
-                    if (!Near(x, y, 1, j => Map.deposit[j] == WorldMap.DepGold)) { why = "Muss an einem Goldvorkommen stehen"; return false; }
+                    if (!Near(x, y, 1, j => Map.deposit[j] == WorldMap.DepGold)) { why = Loc.T("Muss an einem Goldvorkommen stehen"); return false; }
                     break;
             }
             if (mineType && Map.deposit[i] != 0)
             {
                 bool fits = (t == BType.Mine && Map.deposit[i] == WorldMap.DepIron) || (t == BType.Goldmine && Map.deposit[i] == WorldMap.DepGold) || (t == BType.Steinbruch && Map.deposit[i] == WorldMap.DepStone);
-                if (!fits) { why = "Falsches Vorkommen"; return false; }
+                if (!fits) { why = Loc.T("Falsches Vorkommen"); return false; }
             }
             return true;
         }

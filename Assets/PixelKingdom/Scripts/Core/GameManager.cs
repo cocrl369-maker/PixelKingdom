@@ -16,7 +16,7 @@ namespace PixelKingdom
         static void Boot()
         {
             if (I != null || FindObjectOfType<GameManager>() != null) return;
-            var go = new GameObject("PixelKingdom");
+            var go = new GameObject(Loc.T("PixelKingdom"));
             go.AddComponent<GameManager>();
         }
 
@@ -47,7 +47,7 @@ namespace PixelKingdom
             CurrentMode = Mode.PlaceBuilding; ModeSource = s.id; PlaceType = t;
             SelSettlement = -1; SelArmy = -1; SelPoi = -1; placeTapX = -1;
             CamCtrl.FocusOn(new Vector2(s.x + 0.5f, s.y + 0.5f));
-            Game.Hint("place_building", "Wählt den Bauplatz! Grüne Felder sind erlaubt – je heller, desto besser der Standort. Holzfäller brauchen Wald, Bauernhöfe Wiesen, Minen ein Vorkommen. Werkstätten und Märkte müssen in der Stadt stehen, Höfe und Minen dürfen weiter hinaus – lange Wege kosten aber Ertrag.");
+            Game.Hint("place_building", Loc.T("Wählt den Bauplatz! Grüne Felder bringen mehr Ertrag als üblich, gelbe weniger. Holzfäller brauchen Wald, Bauernhöfe Wiesen, Minen ein Vorkommen. Werkstätten und Märkte müssen in der Stadt stehen, Höfe und Minen dürfen weiter hinaus – lange Wege kosten aber Ertrag."));
         }
 
         void EndPlace()
@@ -69,7 +69,7 @@ namespace PixelKingdom
                 return;
             }
             placeTapX = -1;
-            if (!g.CanPlace(s, PlaceType, HoverX, HoverY, out string why)) { UI.Toast("Hier nicht: " + why, 2); return; }
+            if (!g.CanPlace(s, PlaceType, HoverX, HoverY, out string why)) { UI.Toast(Loc.T("Hier nicht: ") + why, 2); return; }
             if (!g.CanBuild(s, PlaceType, out why)) { UI.Toast(why, 2); EndPlace(); return; }
             if (g.QueueBuild(s, PlaceType, HoverX, HoverY))
             {
@@ -106,15 +106,15 @@ namespace PixelKingdom
             }
             Palette.Set(0);
 
-            GroundMat = new Material(LoadShader("PKGround", "PixelKingdom/Ground")) { name = "PK Boden" };
-            SpriteMat = new Material(LoadShader("PKSprite", "PixelKingdom/Sprite")) { name = "PK Sprites" };
-            ShadowMat = new Material(LoadShader("PKShadow", "PixelKingdom/Shadow")) { name = "PK Schatten" };
+            GroundMat = new Material(LoadShader(Loc.T("PKGround"), Loc.T("PixelKingdom/Ground"))) { name = Loc.T("PK Boden") };
+            SpriteMat = new Material(LoadShader(Loc.T("PKSprite"), Loc.T("PixelKingdom/Sprite"))) { name = Loc.T("PK Sprites") };
+            ShadowMat = new Material(LoadShader(Loc.T("PKShadow"), Loc.T("PixelKingdom/Shadow"))) { name = Loc.T("PK Schatten") };
 
             var cam = Camera.main;
             if (cam == null)
             {
-                var cgo = new GameObject("Main Camera");
-                cgo.tag = "MainCamera";
+                var cgo = new GameObject(Loc.T("Main Camera"));
+                cgo.tag = Loc.T("MainCamera");
                 cam = cgo.AddComponent<Camera>();
             }
             foreach (var l in FindObjectsOfType<Light>()) l.enabled = false; // 2D-Pixelkunst braucht kein Licht
@@ -123,11 +123,11 @@ namespace PixelKingdom
             if (CamCtrl == null) CamCtrl = cam.gameObject.AddComponent<CameraController>();
             CamCtrl.Init(cam);
 
-            Ground = new GameObject("Boden").AddComponent<GroundRenderer>();
+            Ground = new GameObject(Loc.T("Boden")).AddComponent<GroundRenderer>();
             Ground.transform.SetParent(transform, false);
-            Objects = new GameObject("Natur").AddComponent<ObjectRenderer>();
+            Objects = new GameObject(Loc.T("Natur")).AddComponent<ObjectRenderer>();
             Objects.transform.SetParent(transform, false);
-            Entities = new GameObject("Siedlungen & Heere").AddComponent<EntityRenderer>();
+            Entities = new GameObject(Loc.T("Siedlungen & Heere")).AddComponent<EntityRenderer>();
             Entities.transform.SetParent(transform, false);
             UI = gameObject.AddComponent<GameUI>();
             gameObject.AddComponent<AudioManager>();
@@ -138,7 +138,7 @@ namespace PixelKingdom
         {
             var sh = Resources.Load<Shader>(res);
             if (sh == null) sh = Shader.Find(name);
-            if (sh == null) { Debug.LogError("PixelKingdom: Shader fehlt: " + name); sh = Shader.Find("Sprites/Default"); }
+            if (sh == null) { Debug.LogError(Loc.T("PixelKingdom: Shader fehlt: ") + name); sh = Shader.Find(Loc.T("Sprites/Default")); }
             return sh;
         }
 
@@ -220,7 +220,7 @@ namespace PixelKingdom
         public void SaveNow()
         {
             if (Game == null || isDemo || InMenu && !HasRunningGame) return;
-            if (SaveSystem.Save(Game)) UI.Toast("Spiel gespeichert.", 1);
+            if (SaveSystem.Save(Game)) UI.Toast(Loc.T("Spiel gespeichert."), 1);
         }
 
         public bool HasRunningGame => Game != null && !isDemo;
@@ -258,7 +258,7 @@ namespace PixelKingdom
             if (PKInput.KeyDown(PKKey.F9) && !Application.isMobilePlatform)
             {
                 PKInput.TouchSim = !PKInput.TouchSim;
-                UI.Toast(PKInput.TouchSim ? "Touch-Simulation AN: Maus = Finger (ziehen = verschieben, halten = lange drücken)" : "Touch-Simulation AUS", 0);
+                UI.Toast(PKInput.TouchSim ? Loc.T("Touch-Simulation AN: Maus = Finger (ziehen = verschieben, halten = lange drücken)") : Loc.T("Touch-Simulation AUS"), 0);
             }
             Screen.sleepTimeout = InMenu ? SleepTimeout.SystemSetting : SleepTimeout.NeverSleep;
             if (!InMenu && !GameOver)
@@ -448,8 +448,8 @@ namespace PixelKingdom
                 CurrentMode = Mode.None;
                 if (src == null) return;
                 var a = g.SendSettlers(src, HoverX, HoverY, out string why);
-                if (a == null) UI.Toast("Nicht möglich: " + why, 2);
-                else { UI.Toast("Siedler brechen auf!", 1); SelectArmy(a); }
+                if (a == null) UI.Toast(Loc.T("Nicht möglich: ") + why, 2);
+                else { UI.Toast(Loc.T("Siedler brechen auf!"), 1); SelectArmy(a); }
                 return;
             }
             // Armee unter der Maus?
@@ -503,10 +503,10 @@ namespace PixelKingdom
             var opts = g.OrderOptions(a, HoverX, HoverY, s, poi);
             int px = s != null ? s.x : poi != null ? poi.x : HoverX, py = s != null ? s.y : poi != null ? poi.y : HoverY;
             var path = g.PreviewPath(a, px, py, out float days);
-            if (path == null) { UI.Toast(g.CanSail(a.faction) || g.S.seafaring ? "Dorthin führt kein Weg (Gebirge oder Meer)." : "Dorthin führt kein Weg – über das Meer braucht ihr Schiffe.", 2); CloseOrderMenu(); return false; }
+            if (path == null) { UI.Toast(g.CanSail(a.faction) || g.S.seafaring ? Loc.T("Dorthin führt kein Weg (Gebirge oder Meer).") : Loc.T("Dorthin führt kein Weg – über das Meer braucht ihr Schiffe."), 2); CloseOrderMenu(); return false; }
             OrderMenu = opts; OrderPath = path; OrderDays = days; OrderArmy = a.id; OrderX = px; OrderY = py;
             OrderTarget = s != null ? s.name + (s.faction != g.PlayerId && g.F(s.faction) != null ? " (" + g.F(s.faction).name + ")" : "") : poi != null ? Game.PoiName(poi) : g.Map.BiomeName(WorldMap.Idx(HoverX, HoverY));
-            Game.Hint("order_menu", "Das Befehlsmenü: Die gepunktete Linie zeigt den Weg, oben steht, wie viele Tage der Marsch dauert. Wählt einen Befehl – erst dann zieht das Heer los. Tippt woanders hin, um ein anderes Ziel zu wählen.");
+            Game.Hint("order_menu", Loc.T("Das Befehlsmenü: Die gepunktete Linie zeigt den Weg, oben steht, wie viele Tage der Marsch dauert. Wählt einen Befehl – erst dann zieht das Heer los. Tippt woanders hin, um ein anderes Ziel zu wählen."));
             return true;
         }
 
@@ -532,7 +532,7 @@ namespace PixelKingdom
                     return;
                 case 5:
                     if (!g.OrderMove(a, o.X, o.Y, ArmyMission.Found, -1, out string w5)) UI.Toast(w5, 2);
-                    else UI.Toast("Siedler ziehen dorthin und gründen einen neuen Ort.", 0);
+                    else UI.Toast(Loc.T("Siedler ziehen dorthin und gründen einen neuen Ort."), 0);
                     return;
                 default:
                     if (!g.OrderMove(a, o.X, o.Y, ArmyMission.Move, -1, out string w0)) UI.Toast(w0, 2);
@@ -556,13 +556,13 @@ namespace PixelKingdom
         public void SendToPoi(ArmyData a, PoiData p)
         {
             if (!Game.OrderMove(a, p.x, p.y, ArmyMission.Poi, p.id, out string why)) UI.Toast(why, 2);
-            else UI.Toast(p.type == 0 ? $"{a.name} zieht zur Ruine." : p.type == 2 ? $"{a.name} besucht das fahrende Volk." : $"{a.name} greift das Räuberlager an.", p.type == 1 ? 3 : 0);
+            else UI.Toast(p.type == 0 ? Loc.F("{0} zieht zur Ruine.", (a.name)) : p.type == 2 ? Loc.F("{0} besucht das fahrende Volk.", (a.name)) : Loc.F("{0} greift das Räuberlager an.", (a.name)), p.type == 1 ? 3 : 0);
         }
 
         public void OrderAttack(ArmyData a, SettlementData s, bool raid)
         {
             if (!Game.OrderMove(a, s.x, s.y, raid ? ArmyMission.Raid : ArmyMission.Attack, s.id, out string why)) UI.Toast(why, 2);
-            else UI.Toast(raid ? $"Überfall auf {s.name} befohlen." : $"Angriff auf {s.name} befohlen.", 3);
+            else UI.Toast(raid ? Loc.F("Überfall auf {0} befohlen.", (s.name)) : Loc.F("Angriff auf {0} befohlen.", (s.name)), 3);
         }
 
         void OnApplicationQuit()

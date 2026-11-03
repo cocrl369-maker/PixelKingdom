@@ -16,6 +16,12 @@ Eine neue Sitzung sollte **zuerst diese Datei und die README lesen**, dann weite
 - Farben wechseln **automatisch mit der Jahreszeit** (kein Paletten-Knopf).
 - Ideen aus großen Strategiespielen sind willkommen, aber **nichts kopieren** (keine Namen, Grafiken, Musik, Texte).
 
+## Regeln für neuen Code
+
+- **Texte immer übersetzbar schreiben**: `Loc.T("Deutscher Text")` für feste Texte, `Loc.F("Text mit {0} und {1}", a, b)` für Texte mit Werten (keine `$"..."`-Strings für sichtbare Texte). Die englische Übersetzung kommt in `Scripts/Loc/Loc.En.cs` (Schlüssel = deutscher Text). Fehlt sie, erscheint der deutsche Text.
+- Feste Daten (Gebäude, Einheiten, Ränge, Kapitel) übersetzen sich selbst über ihre Eigenschaften (`Name`, `Desc` …); feste Listen nutzen `LArr`.
+- **Eingabe der Oberfläche**: Nur `Clicked(rect)`, `Hover(rect)`, `Scroll(...)` aus `UI/GameUI.Input.cs` benutzen – nie `Event.current` für Maus/Finger (auf Android kommen Unitys Mausereignisse mit falscher Position an). Gruppen mit `BeginGroup`/`EndGroup` (nicht `GUI.BeginGroup`).
+
 ## Aufbau in Kürze
 
 | Bereich | Ort | Hinweis |
@@ -63,6 +69,11 @@ Die Unity-Teile kompilieren gegen das NuGet-Paket `UnityEngine.Modules` (Ziel `n
 
 ## Stand (zuletzt erledigt)
 
+- Eigene Zeiger-Eingabe: Klicks gehen nie mehr „durch“ Fenster; Wischen scrollt Listen und die Bauleiste.
+- Befehlsmenü für Heere (`Sim/Orders.cs`): Ziel antippen → Weg, Marschdauer, mögliche Befehle.
+- Verständliche Ertragsangaben beim Bauen (Vergleich mit einem normalen Gebäude, z. B. „+12 %“).
+- Musik: 12 ruhige Stücke, wechselnde Tonarten und Stile.
+- Englische Sprache (`Scripts/Loc/`), umschaltbar im Menü.
 - Gebirge neu: in den Boden gemaltes Höhenfeld (Hauptgrat, Seitengrate, Schnee, Almflecken), Schrägansicht, bleibt im Gebirgsgebiet; unpassierbar.
 - Touch: Knöpfe in Dialogen/Fenstern lösen nicht mehr zusätzlich die Karte aus.
 - Kamera endet am Kartenrand, Zoom-Grenze passend zur Bildschirmgröße.

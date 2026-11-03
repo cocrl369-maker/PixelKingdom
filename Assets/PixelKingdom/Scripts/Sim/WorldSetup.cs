@@ -60,12 +60,12 @@ namespace PixelKingdom
                             .OrderByDescending(s => s.score).FirstOrDefault()
                         ?? home.Where(s => GoodStart(map, s)).OrderByDescending(s => s.score).FirstOrDefault() ?? home[0];
             taken.Add((pSite.x, pSite.y));
-            var player = new FactionData { id = g.NewId(), name = "Euer Reich", leader = "Ihr", isPlayer = true, color = 0, continent = 0, culture = 0,
+            var player = new FactionData { id = g.NewId(), name = Loc.T("Euer Reich"), leader = Loc.T("Ihr"), isPlayer = true, color = 0, continent = 0, culture = 0,
                 honor = 0.7f, res = new float[] { 90, 80, 20, 0, 60, 0 } };
             g.AddFaction(player);
             g.S.playerFaction = player.id;
             var pst = NewSettlement(player, pSite, 22, true);
-            player.name = "Dorf " + pst.name;
+            player.name = Loc.T("Dorf ") + pst.name;
             pst.buildings[(int)BType.Wohnhaus] = 2;
             pst.buildings[(int)BType.Bauernhof] = 1;
             pst.garrison[(int)UType.Miliz] = 4;
@@ -77,12 +77,12 @@ namespace PixelKingdom
             var eSite = home.OrderByDescending(s => Game.Dist(s.x, s.y, pSite.x, pSite.y) * 0.9f + s.score * 2f)
                             .First(s => Free(s, 44));
             taken.Add((eSite.x, eSite.y));
-            var emp = NewFaction("Kaiserreich Valdor", "Kaiser Malrik der Eiserne", 0, 0);
+            var emp = NewFaction(Loc.T("Kaiserreich Valdor"), Loc.T("Kaiser Malrik der Eiserne"), 0, 0);
             emp.isEmperor = true; emp.color = 13; emp.aggression = 0.85f; emp.greed = 0.95f; emp.honor = 0.1f; emp.ambition = 1f; emp.loyalty = 1f;
             emp.res = new float[] { 900, 700, 600, 200, 1500, 300 };
             emp.rank = (int)Rank.Koenigreich;
             var cap = NewSettlement(emp, eSite, 420, true);
-            cap.name = "Valdoran"; cap.isCapitalOfEmperor = true; cap.taxRate = 0.25f;
+            cap.name = Loc.T("Valdoran"); cap.isCapitalOfEmperor = true; cap.taxRate = 0.25f;
             int empTowns = 0;
             foreach (var s in sites)
             {
@@ -118,11 +118,11 @@ namespace PixelKingdom
             {
                 var c = Pick(s => s.cont == 0 && Game.Dist(s.x, s.y, pSite.x, pSite.y) > 15, 15);
                 if (c == null) break;
-                var f = NewFaction("", "Dorfältester " + NameGen.Leader(r, 0).Split(' ')[1], 0, 0);
+                var f = NewFaction("", Loc.T("Dorfältester ") + NameGen.Leader(r, 0).Split(' ')[1], 0, 0);
                 f.isFree = true; f.aggression *= 0.2f; f.ambition *= 0.2f; f.loyalty *= 0.5f;
                 f.res = new float[] { 80, 60, 20, 0, 40, 0 };
                 var st = NewSettlement(f, c, 18 + r.Next(18), true);
-                f.name = "Freidorf " + st.name;
+                f.name = Loc.T("Freidorf ") + st.name;
             }
 
             // ---------------- Übersee ---------------------------------------------------------
@@ -149,10 +149,10 @@ namespace PixelKingdom
                 {
                     var c = Pick(s => s.cont == cont, 14);
                     if (c == null) break;
-                    var f = NewFaction("", "Ältester " + NameGen.Leader(r, cont).Split(' ')[1], cont, cont);
+                    var f = NewFaction("", Loc.T("Ältester ") + NameGen.Leader(r, cont).Split(' ')[1], cont, cont);
                     f.isFree = true; f.aggression *= 0.2f; f.loyalty = 0;
                     var st = NewSettlement(f, c, 20 + r.Next(20), true);
-                    f.name = "Freidorf " + st.name;
+                    f.name = Loc.T("Freidorf ") + st.name;
                 }
             }
 

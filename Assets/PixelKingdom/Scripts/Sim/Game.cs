@@ -209,10 +209,10 @@ namespace PixelKingdom
             try { for (int d = 0; d < days; d++) Advance(1f); }
             finally { Offline = false; }
             var parts = new List<string>();
-            parts.Add($"{S.day - dayBefore} Tage sind vergangen.");
-            parts.Add($"Bevölkerung: {(int)popBefore} -> {(int)TotalPop(p.id)}");
+            parts.Add(Loc.F("{0} Tage sind vergangen.", (S.day - dayBefore)));
+            parts.Add(Loc.F("Bevölkerung: {0} -> {1}", ((int)popBefore), ((int)TotalPop(p.id))));
             int built = SettlementsOf(p.id).Sum(s => s.buildings.Sum()) - buildBefore;
-            if (built > 0) parts.Add($"{built} Gebäude fertiggestellt.");
+            if (built > 0) parts.Add(Loc.F("{0} Gebäude fertiggestellt.", (built)));
             for (int r = 0; r < ResInfo.Count; r++)
             {
                 int diff = (int)(p.res[r] - before[r]);
@@ -346,7 +346,7 @@ namespace PixelKingdom
             var f = F(fid);
             if (f == null || f.isPlayer || f.knownToPlayer != 0) return;
             f.knownToPlayer = 1;
-            Notify($"Neue Bekanntschaft: {f.name} ({f.leader}).", 0);
+            Notify(Loc.F("Neue Bekanntschaft: {0} ({1}).", (f.name), (f.leader)), 0);
             OnFactionMet(f);
         }
 
@@ -360,10 +360,10 @@ namespace PixelKingdom
                 foreach (var a in ArmiesOf(f.id).ToList()) RemoveArmy(a);
                 if (f.isPlayer)
                 {
-                    Notify("Euer Reich ist gefallen...", 2);
+                    Notify(Loc.T("Euer Reich ist gefallen..."), 2);
                     continue;
                 }
-                Notify($"{f.name} existiert nicht mehr.", 3);
+                Notify(Loc.F("{0} existiert nicht mehr.", (f.name)), 3);
             }
         }
 
@@ -402,7 +402,7 @@ namespace PixelKingdom
 
         public string DateString()
         {
-            return $"Tag {Calendar.DayOfSeason(S.day)}, {Calendar.SeasonNames[(int)Season]}, Jahr {Calendar.Year(S.day)}";
+            return Loc.F("Tag {0}, {1}, Jahr {2}", (Calendar.DayOfSeason(S.day)), (Calendar.SeasonNames[(int)Season]), (Calendar.Year(S.day)));
         }
 
         public FactionData Emperor { get { foreach (var f in S.factions) if (f.isEmperor) return f; return null; } }

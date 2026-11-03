@@ -11,7 +11,7 @@ namespace PixelKingdom
         /// <summary>Maßstab gegenüber der ursprünglichen Kartenplanung (320x224).</summary>
         public const float Scale = 1.5f;
         public const float Sea = 0.40f;
-        public static readonly string[] ContinentNames = { "Mittland", "Nordlande", "Südreich", "Inselbund" };
+        public static readonly LArr ContinentNames = new LArr(Loc.T("Mittland"), Loc.T("Nordlande"), Loc.T("Südreich"), Loc.T("Inselbund"));
 
         public readonly float[] h = new float[W * H];
         public readonly Biome[] biome = new Biome[W * H];
@@ -136,26 +136,26 @@ namespace PixelKingdom
             catch { }
         }
 
-        public static string DepositName(byte d) => d == DepIron ? "Eisenvorkommen" : d == DepGold ? "Goldvorkommen" : d == DepStone ? "Steinvorkommen" : null;
+        public static string DepositName(byte d) => d == DepIron ? Loc.T("Eisenvorkommen") : d == DepGold ? Loc.T("Goldvorkommen") : d == DepStone ? Loc.T("Steinvorkommen") : null;
 
         public string BiomeName(int i)
         {
-            if (river[i]) return "Fluss";
+            if (river[i]) return Loc.T("Fluss");
             switch (biome[i])
             {
-                case Biome.Ocean: return "Meer";
-                case Biome.Shallow: return "Küstengewässer";
-                case Biome.Lake: return "See";
-                case Biome.Beach: return "Strand";
-                case Biome.Grass: return "Wiese";
-                case Biome.Fertile: return "Fruchtbares Land";
-                case Biome.Forest: return "Laubwald";
-                case Biome.Pine: return "Nadelwald";
-                case Biome.Hills: return "Hügel";
-                case Biome.Mountain: return "Gebirge";
-                case Biome.Snow: return "Gipfel";
-                case Biome.Desert: return "Wüste";
-                case Biome.Steppe: return "Steppe";
+                case Biome.Ocean: return Loc.T("Meer");
+                case Biome.Shallow: return Loc.T("Küstengewässer");
+                case Biome.Lake: return Loc.T("See");
+                case Biome.Beach: return Loc.T("Strand");
+                case Biome.Grass: return Loc.T("Wiese");
+                case Biome.Fertile: return Loc.T("Fruchtbares Land");
+                case Biome.Forest: return Loc.T("Laubwald");
+                case Biome.Pine: return Loc.T("Nadelwald");
+                case Biome.Hills: return Loc.T("Hügel");
+                case Biome.Mountain: return Loc.T("Gebirge");
+                case Biome.Snow: return Loc.T("Gipfel");
+                case Biome.Desert: return Loc.T("Wüste");
+                case Biome.Steppe: return Loc.T("Steppe");
             }
             return "?";
         }

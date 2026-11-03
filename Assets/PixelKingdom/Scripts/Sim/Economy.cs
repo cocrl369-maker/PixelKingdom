@@ -48,13 +48,13 @@ namespace PixelKingdom
             why = null;
             switch (need)
             {
-                case TerrainNeed.Fertile: if (t[0] < 3) why = "Kein fruchtbares Land in der Nähe"; break;
-                case TerrainNeed.Forest: if (t[1] < 2) why = "Keine Bäume in der Nähe (Wald abgeholzt?)"; break;
-                case TerrainNeed.Iron: if (t[6] < 1) why = "Kein Eisenvorkommen im Gebiet"; break;
-                case TerrainNeed.Gold: if (t[7] < 1) why = "Kein Goldvorkommen im Gebiet"; break;
-                case TerrainNeed.Hills: if (t[2] < 1) why = "Keine Hügel oder Berge in der Nähe"; break;
-                case TerrainNeed.Mountain: if (t[3] < 1) why = "Kein Gebirge in der Nähe"; break;
-                case TerrainNeed.Coast: if (t[4] < 1) why = "Kein Wasser in der Nähe"; break;
+                case TerrainNeed.Fertile: if (t[0] < 3) why = Loc.T("Kein fruchtbares Land in der Nähe"); break;
+                case TerrainNeed.Forest: if (t[1] < 2) why = Loc.T("Keine Bäume in der Nähe (Wald abgeholzt?)"); break;
+                case TerrainNeed.Iron: if (t[6] < 1) why = Loc.T("Kein Eisenvorkommen im Gebiet"); break;
+                case TerrainNeed.Gold: if (t[7] < 1) why = Loc.T("Kein Goldvorkommen im Gebiet"); break;
+                case TerrainNeed.Hills: if (t[2] < 1) why = Loc.T("Keine Hügel oder Berge in der Nähe"); break;
+                case TerrainNeed.Mountain: if (t[3] < 1) why = Loc.T("Kein Gebirge in der Nähe"); break;
+                case TerrainNeed.Coast: if (t[4] < 1) why = Loc.T("Kein Wasser in der Nähe"); break;
             }
             return why == null;
         }
@@ -74,28 +74,28 @@ namespace PixelKingdom
                 float eff = d.Happiness * (float)Math.Sqrt(s.buildings[b]) * Clamp(60f / Math.Max(30f, s.pop), 0.4f, 1.2f);
                 build += eff;
             }
-            R("Gebäude", build);
-            R("Steuern", -s.taxRate * 140f + 7f);
-            if (HasTech(f, Techs.Kraeuterkunde)) R("Kräuterkunde", 4);
-            R("Rationen", (s.rations - 1) * 9f);
+            R(Loc.T("Gebäude"), build);
+            R(Loc.T("Steuern"), -s.taxRate * 140f + 7f);
+            if (HasTech(f, Techs.Kraeuterkunde)) R(Loc.T("Kräuterkunde"), 4);
+            R(Loc.T("Rationen"), (s.rations - 1) * 9f);
             int housing = Housing(s);
-            if (s.pop > housing) R("Überfüllung", -Math.Min(20, (s.pop - housing) * 1.5f));
-            if (f != null && f.res[(int)Res.Food] <= 1) R("Hunger", -25);
-            if (S.day - s.conqueredDay < 120) R("Kürzlich erobert", -25f * (1f - (S.day - s.conqueredDay) / 120f));
-            if (S.day - s.lastBattleDay < 20) R("Kampfhandlungen", -10);
-            if (NearBanditCamp(s)) R("Räuberplage", -6);
+            if (s.pop > housing) R(Loc.T("Überfüllung"), -Math.Min(20, (s.pop - housing) * 1.5f));
+            if (f != null && f.res[(int)Res.Food] <= 1) R(Loc.T("Hunger"), -25);
+            if (S.day - s.conqueredDay < 120) R(Loc.T("Kürzlich erobert"), -25f * (1f - (S.day - s.conqueredDay) / 120f));
+            if (S.day - s.lastBattleDay < 20) R(Loc.T("Kampfhandlungen"), -10);
+            if (NearBanditCamp(s)) R(Loc.T("Räuberplage"), -6);
             if (f != null)
             {
-                R("Rang", f.rank * 1.5f);
-                if (f.warWeariness > 10) R("Kriegsmüdigkeit", -Math.Min(15, f.warWeariness / 4f));
+                R(Loc.T("Rang"), f.rank * 1.5f);
+                if (f.warWeariness > 10) R(Loc.T("Kriegsmüdigkeit"), -Math.Min(15, f.warWeariness / 4f));
                 int maxS = Ranks.Get(f.rank).MaxSettlements;
                 int over = CountSettlements(f.id) - maxS;
-                if (f.isPlayer && over > 0) R("Verwaltungslast", -over * 6);
-                if (f.isEmperor) R("Kaiserliche Garde", 12);
-                if (f.isPlayer && S.story.emperorDefeated) R("Befreiung vom Kaiser", 8);
-                if (EdictOn(f, Edicts.Wehrpflicht)) R("Wehrpflicht", -4);
-                if (EdictOn(f, Edicts.FreieBauern)) R("Freie Bauern", 6);
-                if (Season == Season.Winter) R("Winter", -3);
+                if (f.isPlayer && over > 0) R(Loc.T("Verwaltungslast"), -over * 6);
+                if (f.isEmperor) R(Loc.T("Kaiserliche Garde"), 12);
+                if (f.isPlayer && S.story.emperorDefeated) R(Loc.T("Befreiung vom Kaiser"), 8);
+                if (EdictOn(f, Edicts.Wehrpflicht)) R(Loc.T("Wehrpflicht"), -4);
+                if (EdictOn(f, Edicts.FreieBauern)) R(Loc.T("Freie Bauern"), 6);
+                if (Season == Season.Winter) R(Loc.T("Winter"), -3);
             }
             return Clamp(h, 0, 100);
         }
@@ -205,7 +205,7 @@ namespace PixelKingdom
             if (!s.isCapitalOfEmperor && s.buildings[(int)BType.Brunnen] == 0 && !HasTech(f, Techs.Kraeuterkunde) && s.pop > 60 && Rng.NextDouble() < 0.002 && !Offline)
             {
                 s.pop *= 0.9f;
-                if (f.isPlayer) Notify($"Krankheit in {s.name}! Ein Brunnen hätte geholfen.", 2);
+                if (f.isPlayer) Notify(Loc.F("Krankheit in {0}! Ein Brunnen hätte geholfen.", (s.name)), 2);
             }
 
             // Zufriedenheit nähert sich dem Zielwert
@@ -301,7 +301,7 @@ namespace PixelKingdom
                 // Sold nicht bezahlt -> Desertion
                 f.res[(int)Res.Gold] = 0;
                 if (!Offline || f.isPlayer) Desert(f, 0.03f);
-                if (f.isPlayer && !Offline && S.day % 5 == 0) Notify("Die Kassen sind leer! Soldaten desertieren.", 2);
+                if (f.isPlayer && !Offline && S.day % 5 == 0) Notify(Loc.T("Die Kassen sind leer! Soldaten desertieren."), 2);
             }
             for (int r = 0; r < ResInfo.Count; r++) if (f.res[r] < 0) f.res[r] = 0;
 
@@ -337,7 +337,7 @@ namespace PixelKingdom
             {
                 s.pop *= 0.95f;
                 s.happiness += 8;
-                if (f.isPlayer) Notify($"Unruhen in {s.name} wurden von der Garnison niedergeschlagen.", 2);
+                if (f.isPlayer) Notify(Loc.F("Unruhen in {0} wurden von der Garnison niedergeschlagen.", (s.name)), 2);
                 return;
             }
             // Siedlung löst sich los
@@ -348,7 +348,7 @@ namespace PixelKingdom
             {
                 target = new FactionData
                 {
-                    id = NewId(), name = "Aufständische von " + s.name, leader = "Volkstribun " + NameGen.Leader(Rng, 0).Split(' ')[1],
+                    id = NewId(), name = Loc.T("Aufständische von ") + s.name, leader = Loc.T("Volkstribun ") + NameGen.Leader(Rng, 0).Split(' ')[1],
                     isRebel = true, isFree = true, continent = Map.cont[WorldMap.Idx(s.x, s.y)], culture = f.culture, color = 12,
                     aggression = 0.3f, honor = 0.6f, ambition = 0.2f, loyalty = 0f, res = new float[] { 60, 40, 10, 0, 20, 0 },
                 };
@@ -359,7 +359,7 @@ namespace PixelKingdom
             string oldName = f.name;
             TransferSettlement(s, target.id);
             s.happiness = 50;
-            Notify($"Aufstand! {s.name} hat sich von {oldName} losgesagt.", f.isPlayer ? 2 : 3);
+            Notify(Loc.F("Aufstand! {0} hat sich von {1} losgesagt.", (s.name), (oldName)), f.isPlayer ? 2 : 3);
         }
 
         public void TransferSettlement(SettlementData s, int newFaction)
@@ -410,13 +410,13 @@ namespace PixelKingdom
         {
             var f = F(s.faction); var d = Buildings.Get(t);
             why = null;
-            if (f.rank < d.MinRank) { why = "Benötigt Rang: " + Ranks.Get(d.MinRank).Name; return false; }
-            if (CountWithQueue(s, t) >= d.Max) { why = "Maximum erreicht"; return false; }
+            if (f.rank < d.MinRank) { why = Loc.T("Benötigt Rang: ") + Ranks.Get(d.MinRank).Name; return false; }
+            if (CountWithQueue(s, t) >= d.Max) { why = Loc.T("Maximum erreicht"); return false; }
             if (!f.isPlayer && d.Need != TerrainNeed.None && !TerrainOk(s, d.Need, out why)) return false;
-            if (t == BType.Burg && s.buildings[(int)BType.Mauer] == 0) { why = "Benötigt erst eine Mauer"; return false; }
-            if (t == BType.Kathedrale && s.buildings[(int)BType.Kapelle] == 0) { why = "Benötigt erst eine Kapelle"; return false; }
-            if (s.queue.Count >= 6) { why = "Bauschlange voll"; return false; }
-            if (checkCost && !CanAfford(f, d.Cost, BuildCostMult(s, t))) { why = "Nicht genug Ressourcen"; return false; }
+            if (t == BType.Burg && s.buildings[(int)BType.Mauer] == 0) { why = Loc.T("Benötigt erst eine Mauer"); return false; }
+            if (t == BType.Kathedrale && s.buildings[(int)BType.Kapelle] == 0) { why = Loc.T("Benötigt erst eine Kapelle"); return false; }
+            if (s.queue.Count >= 6) { why = Loc.T("Bauschlange voll"); return false; }
+            if (checkCost && !CanAfford(f, d.Cost, BuildCostMult(s, t))) { why = Loc.T("Nicht genug Ressourcen"); return false; }
             return true;
         }
 
@@ -443,11 +443,11 @@ namespace PixelKingdom
         {
             var f = F(s.faction); var d = Units.Get(u);
             why = null;
-            if (f.rank < d.MinRank) { why = "Benötigt Rang: " + Ranks.Get(d.MinRank).Name; return false; }
-            if (d.Needs != BType.None && s.buildings[(int)d.Needs] == 0) { why = "Benötigt " + Buildings.Get(d.Needs).Name; return false; }
-            if (s.queue.Count >= 6) { why = "Warteschlange voll"; return false; }
-            if (s.pop - count < 8) { why = "Zu wenige Bewohner"; return false; }
-            if (!CanAfford(f, d.Cost, count)) { why = "Nicht genug Ressourcen"; return false; }
+            if (f.rank < d.MinRank) { why = Loc.T("Benötigt Rang: ") + Ranks.Get(d.MinRank).Name; return false; }
+            if (d.Needs != BType.None && s.buildings[(int)d.Needs] == 0) { why = Loc.T("Benötigt ") + Buildings.Get(d.Needs).Name; return false; }
+            if (s.queue.Count >= 6) { why = Loc.T("Warteschlange voll"); return false; }
+            if (s.pop - count < 8) { why = Loc.T("Zu wenige Bewohner"); return false; }
+            if (!CanAfford(f, d.Cost, count)) { why = Loc.T("Nicht genug Ressourcen"); return false; }
             return true;
         }
 
@@ -501,13 +501,13 @@ namespace PixelKingdom
                 SettlementsDirty = true;
                 terrainCounts.Remove(s.id);
                 f.prestige += 1f;
-                if (f.isPlayer) Notify($"{Buildings.Get(q.type).Name} in {s.name} fertiggestellt.", 1, false);
+                if (f.isPlayer) Notify(Loc.F("{0} in {1} fertiggestellt.", (Buildings.Get(q.type).Name), (s.name)), 1, false);
                 OnBuildingFinished(s, (BType)q.type);
             }
             else
             {
                 s.garrison[q.type] += q.count;
-                if (f.isPlayer) Notify($"{q.count} {Units.Get(q.type).Plural} in {s.name} ausgebildet.", 1, false);
+                if (f.isPlayer) Notify(Loc.F("{0} {1} in {2} ausgebildet.", (q.count), (Units.Get(q.type).Plural), (s.name)), 1, false);
             }
         }
 
@@ -648,21 +648,21 @@ namespace PixelKingdom
         // ==================================================================
         public bool CanRankUp(FactionData f, List<string> missing)
         {
-            if (f.rank >= Ranks.Count - 1) { missing?.Add("Höchster Rang erreicht"); return false; }
+            if (f.rank >= Ranks.Count - 1) { missing?.Add(Loc.T("Höchster Rang erreicht")); return false; }
             var next = Ranks.Get(f.rank + 1);
             bool ok = true;
             void Need(bool cond, string text) { if (!cond) { ok = false; missing?.Add(text); } }
             float pop = TotalPop(f.id);
-            Need(pop >= next.Pop, $"Bevölkerung {(int)pop}/{next.Pop}");
-            Need(CountSettlements(f.id) >= next.Settlements, $"Siedlungen {CountSettlements(f.id)}/{next.Settlements}");
-            Need(f.prestige >= next.Prestige, $"Ansehen {(int)f.prestige}/{(int)next.Prestige}");
-            Need(f.res[(int)Res.Gold] >= next.GoldCost, $"Gold {(int)f.res[(int)Res.Gold]}/{(int)next.GoldCost}");
+            Need(pop >= next.Pop, Loc.F("Bevölkerung {0}/{1}", ((int)pop), (next.Pop)));
+            Need(CountSettlements(f.id) >= next.Settlements, Loc.F("Siedlungen {0}/{1}", (CountSettlements(f.id)), (next.Settlements)));
+            Need(f.prestige >= next.Prestige, Loc.F("Ansehen {0}/{1}", ((int)f.prestige), ((int)next.Prestige)));
+            Need(f.res[(int)Res.Gold] >= next.GoldCost, Loc.F("Gold {0}/{1}", ((int)f.res[(int)Res.Gold]), ((int)next.GoldCost)));
             if (next.RequiredBuilding != BType.None)
             {
                 bool has = SettlementsOf(f.id).Any(s => s.buildings[(int)next.RequiredBuilding] > 0);
-                Need(has, "Gebäude: " + Buildings.Get(next.RequiredBuilding).Name);
+                Need(has, Loc.T("Gebäude: ") + Buildings.Get(next.RequiredBuilding).Name);
             }
-            if (f.isPlayer && next.StoryChapter > 0) Need(S.story.chapter >= next.StoryChapter, "Geschichte: Kapitel " + (next.StoryChapter + 1) + " erreichen");
+            if (f.isPlayer && next.StoryChapter > 0) Need(S.story.chapter >= next.StoryChapter, Loc.T("Geschichte: Kapitel ") + (next.StoryChapter + 1) + " erreichen");
             return ok;
         }
 
@@ -675,8 +675,8 @@ namespace PixelKingdom
             var rd = Ranks.Get(f.rank);
             var cap = Capital(f);
             f.name = (f.rank >= 2 ? rd.Name + " " : rd.Name + " ") + (cap != null ? cap.name : "");
-            if (f.rank == (int)Rank.Gemeinde) f.name = "Gemeinde " + (cap != null ? cap.name : "");
-            Notify($"Aufstieg! Euer Reich ist nun: {rd.Name}. Ihr seid {rd.Ruler}.", 1);
+            if (f.rank == (int)Rank.Gemeinde) f.name = Loc.T("Gemeinde ") + (cap != null ? cap.name : "");
+            Notify(Loc.F("Aufstieg! Euer Reich ist nun: {0}. Ihr seid {1}.", (rd.Name), (rd.Ruler)), 1);
             foreach (var s in SettlementsOf(f.id)) s.happiness += 10;
             OnRankUp(f.rank);
             return true;
@@ -688,7 +688,7 @@ namespace PixelKingdom
             if (f.rank != lastRankHint && CanRankUp(f, null))
             {
                 lastRankHint = f.rank;
-                Notify("Ihr könnt im Rang aufsteigen! (Reich-Menü)", 1, false);
+                Notify(Loc.T("Ihr könnt im Rang aufsteigen! (Reich-Menü)"), 1, false);
             }
         }
 

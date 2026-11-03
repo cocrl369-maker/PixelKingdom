@@ -44,39 +44,39 @@ namespace PixelKingdom
             if (a.settlers > 0 && a.units.Sum() == 0)
             {
                 bool can = CanFoundAt(a.faction, tx, ty, out string why);
-                list.Add(new OrderOption { Kind = 5, Label = "Hier eine Siedlung gründen", Icon = "cart", Mission = ArmyMission.Found, X = tx, Y = ty, Enabled = can, Tip = can ? "Die Siedler ziehen hin und gründen einen neuen Ort." : why });
-                list.Add(new OrderOption { Kind = 0, Label = "Nur hinziehen", Icon = "arrow", Mission = ArmyMission.Move, X = tx, Y = ty });
+                list.Add(new OrderOption { Kind = 5, Label = Loc.T("Hier eine Siedlung gründen"), Icon = "cart", Mission = ArmyMission.Found, X = tx, Y = ty, Enabled = can, Tip = can ? Loc.T("Die Siedler ziehen hin und gründen einen neuen Ort.") : why });
+                list.Add(new OrderOption { Kind = 0, Label = Loc.T("Nur hinziehen"), Icon = "arrow", Mission = ArmyMission.Move, X = tx, Y = ty });
                 return list;
             }
             if (target != null)
             {
                 if (target.faction == a.faction)
                 {
-                    list.Add(new OrderOption { Kind = 3, Label = $"In {target.name} einrücken", Icon = "house", Mission = ArmyMission.Return, Target = target.id, X = target.x, Y = target.y, Tip = "Die Truppen gehen in die Garnison und verteidigen die Stadt." });
-                    list.Add(new OrderOption { Kind = 0, Label = "Vor der Stadt lagern", Icon = "flag", Mission = ArmyMission.Move, X = tx, Y = ty, Tip = "Das Heer bleibt als eigenes Heer stehen." });
+                    list.Add(new OrderOption { Kind = 3, Label = Loc.F("In {0} einrücken", (target.name)), Icon = "house", Mission = ArmyMission.Return, Target = target.id, X = target.x, Y = target.y, Tip = Loc.T("Die Truppen gehen in die Garnison und verteidigen die Stadt.") });
+                    list.Add(new OrderOption { Kind = 0, Label = Loc.T("Vor der Stadt lagern"), Icon = "flag", Mission = ArmyMission.Move, X = tx, Y = ty, Tip = Loc.T("Das Heer bleibt als eigenes Heer stehen.") });
                     return list;
                 }
                 var f = F(target.faction);
                 bool war = AtWar(a.faction, target.faction);
                 float mine = Strength(a.units), theirs = DefenseStrength(target);
-                string odds = mine > theirs * 1.4f ? "gute Aussichten" : mine > theirs ? "knapp" : "das Heer ist zu schwach";
-                string warNote = war ? "" : $" Dafür erklärt ihr {f.name} den Krieg.";
-                list.Add(new OrderOption { Kind = 1, Label = $"{target.name} erobern", Icon = "sword", Mission = ArmyMission.Attack, Target = target.id, X = target.x, Y = target.y, NeedsWar = !war,
-                    Tip = $"Die Stadt einnehmen. Stärke {(int)mine} gegen ~{(int)theirs} ({odds}).{warNote}" });
-                list.Add(new OrderOption { Kind = 2, Label = $"{target.name} überfallen", Icon = "fire", Mission = ArmyMission.Raid, Target = target.id, X = target.x, Y = target.y, NeedsWar = !war,
-                    Tip = $"Nur plündern und heimkehren – Mauern zählen halb.{warNote}" });
-                list.Add(new OrderOption { Kind = 0, Label = "Nur in die Nähe ziehen", Icon = "arrow", Mission = ArmyMission.Move, X = tx, Y = ty, Tip = "Marschieren ohne Angriff." });
+                string odds = mine > theirs * 1.4f ? Loc.T("gute Aussichten") : mine > theirs ? "knapp" : Loc.T("das Heer ist zu schwach");
+                string warNote = war ? "" : Loc.F(" Dafür erklärt ihr {0} den Krieg.", (f.name));
+                list.Add(new OrderOption { Kind = 1, Label = Loc.F("{0} erobern", (target.name)), Icon = "sword", Mission = ArmyMission.Attack, Target = target.id, X = target.x, Y = target.y, NeedsWar = !war,
+                    Tip = Loc.F("Die Stadt einnehmen. Stärke {0} gegen ~{1} ({2}).{3}", ((int)mine), ((int)theirs), (odds), (warNote)) });
+                list.Add(new OrderOption { Kind = 2, Label = Loc.F("{0} überfallen", (target.name)), Icon = "fire", Mission = ArmyMission.Raid, Target = target.id, X = target.x, Y = target.y, NeedsWar = !war,
+                    Tip = Loc.F("Nur plündern und heimkehren – Mauern zählen halb.{0}", (warNote)) });
+                list.Add(new OrderOption { Kind = 0, Label = Loc.T("Nur in die Nähe ziehen"), Icon = "arrow", Mission = ArmyMission.Move, X = tx, Y = ty, Tip = Loc.T("Marschieren ohne Angriff.") });
                 return list;
             }
             if (poi != null)
             {
-                string l = poi.type == 0 ? (poi.done ? "Zur Ruine ziehen" : "Ruine erkunden") : poi.type == 1 ? "Räuberlager angreifen" : "Fahrendes Volk besuchen";
-                string tip = poi.type == 1 ? $"Kampf gegen etwa {Math.Max(1, (int)Math.Round(poi.guards.Sum() / 5f) * 5)} Räuber. Beute: Gold und Waffen." : poi.type == 0 ? "Gold, Waffen, Relikte oder Karten – manchmal eine Falle." : "Handeln oder sie einladen, zu bleiben.";
+                string l = poi.type == 0 ? (poi.done ? Loc.T("Zur Ruine ziehen") : Loc.T("Ruine erkunden")) : poi.type == 1 ? Loc.T("Räuberlager angreifen") : Loc.T("Fahrendes Volk besuchen");
+                string tip = poi.type == 1 ? Loc.F("Kampf gegen etwa {0} Räuber. Beute: Gold und Waffen.", (Math.Max(1, (int)Math.Round(poi.guards.Sum() / 5f) * 5))) : poi.type == 0 ? Loc.T("Gold, Waffen, Relikte oder Karten – manchmal eine Falle.") : Loc.T("Handeln oder sie einladen, zu bleiben.");
                 list.Add(new OrderOption { Kind = 4, Label = l, Icon = poi.type == 1 ? "sword" : "eye", Mission = ArmyMission.Poi, Target = poi.id, X = poi.x, Y = poi.y, Tip = tip });
-                list.Add(new OrderOption { Kind = 0, Label = "Nur hinziehen", Icon = "arrow", Mission = ArmyMission.Move, X = tx, Y = ty });
+                list.Add(new OrderOption { Kind = 0, Label = Loc.T("Nur hinziehen"), Icon = "arrow", Mission = ArmyMission.Move, X = tx, Y = ty });
                 return list;
             }
-            list.Add(new OrderOption { Kind = 0, Label = "Hierher marschieren", Icon = "arrow", Mission = ArmyMission.Move, X = tx, Y = ty, Tip = "Das Heer zieht an diesen Ort und wartet dort." });
+            list.Add(new OrderOption { Kind = 0, Label = Loc.T("Hierher marschieren"), Icon = "arrow", Mission = ArmyMission.Move, X = tx, Y = ty, Tip = Loc.T("Das Heer zieht an diesen Ort und wartet dort.") });
             return list;
         }
     }

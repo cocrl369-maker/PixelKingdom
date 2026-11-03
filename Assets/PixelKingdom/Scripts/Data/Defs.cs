@@ -10,7 +10,7 @@ namespace PixelKingdom
     public static class ResInfo
     {
         public const int Count = 6;
-        public static readonly string[] Names = { "Nahrung", "Holz", "Stein", "Eisen", "Gold", "Waffen" };
+        public static readonly LArr Names = new LArr("Nahrung", "Holz", "Stein", "Eisen", "Gold", "Waffen");
         public static readonly string[] Icons = { "food", "wood", "stone", "iron", "gold", "weapons" };
         // Grundpreis am Markt (in Gold)
         public static readonly float[] BasePrice = { 0.8f, 1.0f, 1.4f, 3.0f, 1f, 5.0f };
@@ -24,7 +24,12 @@ namespace PixelKingdom
 
     public class RankDef
     {
-        public string Name, Ruler, Desc;
+        string _name;
+        public string Name { get => Loc.T(_name); set => _name = value; }
+        string _ruler;
+        public string Ruler { get => Loc.T(_ruler); set => _ruler = value; }
+        string _desc;
+        public string Desc { get => Loc.T(_desc); set => _desc = value; }
         public int Pop, Settlements, MaxSettlements;
         public float Prestige, GoldCost;
         public BType RequiredBuilding = BType.None;
@@ -69,7 +74,11 @@ namespace PixelKingdom
     public class BuildingDef
     {
         public BType Type;
-        public string Name, Desc, Icon;
+        public string Icon;
+        string _name;
+        public string Name { get => Loc.T(_name); set => _name = value; }
+        string _desc;
+        public string Desc { get => Loc.T(_desc); set => _desc = value; }
         public float[] Cost = new float[ResInfo.Count];
         public float[] Prod = new float[ResInfo.Count];   // pro Tag, voll besetzt
         public float[] Use = new float[ResInfo.Count];    // Verbrauch pro Tag
@@ -163,7 +172,13 @@ namespace PixelKingdom
     public class UnitDef
     {
         public UType Type;
-        public string Name, Plural, Icon, Desc;
+        public string Icon;
+        string _name;
+        public string Name { get => Loc.T(_name); set => _name = value; }
+        string _plural;
+        public string Plural { get => Loc.T(_plural); set => _plural = value; }
+        string _desc;
+        public string Desc { get => Loc.T(_desc); set => _desc = value; }
         public float Atk, Def, Hp, Speed;
         public float[] Cost = new float[ResInfo.Count];
         public float UpkeepGold, UpkeepFood;
@@ -210,7 +225,7 @@ namespace PixelKingdom
 
     public static class DipInfo
     {
-        public static readonly string[] Names = { "Neutral", "Krieg", "Waffenruhe", "Nichtangriff", "Bündnis" };
+        public static readonly LArr Names = new LArr("Neutral", "Krieg", "Waffenruhe", "Nichtangriff", "Bündnis");
     }
 
     public enum ArmyMission { Idle = 0, Move = 1, Attack = 2, Raid = 3, Return = 4, Found = 5, Explore = 6, Poi = 7 }
@@ -220,15 +235,13 @@ namespace PixelKingdom
     {
         public const int Count = 5;
         public const int Wehrpflicht = 0, Marktrecht = 1, Erntedank = 2, FreieBauern = 3, Pilgerwege = 4;
-        public static readonly string[] Names = { "Wehrpflicht", "Marktrecht", "Erntedank", "Freie Bauern", "Pilgerwege" };
-        public static readonly string[] Desc =
-        {
+        public static readonly LArr Names = new LArr("Wehrpflicht", "Marktrecht", "Erntedank", "Freie Bauern", "Pilgerwege");
+        public static readonly LArr Desc = new LArr(
             "Mehr Bürger verteidigen die Städte (+60% Aufgebot). Die Leute murren (-4 Zufriedenheit).",
             "Händler zahlen gern: +15% Steuern, wenn ihr einen Markt habt.",
             "Gemeinsame Ernte: +10% Nahrung. Das Fest kostet 1 Gold pro Siedlung und Tag.",
             "Weniger Frondienst: +6 Zufriedenheit, aber 20% weniger Steuern.",
-            "Pilger bringen Ruhm: +0,5 Ansehen pro Tag je Kapelle, Kloster oder Kathedrale. Kostet 0,5 Nahrung pro Siedlung und Tag.",
-        };
+            "Pilger bringen Ruhm: +0,5 Ansehen pro Tag je Kapelle, Kloster oder Kathedrale. Kostet 0,5 Nahrung pro Siedlung und Tag.");
         public static readonly int[] MinRank = { 1, 1, 1, 2, 2 };
         public const float ChangeCost = 30f;
     }
@@ -239,7 +252,7 @@ namespace PixelKingdom
     {
         public const int DaysPerSeason = 30;
         public const int DaysPerYear = DaysPerSeason * 4;
-        public static readonly string[] SeasonNames = { "Frühling", "Sommer", "Herbst", "Winter" };
+        public static readonly LArr SeasonNames = new LArr("Frühling", "Sommer", "Herbst", "Winter");
         public static readonly float[] FoodMod = { 0.9f, 1.25f, 1.1f, 0.45f };
         public static Season SeasonOf(int day) => (Season)((day / DaysPerSeason) % 4);
         public static int Year(int day) => 1 + day / DaysPerYear;
@@ -252,7 +265,11 @@ namespace PixelKingdom
     /// <summary>Wissen: Verbesserungen, die einmal erforscht dauerhaft wirken (Schreibstube der Gelehrten).</summary>
     public class TechDef
     {
-        public string Name, Desc, Icon;
+        public string Icon;
+        string _name;
+        public string Name { get => Loc.T(_name); set => _name = value; }
+        string _desc;
+        public string Desc { get => Loc.T(_desc); set => _desc = value; }
         public float Gold, Wood, Stone, Iron;
         public int Days, MinRank;
         public BType Needs = BType.None;
