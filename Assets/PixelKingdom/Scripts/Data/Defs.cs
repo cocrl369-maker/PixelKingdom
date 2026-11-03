@@ -61,7 +61,7 @@ namespace PixelKingdom
         None = -1,
         Wohnhaus, Bauernhof, Fischerhuette, Holzfaeller, Steinbruch, Mine, Lagerhaus, Markt, Taverne,
         Kapelle, Brunnen, Schmiede, Kaserne, Archerie, Stall, Mauer, Burg, Hafen, Kathedrale, Werkstatt, Goldmine,
-        Windmuehle, Kloster, Turnierplatz,
+        Windmuehle, Kloster, Turnierplatz, Wachturm,
     }
 
     public enum TerrainNeed { None, Coast, Forest, Hills, Mountain, Fertile, Iron, Gold }
@@ -145,6 +145,8 @@ namespace PixelKingdom
                 Cost = R(wood: 45, stone: 15, gold: 20), Days = 4, Jobs = 1, Max = 2 });
             Add(new BuildingDef { Type = BType.Kloster, Name = "Kloster", Icon = "chapel", Desc = "Mönche pflegen Kranke und schreiben Chroniken. Viel Ansehen und Zufriedenheit.",
                 Cost = R(wood: 60, stone: 90, gold: 80), Days = 10, Jobs = 3, Prod = R(food: 1.0f), Happiness = 5, Prestige = 0.8f, MinRank = 2, Max = 1 });
+            Add(new BuildingDef { Type = BType.Wachturm, Name = "Wachturm", Icon = "eye", Desc = "Späht weit ins Land und warnt vor Feinden. Darf auch weit draußen stehen.",
+                Cost = R(wood: 30, stone: 15), Days = 3, MinRank = 1, Max = 6 });
             Add(new BuildingDef { Type = BType.Turnierplatz, Name = "Turnierplatz", Icon = "flag", Desc = "Ermöglicht Ritterturniere (Reich-Übersicht): Ansehen, gute Laune und Freunde.",
                 Cost = R(wood: 80, stone: 20, gold: 100), Days = 6, Happiness = 4, Prestige = 0.3f, MinRank = 3, Max = 1 });
         }

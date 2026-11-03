@@ -63,7 +63,7 @@ namespace PixelKingdom
             {
                 case Biome.Forest: case Biome.Pine: c = 1.6f; break;
                 case Biome.Hills: c = 1.8f; break;
-                case Biome.Mountain: c = 3.5f; break;
+                case Biome.Mountain: return float.MaxValue; // Gebirge ist eine Wand – nur über Pässe (Hügel)
                 case Biome.Snow: return float.MaxValue;
                 case Biome.Desert: c = 1.5f; break;
                 default: c = 1f; break;

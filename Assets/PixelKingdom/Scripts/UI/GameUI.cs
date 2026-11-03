@@ -500,8 +500,6 @@ namespace PixelKingdom
                 y += 23;
             }
             if (Button(new Rect(4, y, 22, 20), "", true, "Zur Hauptstadt (H)", "house")) gm.FocusHome();
-            y += 23;
-            if (Button(new Rect(4, y, 22, 20), "", true, "Farbpalette wechseln (P): " + Palette.Name, "sun")) gm.CyclePalette();
             Mark("side", new Rect(4, 40, 22, y + 20 - 40));
         }
 

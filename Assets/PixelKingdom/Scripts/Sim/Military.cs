@@ -168,7 +168,9 @@ namespace PixelKingdom
                 return (raid ? "Überfall auf " : "Erobern: ") + target.name + " (" + f.name + ")";
             }
             if (!WorldMap.In(tx, ty)) return null;
-            if (Map.MoveCost(WorldMap.Idx(tx, ty), CanSail(a.faction)) == float.MaxValue) return "Dort kann das Heer nicht hin";
+            int ti = WorldMap.Idx(tx, ty);
+            if (Map.biome[ti] == Biome.Mountain || Map.biome[ti] == Biome.Snow) return "Gebirge – unpassierbar";
+            if (Map.MoveCost(ti, CanSail(a.faction)) == float.MaxValue) return "Dort kann das Heer nicht hin";
             return "Hierher marschieren";
         }
 

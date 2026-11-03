@@ -883,59 +883,75 @@ namespace PixelKingdom
             }
         }
 
+        /// <summary>
+        /// Ein Gipfel im Pixel-Stil: links die beleuchtete Flanke, rechts die Schattenflanke,
+        /// oben eine Schneekappe (links grau, rechts weiß), dazu Felsrinnen. Gestufte Kanten.
+        /// </summary>
         static void Mountain(PixelCanvas c, int cx, int gy, int w, int h, bool snowy, ArtPalette p, int seed)
         {
-            int peakX = cx + (int)((PixelCanvas.Rnd(seed, 1, 9) - 0.5f) * w * 0.3f);
             int top = gy - h;
-            c.Tri(cx - w / 2f, gy, peakX, top, cx + w / 2f, gy, p.RockDark);
-            c.Tri(peakX, top, cx + w / 2f, gy, peakX + 1, gy, p.Rock);
-            c.Tri(peakX + 1, top + 2, cx + w / 2f - 1, gy - 1, peakX + w * 0.2f, gy - 1, p.RockLight.Lerp(p.Rock, 0.5f));
-            // Grate
-            for (int k = 0; k < 4; k++)
+            int peakX = cx + (int)((PixelCanvas.Rnd(seed, 1, 9) - 0.5f) * w * 0.12f);
+            float capFrac = snowy ? 0.42f : 0.26f;
+            // Grat (Trennlinie zwischen Licht- und Schattenflanke) schlängelt sich vom Gipfel nach unten
+            for (int y = top; y <= gy; y++)
             {
-                int x0 = peakX + (int)((PixelCanvas.Rnd(seed, k, 10) - 0.5f) * w * 0.5f);
-                c.Line(peakX, top + 2, x0, gy - 2 - (int)(PixelCanvas.Rnd(seed, k, 11) * h * 0.4f), k % 2 == 0 ? p.RockDark : p.RockLight);
-            }
-            // Schneekappe
-            float cap = snowy ? 0.5f : 0.22f;
-            for (int y = top; y < top + h * cap; y++)
-            {
-                int jag = (int)(PixelCanvas.Rnd(y, seed, 12) * 3);
-                for (int x = cx - w / 2; x <= cx + w / 2; x++)
+                float t = (y - top) / (float)h;
+                int half = (int)Math.Round(t * w / 2f);
+                // gestufte, leicht unregelmäßige Kanten wie bei Pixel-Gebirgen
+                int jagL = (int)(PixelCanvas.Rnd(y / 3, seed, 2) * 3) - 1;
+                int jagR = (int)(PixelCanvas.Rnd(y / 3, seed, 3) * 3) - 1;
+                int x0 = peakX - half + (t > 0.15f ? jagL : 0), x1 = peakX + half + (t > 0.15f ? jagR : 0);
+                int ridge = peakX + (int)Math.Round(Math.Sin(t * 5 + seed) * w * 0.05f * t + t * w * 0.08f);
+                int capLine = top + (int)(h * capFrac) + (int)((PixelCanvas.Rnd((y + seed) / 2, 7, seed) - 0.5f) * 4);
+                for (int x = x0; x <= x1; x++)
                 {
-                    if (!c.Opaque(x, y)) continue;
-                    float lim = top + h * cap - jag - ((x * 7 + seed) % 3);
-                    if (y > lim) continue;
-                    c.Set(x, y, x < peakX ? H("#C9D6E2") : H("#F4F8FB"));
+                    bool lit = x < ridge;
+                    Px col = lit ? p.MountA : p.MountB;
+                    if (y < capLine - Math.Abs(x - peakX) / 3) col = lit ? p.CapGrey : p.CapSnow;
+                    else if (y < capLine + 2 - Math.Abs(x - peakX) / 4 && ((x + y) & 1) == 0) col = lit ? p.CapGrey : p.CapSnow;
+                    c.Set(x, y, col);
+                }
+                // dunkle Kante direkt am Grat auf der Schattenseite
+                if (y > capLine) { c.Set(ridge, y, p.MountD); }
+            }
+            // Felsrinnen: auf der Lichtseite dunkle, auf der Schattenseite helle Striche
+            int gullies = Math.Max(3, w / 9);
+            for (int k = 0; k < gullies; k++)
+            {
+                bool litSide = k % 2 == 0;
+                float fx = (PixelCanvas.Rnd(seed, k, 31) * 0.7f + 0.15f);
+                int sx = litSide ? peakX - (int)(fx * w * 0.4f) : peakX + (int)(fx * w * 0.4f);
+                int sy = top + (int)(h * (capFrac + 0.05f + PixelCanvas.Rnd(seed, k, 32) * 0.25f));
+                int len = (int)(h * (0.2f + PixelCanvas.Rnd(seed, k, 33) * 0.3f));
+                for (int d = 0; d < len; d++)
+                {
+                    int x = sx + (litSide ? -d / 4 : d / 4), y = sy + d;
+                    if (!c.Opaque(x, y) || y >= gy) continue;
+                    Px cur = c.Get(x, y);
+                    if (cur.Same(p.CapGrey) || cur.Same(p.CapSnow)) continue;
+                    c.Set(x, y, litSide ? p.MountB : p.MountC);
+                    if (d % 3 == 0 && c.Opaque(x + 1, y)) c.Set(x + 1, y, litSide ? p.MountD : p.MountA);
                 }
             }
-            // Grasfuß
-            for (int x = cx - w / 2; x <= cx + w / 2; x++)
+            // Fuß etwas dunkler
+            for (int x = cx - w / 2 - 2; x <= cx + w / 2 + 2; x++)
                 for (int y = gy - 2; y <= gy; y++)
-                    if (c.Opaque(x, y) && PixelCanvas.Rnd(x, y, seed) < 0.6f) c.Set(x, y, p.Hills.Mul(0.85f));
+                    if (c.Opaque(x, y)) c.Set(x, y, c.Get(x, y).Mul(0.85f));
         }
 
         /// <summary>Gebirgsmassiv: mehrere Gipfel, hintere zuerst – wirkt wie eine echte Gebirgskette.</summary>
-        static void Massif(PixelCanvas c, int cx, int gy, int w, int h, bool snowy, ArtPalette p, int seed, int peaks)
+static void Massif(PixelCanvas c, int cx, int gy, int w, int h, bool snowy, ArtPalette p, int seed, int peaks)
         {
-            // hintere Gipfel (etwas höher, versetzt nach oben)
-            for (int k = 0; k < peaks - 1; k++)
+            // Seitliche, kleinere Gipfel hinten – der Hauptgipfel vorne überlappt sie zu einer geschlossenen Wand
+            if (peaks >= 2)
             {
-                float t = peaks == 2 ? (k == 0 ? -0.28f : 0.28f) : (k - (peaks - 2) / 2f) * 0.42f;
-                int bw = (int)(w * 0.62f), bh = (int)(h * (0.82f + PixelCanvas.Rnd(seed, k, 21) * 0.18f));
-                Mountain(c, cx + (int)(t * w), gy - (int)(h * 0.18f), bw, bh, snowy, p, seed * 7 + k);
+                Mountain(c, cx - (int)(w * 0.3f), gy - 2, (int)(w * 0.6f), (int)(h * 0.66f), snowy, p, seed * 7 + 1);
+                Mountain(c, cx + (int)(w * 0.32f), gy - 1, (int)(w * 0.56f), (int)(h * 0.6f), snowy, p, seed * 7 + 2);
             }
-            // vorderer Hauptgipfel
-            Mountain(c, cx, gy, w, (int)(h * 0.78f), snowy, p, seed * 13 + 5);
-            // Geröll am Fuß
-            for (int k = 0; k < 6; k++)
-            {
-                int x = cx - w / 2 + 3 + (int)(PixelCanvas.Rnd(seed, k, 30) * (w - 6));
-                if (c.Opaque(x, gy - 1)) c.Set(x, gy - 1, p.RockDark);
-            }
+            Mountain(c, cx, gy, (int)(w * 0.78f), h, snowy, p, seed * 13 + 5);
         }
 
-        static void Hill(PixelCanvas c, int cx, int gy, ArtPalette p, int seed)
+                static void Hill(PixelCanvas c, int cx, int gy, ArtPalette p, int seed)
         {
             c.Ellipse(cx, gy, 10, 6, p.Hills.Mul(0.82f));
             c.Ellipse(cx + 1.5f, gy - 0.8f, 8, 4.8f, p.Hills);
@@ -1154,11 +1170,11 @@ namespace PixelKingdom
             Add("m_snow0", 48, (c, x, y) => Mountain(c, x, y, 32, 26, true, pal, 5));
             Add("m_snow1", 48, (c, x, y) => Mountain(c, x, y, 26, 20, true, pal, 9));
             // Große Massive für Gebirgszüge
-            Add("m_mid", 80, (c, x, y) => Massif(c, x, y, 54, 40, false, pal, 11, 2));
-            Add("m_big", 112, (c, x, y) => Massif(c, x, y, 80, 60, false, pal, 12, 3));
-            Add("m_huge", 128, (c, x, y) => Massif(c, x, y, 100, 76, true, pal, 13, 3));
-            Add("m_mid_s", 80, (c, x, y) => Massif(c, x, y, 54, 42, true, pal, 14, 2));
-            Add("m_big_s", 112, (c, x, y) => Massif(c, x, y, 82, 64, true, pal, 15, 3));
+            Add("m_mid", 112, (c, x, y) => Massif(c, x, y, 78, 54, false, pal, 11, 2));
+            Add("m_big", 144, (c, x, y) => Massif(c, x, y, 110, 76, false, pal, 12, 3));
+            Add("m_huge", 160, (c, x, y) => Massif(c, x, y, 128, 92, true, pal, 13, 3));
+            Add("m_mid_s", 112, (c, x, y) => Massif(c, x, y, 78, 58, true, pal, 14, 2));
+            Add("m_big_s", 144, (c, x, y) => Massif(c, x, y, 112, 82, true, pal, 15, 3));
             Add("h_hill0", 32, (c, x, y) => Hill(c, x, y, pal, 1), false, true, pal.Hills.Dark(0.5f));
             Add("r_rock", 24, (c, x, y) => Rocks(c, x, y, pal.Rock, pal.RockLight, pal.RockDark, pal.RockLight, pal.Rock, 4));
             Add("d_iron", 24, (c, x, y) => Rocks(c, x, y, H("#8C7F74"), H("#B0A396"), H("#5E544C"), Rust, RustL, 5));

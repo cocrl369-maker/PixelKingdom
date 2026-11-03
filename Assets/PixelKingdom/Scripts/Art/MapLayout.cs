@@ -22,13 +22,13 @@ namespace PixelKingdom
 
         static bool IsMountain(WorldMap map, int i) => map.biome[i] == Biome.Mountain || map.biome[i] == Biome.Snow;
 
-        /// <summary>Ist dieses Feld das höchste Gebirgsfeld seines 3x3-Blocks?</summary>
+        /// <summary>Ist dieses Feld das höchste Gebirgsfeld seines 4x4-Blocks?</summary>
         static bool IsBlockPeak(WorldMap map, int x, int y)
         {
-            int bx = x / 3 * 3, by = y / 3 * 3;
+            int bx = x / 4 * 4, by = y / 4 * 4;
             int best = -1; float bh = float.MinValue;
-            for (int yy = by; yy < by + 3; yy++)
-                for (int xx = bx; xx < bx + 3; xx++)
+            for (int yy = by; yy < by + 4; yy++)
+                for (int xx = bx; xx < bx + 4; xx++)
                 {
                     if (!WorldMap.In(xx, yy)) continue;
                     int j = WorldMap.Idx(xx, yy);

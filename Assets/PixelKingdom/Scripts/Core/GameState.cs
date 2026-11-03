@@ -8,7 +8,7 @@ namespace PixelKingdom
     [Serializable]
     public class GameState
     {
-        public const int CurrentVersion = 3;   // 3 = Welt 480x336, Ruinen, Räuberlager, Erlasse
+        public const int CurrentVersion = 4;   // 4 = Gebäude mit Bauplatz, Wissen, Fahrendes Volk
         public int version = CurrentVersion;
         public int seed;
         public int day;
@@ -36,6 +36,10 @@ namespace PixelKingdom
         public List<PoiData> pois = new List<PoiData>();
         public List<int> edicts = new List<int>();
         public int lastTournamentDay = -999;
+        public List<int> techs = new List<int>();
+        public int researching = -1;
+        public float researchLeft;
+        public int relics;
         public StoryData story = new StoryData();
     }
 
@@ -87,6 +91,7 @@ namespace PixelKingdom
         public int[] buildings = new int[Buildings.Count];
         public int[] garrison = new int[Units.Count];
         public List<QueueItem> queue = new List<QueueItem>();
+        public List<BuildingPos> placed = new List<BuildingPos>();   // wo jedes Gebäude steht
         public float taxRate = 0.1f;
         public int rations = 1;
         public bool auto;
@@ -105,6 +110,15 @@ namespace PixelKingdom
         public int count = 1;
         public float daysLeft;
         public float total;
+        public int x = -1, y = -1;   // Bauplatz (Gebäude)
+    }
+
+    [Serializable]
+    public class BuildingPos
+    {
+        public int type, x, y;
+        public BuildingPos() { }
+        public BuildingPos(int t, int x, int y) { type = t; this.x = x; this.y = y; }
     }
 
     [Serializable]

@@ -352,7 +352,7 @@ namespace PixelKingdom
                 "HEERE: Truppen in einer Siedlung ausbilden (Reiter 'Truppen'), dann 'Heer aufstellen' und 'Ausrücken'. Heer anklicken: Am Mauszeiger steht, was ein Rechtsklick bewirkt (marschieren, einrücken, erobern). Die Heerführung (M) listet alle Heere, Ziele mit Entfernung, Teilen, Vereinen und Truppentausch mit der Garnison.\n" +
                 "STORY: Ihr bestimmt das Tempo. Nach jedem Kapitel gibt es eine Friedenszeit. Der Druck des Kaiserreichs steigt langsam – zahlt den Zehnt, um ihn zu senken, oder erhebt euch, wenn ihr bereit seid.\n" +
                 "ZEIT: Leertaste Pause, 1/2/3 Tempo. Tab: nächste Siedlung, H: Hauptstadt.\n" +
-                "FENSTER: R Reich, M Heerführung, G Diplomatie, L Chronik, F1 Hilfe, P Farbpalette, F5 Speichern.\n\n" +
+                "FENSTER: R Reich, M Heerführung, G Diplomatie, L Chronik, F1 Hilfe, F5 Speichern. Die Farben der Welt wechseln mit den Jahreszeiten.\n\n" +
                 "WIRTSCHAFT: Gebäude brauchen Arbeiter (60% der Bewohner). Bauernhöfe brauchen fruchtbares Land, Steinbrüche Hügel. Holzfäller fällen sichtbar Bäume – der Wald wächst nur langsam nach. Eisen- und Goldminen brauchen Erzvorkommen (rostrote bzw. funkelnde Felsen) im Stadtgebiet. Im Winter wächst wenig – legt Vorräte an!\n" +
                 "ZUFRIEDENHEIT: Steuern und Hunger senken sie, Tavernen, Kapellen und Feste heben sie. Unter 25 wandern Leute ab, unter 15 drohen Aufstände.\n" +
                 "MILITÄR: Rekruten kommen aus der Bevölkerung. Speere schlagen Ritter, Ritter schlagen Bogenschützen, Bogenschützen schlagen Speere. Rammen brechen Mauern.\n" +
@@ -368,7 +368,7 @@ namespace PixelKingdom
         // ==================================================================
         void DrawMenu()
         {
-            var c = WindowFrame("Menü", 230, 252, true);
+            var c = WindowFrame("Menü", 230, 232, true);
             float y = c.y, bh = 16, gap = 4;
             if (Button(new Rect(c.x, y, c.width, bh), "Weiterspielen", true, null, "play")) Open = Window.None; y += bh + gap;
             if (Button(new Rect(c.x, y, c.width, bh), "Speichern (F5)", true, null, "save")) gm.SaveNow(); y += bh + gap + 4;
@@ -377,7 +377,7 @@ namespace PixelKingdom
             if (Button(new Rect(c.x, y, c.width, bh), "Tipps von Aldo: " + (Game.HintsEnabled ? "An" : "Aus"), true, "Meister Aldo erklärt Neues, sobald es zum ersten Mal vorkommt.", "book", Game.HintsEnabled))
             { Game.HintsEnabled = !Game.HintsEnabled; PlayerPrefs.SetInt("pk_hints", Game.HintsEnabled ? 1 : 0); }
             y += bh + gap;
-            if (Button(new Rect(c.x, y, c.width, bh), "Farben: " + Palette.Name, true, null, "sun")) gm.CyclePalette(); y += bh + gap;
+
             int extra = PlayerPrefs.GetInt("pk_uiscale", 0);
             Text(c.x, y + 4, "Größe der Oberfläche");
             if (Button(new Rect(c.xMax - 66, y, 30, bh), "-", S > 1)) PlayerPrefs.SetInt("pk_uiscale", extra - 1);
@@ -489,7 +489,7 @@ namespace PixelKingdom
             bool hasSave = SaveSystem.Exists;
             int bs = VW > 400 ? 2 : 1;
             float bw = Mathf.Min(VW - 40, bs == 2 ? 280 : 200), bh = bs == 2 ? 30 : 22, gap = 8;
-            int n = hasSave ? 5 : 4;
+            int n = hasSave ? 4 : 3;
             float bx = Mathf.Round((VW - bw) / 2), by = Mathf.Round(Mathf.Max(plate.yMax + 16, VH * 0.42f));
             var box = new Rect(bx - 14, by - 14, bw + 28, n * (bh + gap) - gap + 28);
             Panel(box);
@@ -504,8 +504,7 @@ namespace PixelKingdom
                 else { confirmNew = false; gm.NewGame(); }
             }
             by += bh + gap;
-            if (Button(new Rect(bx, by, bw, bh), "Farben: " + Palette.Name, true, "Farbpalette der Karte wechseln", "sun", false, bs)) gm.CyclePalette();
-            by += bh + gap;
+
             if (Button(new Rect(bx, by, bw, bh), "Hilfe", true, null, "scroll", false, bs)) { Open = Open == Window.Help ? Window.None : Window.Help; }
             by += bh + gap;
             if (Button(new Rect(bx, by, bw, bh), "Beenden", true, null, "close", false, bs)) Application.Quit();

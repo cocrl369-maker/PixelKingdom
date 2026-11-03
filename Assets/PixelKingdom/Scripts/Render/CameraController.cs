@@ -52,8 +52,11 @@ namespace PixelKingdom
                 Target = Vector2.Lerp(Target, goal, 1f - Mathf.Exp(-7f * dt));
                 if ((Target - goal).sqrMagnitude < 0.001f) hasGoal = false;
             }
-            Target.x = Mathf.Clamp(Target.x, 0, WorldMap.W);
-            Target.y = Mathf.Clamp(Target.y, 0, WorldMap.H);
+            // Nie über den Kartenrand hinausschauen: so weit heraus zoomen, wie die Karte reicht, und die Sicht einklemmen
+            while (ZoomIndex < Zooms.Length - 1 && (Screen.width / (16f * Zoom) > WorldMap.W || Screen.height / (16f * Zoom) > WorldMap.H)) ZoomIndex++;
+            var half = ViewSize * 0.5f;
+            Target.x = half.x * 2 >= WorldMap.W ? WorldMap.W / 2f : Mathf.Clamp(Target.x, half.x, WorldMap.W - half.x);
+            Target.y = half.y * 2 >= WorldMap.H ? WorldMap.H / 2f : Mathf.Clamp(Target.y, half.y, WorldMap.H - half.y);
 
             float ppu = 16f * Zoom; // Bildschirmpixel pro Kachel
             Cam.orthographicSize = Screen.height / (2f * ppu);
@@ -119,6 +122,8 @@ namespace PixelKingdom
         void ZoomAt(int dir, Vector2 screen)
         {
             int ni = Mathf.Clamp(ZoomIndex + dir, 0, Zooms.Length - 1);
+            // nicht weiter herauszoomen, als die Karte groß ist
+            if (dir < 0 && (Screen.width / (16f * Zooms[ni]) > WorldMap.W || Screen.height / (16f * Zooms[ni]) > WorldMap.H)) return;
             if (ni == ZoomIndex) return;
             var before = ScreenToWorld(screen);
             ZoomIndex = ni;

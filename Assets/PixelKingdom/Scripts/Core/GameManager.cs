@@ -63,7 +63,7 @@ namespace PixelKingdom
                 Screen.autorotateToLandscapeLeft = true; Screen.autorotateToLandscapeRight = true;
                 QualitySettings.vSyncCount = 0;
             }
-            Palette.Set(PlayerPrefs.GetInt("pk_palette", 0));
+            Palette.Set(0);
 
             GroundMat = new Material(LoadShader("PKGround", "PixelKingdom/Ground")) { name = "PK Boden" };
             SpriteMat = new Material(LoadShader("PKSprite", "PixelKingdom/Sprite")) { name = "PK Sprites" };
@@ -124,7 +124,7 @@ namespace PixelKingdom
         void LoadInto(Game g, bool focus)
         {
             Game = g;
-            Palette.Set(PlayerPrefs.GetInt("pk_palette", g.S.palette));
+            Palette.Set(SeasonPalette(g.Season));
             SpriteLib.Build(Palette.Index);
             SpriteMat.mainTexture = SpriteLib.Atlas; ShadowMat.mainTexture = SpriteLib.Atlas;
             g.DirtyTiles.Clear(); g.DirtyTrees.Clear();
@@ -191,10 +191,12 @@ namespace PixelKingdom
             CamCtrl.AutoPan = new Vector2(1.2f, 0.4f);
         }
 
-        public void CyclePalette()
+        /// <summary>Die Farben der Welt folgen der Jahreszeit.</summary>
+        public static int SeasonPalette(Season s) => s == Season.Winter ? 2 : s == Season.Herbst ? 1 : 0;
+
+        void ApplyPalette(int idx)
         {
-            Palette.Set(Palette.Index + 1);
-            PlayerPrefs.SetInt("pk_palette", Palette.Index);
+            Palette.Set(idx);
             SpriteLib.Build(Palette.Index);
             SpriteMat.mainTexture = SpriteLib.Atlas; ShadowMat.mainTexture = SpriteLib.Atlas;
             Ground.PaletteChanged();
@@ -237,6 +239,8 @@ namespace PixelKingdom
                 if (ss == null) SelSettlement = -1;
             }
             Entities.SelectedArmy = SelArmy;
+            int wantPal = SeasonPalette(Game.Season);
+            if (wantPal != Palette.Index) ApplyPalette(wantPal);
             if (InMenu) CamCtrl.AutoPan = new Vector2(Mathf.Sin(Time.unscaledTime * 0.07f) * 1.6f, Mathf.Cos(Time.unscaledTime * 0.05f) * 1.1f);
             // Änderungen an Karte an die Darstellung weitergeben
             if (Game.DirtyTiles.Count > 0) { Ground.MarkFogDirty(); Entities.MarkBordersDirty(); Game.DirtyTiles.Clear(); }
@@ -256,7 +260,6 @@ namespace PixelKingdom
             if (PKInput.KeyDown(PKKey.Alpha2)) { Speed = 2; Paused = false; }
             if (PKInput.KeyDown(PKKey.Alpha3)) { Speed = 3; Paused = false; }
             if (PKInput.KeyDown(PKKey.F5)) SaveNow();
-            if (PKInput.KeyDown(PKKey.P)) CyclePalette();
             if (PKInput.KeyDown(PKKey.H)) FocusHome();
             if (PKInput.KeyDown(PKKey.Tab)) CycleSettlement();
             if (PKInput.KeyDown(PKKey.Escape))
