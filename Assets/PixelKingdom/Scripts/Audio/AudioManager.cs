@@ -4,15 +4,15 @@ using UnityEngine;
 
 namespace PixelKingdom
 {
-    /// <summary>Spielt die im Code komponierte Musik (mehrere Stücke im Wechsel) und den Klick-Ton.</summary>
+    /// <summary>Spielt die im Code komponierte Musik (12 ruhige Stücke im Wechsel) und den Klick-Ton.</summary>
     public class AudioManager : MonoBehaviour
     {
         public static AudioManager I;
         AudioSource music, sfx;
         AudioClip click;
-        readonly List<AudioClip> pieces = new List<AudioClip>();
-        readonly List<Task<float[]>> tasks = new List<Task<float[]>>();
-        int current = -1;
+        AudioClip currentClip, nextClip;
+        Task<float[]> pending;
+        int nextSeed;
         float pause = 2f;
 
         public static bool MusicOn
@@ -36,7 +36,7 @@ namespace PixelKingdom
                 (cam != null ? cam.gameObject : gameObject).AddComponent<AudioListener>();
             }
             music = gameObject.AddComponent<AudioSource>();
-            music.playOnAwake = false; music.loop = false; music.volume = 0.38f; music.spatialBlend = 0f;
+            music.playOnAwake = false; music.loop = false; music.volume = 0.3f; music.spatialBlend = 0f;
             sfx = gameObject.AddComponent<AudioSource>();
             sfx.playOnAwake = false; sfx.volume = 0.8f; sfx.spatialBlend = 0f;
 
@@ -44,34 +44,39 @@ namespace PixelKingdom
             click = AudioClip.Create("Klick", c.Length, 1, MusicSynth.SR, false);
             click.SetData(c, 0);
 
-            // Stücke im Hintergrund komponieren (dauert einen Moment, blockiert nichts)
-            for (int k = 0; k < 4; k++)
-            {
-                int seed = k + 1;
-                tasks.Add(Task.Run(() => MusicSynth.Piece(seed)));
-            }
+            // Stücke im Hintergrund komponieren – immer nur das nächste, damit wenig Speicher belegt ist
+            nextSeed = Random.Range(0, MusicSynth.PieceCount);
+            Compose();
+        }
+
+        void Compose()
+        {
+            int seed = nextSeed + 1;
+            nextSeed = (nextSeed + 1 + Random.Range(0, 2)) % MusicSynth.PieceCount;
+            pending = Task.Run(() => MusicSynth.Piece(seed));
         }
 
         void Update()
         {
-            for (int k = tasks.Count - 1; k >= 0; k--)
+            if (pending != null && pending.IsCompleted)
             {
-                var t = tasks[k];
-                if (!t.IsCompleted) continue;
-                tasks.RemoveAt(k);
-                if (t.IsFaulted || t.Result == null) continue;
-                var clip = AudioClip.Create("Musik " + (pieces.Count + 1), t.Result.Length, 1, MusicSynth.SR, false);
-                clip.SetData(t.Result, 0);
-                pieces.Add(clip);
+                if (!pending.IsFaulted && pending.Result != null)
+                {
+                    nextClip = AudioClip.Create("Musik", pending.Result.Length, 1, MusicSynth.SR, false);
+                    nextClip.SetData(pending.Result, 0);
+                }
+                pending = null;
             }
-            if (!MusicOn || pieces.Count == 0) return;
-            if (music.isPlaying) return;
+            if (!MusicOn || music.isPlaying) return;
+            if (nextClip == null) return;
             pause -= Time.unscaledDeltaTime;
             if (pause > 0) return;
-            current = (current + 1) % pieces.Count;
-            music.clip = pieces[current];
+            if (currentClip != null) { music.clip = null; Destroy(currentClip); }
+            currentClip = nextClip; nextClip = null;
+            music.clip = currentClip;
             music.Play();
-            pause = 4f + Random.value * 5f; // kurze Stille zwischen den Stücken
+            Compose();                                   // das folgende Stück schon vorbereiten
+            pause = 6f + Random.value * 8f;              // längere Stille zwischen den Stücken
         }
 
         public static void Click()
