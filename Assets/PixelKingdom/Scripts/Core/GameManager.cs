@@ -345,7 +345,7 @@ namespace PixelKingdom
             if (focus) CamCtrl.FocusOn(new Vector2(a.x, a.y));
         }
 
-        Vector2 downPos;
+        Vector2 downPos; float downTime;
         void HandleMouse()
         {
             if (PKInput.UsingTouch)
@@ -364,8 +364,8 @@ namespace PixelKingdom
                 HoverValid = true; HoverPoint = hit;
                 HoverX = Mathf.FloorToInt(hit.x); HoverY = Mathf.FloorToInt(hit.y);
             }
-            if (PKInput.MouseDown(0)) downPos = mp;
-            if (PKInput.MouseUp(0) && (mp - downPos).sqrMagnitude < 100 && HoverValid) LeftClick();
+            if (PKInput.MouseDown(0)) { downPos = mp; downTime = Time.unscaledTime; }
+            if (PKInput.MouseUp(0) && (mp - downPos).sqrMagnitude < 100 && HoverValid && UI.LastUIPress < downTime - 0.02f) LeftClick();
             if (PKInput.MouseUp(1) && !CamCtrl.DraggedThisPress && HoverValid) RightClick();
         }
 

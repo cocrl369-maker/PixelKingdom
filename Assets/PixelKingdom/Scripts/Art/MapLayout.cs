@@ -22,22 +22,6 @@ namespace PixelKingdom
 
         static bool IsMountain(WorldMap map, int i) => map.biome[i] == Biome.Mountain || map.biome[i] == Biome.Snow;
 
-        /// <summary>Ist dieses Feld das höchste Gebirgsfeld seines 4x4-Blocks?</summary>
-        static bool IsBlockPeak(WorldMap map, int x, int y)
-        {
-            int bx = x / 4 * 4, by = y / 4 * 4;
-            int best = -1; float bh = float.MinValue;
-            for (int yy = by; yy < by + 4; yy++)
-                for (int xx = bx; xx < bx + 4; xx++)
-                {
-                    if (!WorldMap.In(xx, yy)) continue;
-                    int j = WorldMap.Idx(xx, yy);
-                    if (!IsMountain(map, j) || map.deposit[j] != 0) continue;
-                    if (map.h[j] > bh) { bh = map.h[j]; best = j; }
-                }
-            return best == WorldMap.Idx(x, y);
-        }
-
         public static void ForTile(WorldMap map, int x, int y, List<Placed> outList)
         {
             int i = WorldMap.Idx(x, y);
@@ -53,24 +37,8 @@ namespace PixelKingdom
             }
             if (b == Biome.Mountain || b == Biome.Snow)
             {
-                // Geschlossene Gebirgsketten: in jedem 3x3-Block steht ein Massiv auf dem höchsten Gebirgsfeld.
-                // Die Massive sind breiter als 3 Felder und überlappen sich daher lückenlos.
-                if (IsBlockPeak(map, x, y))
-                {
-                    int dens = 0; bool snowy = b == Biome.Snow || map.h[i] > 0.88f;
-                    for (int dy = -2; dy <= 2; dy++)
-                        for (int dx = -2; dx <= 2; dx++)
-                        {
-                            int nx = x + dx, ny = y + dy;
-                            if (!WorldMap.In(nx, ny)) continue;
-                            var nb = map.biome[WorldMap.Idx(nx, ny)];
-                            if (nb == Biome.Mountain || nb == Biome.Snow) dens++;
-                            if (nb == Biome.Snow) snowy = true;
-                        }
-                    string n = dens >= 16 ? (snowy ? "m_huge" : "m_big") : dens >= 8 ? (snowy ? "m_big_s" : "m_big") : (snowy ? "m_mid_s" : "m_mid");
-                    outList.Add(new Placed(n, cx + (R(x, y, 3) - 0.5f) * 0.5f, y + 0.1f + R(x, y, 4) * 0.3f, false, false, R(x, y, 5) < 0.5f));
-                }
-                else if (R(x, y, 6) < 0.12f) outList.Add(new Placed("r_rock", cx, y + 0.4f));
+                // Das Gebirge selbst malt der GroundPainter in den Boden – es füllt genau das Gebirgsgebiet.
+                return;
             }
             else if (b == Biome.Hills && map.trees[i] == 0 && R(x, y, 7) < 0.18f)
                 outList.Add(new Placed("h_hill0", cx + (R(x, y, 8) - 0.5f) * 0.4f, y + 0.35f, false, false, R(x, y, 9) < 0.5f));

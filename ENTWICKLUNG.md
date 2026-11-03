@@ -11,7 +11,8 @@ Eine neue Sitzung sollte **zuerst diese Datei und die README lesen**, dann weite
 - Mittelalter-Aufbau + Strategie: Dorf → Städtegemeinde → Grafschaft → Fürstentum → Königreich → Kaiserreich.
 - Gut für **gelegentliches Spielen**, aber nicht langweilig über lange Zeit. Ruhephasen + wachsender Druck des Kaisers.
 - **Übersichtlich bleiben**: Neues erst zeigen, wenn es freigeschaltet ist; Meister Aldo (Chronist) erklärt Neues unten am Bildschirm (`Game.Hint(key, text)`).
-- Gebirge: wenige große, überlappende Berge als geschlossene Wand – unpassierbar.
+- Gebirge: große, langgezogene, natürlich geformte Ketten (braune Felsen, Schneegipfel, Licht von links) wie im Vorbild des Entwicklers; sie füllen genau das Gebirgsgebiet und überschreiten es nicht; unpassierbar.
+- Eingabe: Ein Druck auf Knöpfe/Fenster darf nie die Karte darunter auslösen (`GameUI.LastUIPress`, Ebenen in `OnGUI`).
 - Farben wechseln **automatisch mit der Jahreszeit** (kein Paletten-Knopf).
 - Ideen aus großen Strategiespielen sind willkommen, aber **nichts kopieren** (keine Namen, Grafiken, Musik, Texte).
 
@@ -26,7 +27,7 @@ Eine neue Sitzung sollte **zuerst diese Datei und die README lesen**, dann weite
 | Bauplätze | `Scripts/Sim/Placement.cs` | `CanPlace`, `SiteBonus`, `DistanceFactor`, `FindSite`, `EnsurePlaced` |
 | Grenzland / Forschung | `Scripts/Sim/Frontier.cs` | Grenzstreit, fahrendes Volk, Wachtürme, Reliquien, Wissen |
 | Karte | `Scripts/World/*.cs` | 480×336 Felder; `MoveCost` (Gebirge/Schnee = unpassierbar) |
-| Pixelkunst | `Scripts/Art/*.cs` | `SpriteArt` (Sprites), `GroundPainter` (Boden), `MapLayout` (Objekte, Siedlungsbild), `ArtPalette` (Jahreszeiten) |
+| Pixelkunst | `Scripts/Art/*.cs` | `SpriteArt` (Sprites), `GroundPainter` (Boden **und Gebirge**: Höhenfeld + Schrägansicht in `MountH`/`MountainPixel`), `MapLayout` (Objekte, Siedlungsbild), `ArtPalette` (Jahreszeiten) |
 | Darstellung | `Scripts/Render/*.cs` | Chunks, Atlas, Kamera (Kartenrand-Begrenzung in `CameraController.LateUpdate`) |
 | Oberfläche | `Scripts/UI/*.cs` | IMGUI mit virtueller Auflösung, eigene Pixelschrift; `__text__` = unterstrichen |
 | Musik | `Scripts/Audio/*.cs` | im Code synthetisiert |
@@ -62,7 +63,8 @@ Die Unity-Teile kompilieren gegen das NuGet-Paket `UnityEngine.Modules` (Ziel `n
 
 ## Stand (zuletzt erledigt)
 
-- Neue Gebirgsketten (wenige große, überlappende Berge), Berge unpassierbar (auch für Späher).
+- Gebirge neu: in den Boden gemaltes Höhenfeld (Hauptgrat, Seitengrate, Schnee, Almflecken), Schrägansicht, bleibt im Gebirgsgebiet; unpassierbar.
+- Touch: Knöpfe in Dialogen/Fenstern lösen nicht mehr zusätzlich die Karte aus.
 - Kamera endet am Kartenrand, Zoom-Grenze passend zur Bildschirmgröße.
 - Jahreszeiten-Paletten (Frühling/Sommer, Herbst, Winter) wechseln automatisch.
 - Freie Gebäudeplatzierung mit Standortregeln, Gerüste für Baustellen, Außenposten, Grenzstreit.

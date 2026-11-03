@@ -64,6 +64,8 @@ namespace PixelKingdom
                 return;
             }
             if (t.Id != primaryId) return;
+            // Hat die Oberfläche (Knopf, Fenster, Dialog) diesen Druck angenommen, bleibt die Karte unberührt
+            if (gm.UI.LastUIPress >= startTime - 0.02f || !worldInput) startedOnUI = true;
             if (!startedOnUI)
             {
                 if (!moved && (t.Pos - startPos).magnitude > DragThreshold) moved = true;
@@ -73,7 +75,7 @@ namespace PixelKingdom
             lastPos = t.Pos;
             if (t.Phase == 2)
             {
-                if (!startedOnUI && !moved && !longFired) gm.OnTap(t.Pos);
+                if (!startedOnUI && !moved && !longFired && !gm.UI.IsBlocking && !gm.UI.IsOverUI(t.Pos)) gm.OnTap(t.Pos);
                 primaryId = -1;
             }
         }

@@ -52,6 +52,15 @@ namespace PixelKingdom
             }
         }
 
+        /// <summary>Zeitpunkt, zu dem zuletzt ein Druck/Klick von der Oberfläche angenommen wurde.</summary>
+        public float LastUIPress = -100f;
+
+        bool IsOverVirtual(Vector2 v)
+        {
+            foreach (var r in lastRects) if (r.Contains(v)) return true;
+            return false;
+        }
+
         /// <summary>Liegt ein Bildschirmpunkt (Maus/Finger) auf einem UI-Element?</summary>
         public bool IsOverUI(Vector2 screen)
         {
@@ -186,10 +195,19 @@ namespace PixelKingdom
             bool input = et == EventType.MouseDown || et == EventType.MouseUp || et == EventType.MouseDrag || et == EventType.ScrollWheel;
             if (input)
             {
+                var mpos = Event.current.mousePosition;
+                int before = rects.Count;
                 DrawTopLayer();
                 bool overTop = modalNow;
-                foreach (var r in lastTopRects) if (r.Contains(Event.current.mousePosition)) { overTop = true; break; }
-                if (Event.current.type != EventType.Used && !overTop) DrawBackgroundLayer();
+                foreach (var r in lastTopRects) if (r.Contains(mpos)) { overTop = true; break; }
+                // auch Fenster/Dialoge, die erst in diesem Bild aufgetaucht sind
+                for (int k = before; k < rects.Count && !overTop; k++) if (rects[k].Contains(mpos)) overTop = true;
+                if (rects.Count > before) rects.RemoveRange(before, rects.Count - before);
+                bool used = Event.current.type == EventType.Used;
+                if (!used && !overTop) DrawBackgroundLayer();
+                used |= Event.current.type == EventType.Used;
+                // Ein Druck auf die Oberfläche darf nie zusätzlich die Karte erreichen (Tablet & Maus)
+                if (et == EventType.MouseDown && (used || overTop || IsOverVirtual(mpos))) LastUIPress = Time.unscaledTime;
                 FinishFrame();
                 return;
             }

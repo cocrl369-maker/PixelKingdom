@@ -16,6 +16,7 @@ namespace PixelKingdom
         readonly float[] th, land, dist;
         readonly byte[] riverMask;
         readonly float[] noise;
+        readonly float[] mMask, mSnow, mDist;   // Gebirge: Maske, Schneegebiet, Abstand zum Rand (in Feldern)
         const int NW = 256;
 
         static readonly float[] Bayer = { 0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5 };
@@ -61,6 +62,38 @@ namespace PixelKingdom
                         if (m.river[ni] || m.IsWater(ni)) mask |= (byte)(1 << k);
                     }
                     riverMask[i] = mask;
+                }
+            // Gebirge: Abstand jedes Gebirgsfelds zum nächsten Nicht-Gebirgsfeld (Chamfer, 2 Durchläufe)
+            mMask = new float[N]; mSnow = new float[N]; mDist = new float[N];
+            for (int i = 0; i < N; i++)
+            {
+                bool mt = m.biome[i] == Biome.Mountain || m.biome[i] == Biome.Snow;
+                mMask[i] = mt ? 1f : 0f; mSnow[i] = m.biome[i] == Biome.Snow ? 1f : 0f;
+                mDist[i] = mt ? 99f : 0f;
+            }
+            const float D1 = 1f, D2 = 1.414f;
+            for (int y = 0; y < H; y++)
+                for (int x = 0; x < W; x++)
+                {
+                    int i = y * W + x; if (mDist[i] == 0) continue;
+                    float d = mDist[i];
+                    if (x > 0) d = Math.Min(d, mDist[i - 1] + D1);
+                    if (y > 0) d = Math.Min(d, mDist[i - W] + D1);
+                    if (x > 0 && y > 0) d = Math.Min(d, mDist[i - W - 1] + D2);
+                    if (x < W - 1 && y > 0) d = Math.Min(d, mDist[i - W + 1] + D2);
+                    if (x == 0 || y == 0 || x == W - 1 || y == H - 1) d = Math.Min(d, 1f);
+                    mDist[i] = d;
+                }
+            for (int y = H - 1; y >= 0; y--)
+                for (int x = W - 1; x >= 0; x--)
+                {
+                    int i = y * W + x; if (mDist[i] == 0) continue;
+                    float d = mDist[i];
+                    if (x < W - 1) d = Math.Min(d, mDist[i + 1] + D1);
+                    if (y < H - 1) d = Math.Min(d, mDist[i + W] + D1);
+                    if (x < W - 1 && y < H - 1) d = Math.Min(d, mDist[i + W + 1] + D2);
+                    if (x > 0 && y < H - 1) d = Math.Min(d, mDist[i + W - 1] + D2);
+                    mDist[i] = d;
                 }
             noise = new float[NW * NW];
             var r = new Random(1234);
@@ -109,12 +142,58 @@ namespace PixelKingdom
         public void Paint(int tx0, int ty0, int tilesW, int tilesH, Px[] outPx)
         {
             int pw = tilesW * T, ph = tilesH * T;
+            var grid = BuildMountGrid(tx0, ty0, tilesW, tilesH);
             for (int j = 0; j < ph; j++)
                 for (int i = 0; i < pw; i++)
-                    outPx[j * pw + i] = PaintPixel(tx0 * T + i, ty0 * T + j);
+                    outPx[j * pw + i] = PaintPixel(tx0 * T + i, ty0 * T + j, grid);
         }
 
-        public Px PaintPixel(int gx, int gy)
+        /// <summary>Vorberechnetes Höhenfeld des Gebirges für einen Malbereich (pro Pixel einmal statt pro Strahlschritt).</summary>
+        sealed class MountGrid
+        {
+            public int gx0, gy0, w, h;
+            public float[] hv;
+        }
+
+        const int GridSouth = 8 * T, GridPad = 4;
+
+        MountGrid BuildMountGrid(int tx0, int ty0, int tilesW, int tilesH)
+        {
+            // Nur nötig, wenn im Bereich (oder knapp daneben) Gebirge liegt
+            bool any = false;
+            for (int y = ty0 - 1; y <= ty0 + tilesH && !any; y++)
+                for (int x = tx0 - 1; x <= tx0 + tilesW && !any; x++)
+                    if (WorldMap.In(x, y) && mMask[y * WorldMap.W + x] > 0) any = true;
+            if (!any) return null;
+            var g = new MountGrid { gx0 = tx0 * T - GridPad, gy0 = ty0 * T - GridSouth - GridPad, w = tilesW * T + 2 * GridPad };
+            g.h = tilesH * T + GridSouth + 2 * GridPad;
+            g.hv = new float[g.w * g.h];
+            for (int j = 0; j < g.h; j++)
+            {
+                float v = (g.gy0 + j + 0.5f) / T;
+                for (int i = 0; i < g.w; i++)
+                {
+                    float u = (g.gx0 + i + 0.5f) / T;
+                    g.hv[j * g.w + i] = Bil(mMask, u, v) > 0.05f ? MountH(u, v) : -1f;
+                }
+            }
+            return g;
+        }
+
+        /// <summary>Höhe am Pixel (aus dem Raster, sonst direkt berechnet).</summary>
+        float GH(MountGrid g, int gx, int gy)
+        {
+            if (g != null)
+            {
+                int i = gx - g.gx0, j = gy - g.gy0;
+                if (i >= 0 && j >= 0 && i < g.w && j < g.h) return g.hv[j * g.w + i];
+            }
+            return MountH((gx + 0.5f) / T, (gy + 0.5f) / T);
+        }
+
+        public Px PaintPixel(int gx, int gy) => PaintPixel(gx, gy, null);
+
+        Px PaintPixel(int gx, int gy, MountGrid grid)
         {
             float u = (gx + 0.5f) / T, v = (gy + 0.5f) / T;
             int tx = Math.Min(WorldMap.W - 1, Math.Max(0, (int)u)), ty = Math.Min(WorldMap.H - 1, Math.Max(0, (int)v));
@@ -135,6 +214,13 @@ namespace PixelKingdom
                 // Wellenkämme
                 if (((gx / 3 + (gy / 5) * 7) % 23 == 0) && H01(gx / 6, gy / 3, 1) < 0.5f && dd > 1.5f) wc = wc.Light(0.25f);
                 return wc;
+            }
+
+            // ---- Gebirge (füllt genau das Gebirgsgebiet, ragt in Schrägansicht auf) ------
+            if (Bil(mMask, u, v) > 0.2f)
+            {
+                var mc = MountainPixel(gx, gy, u, v, bay, grid);
+                if (mc.a != 0) return mc;
             }
 
             // ---- Fluss ------------------------------------------------------------------
@@ -237,7 +323,7 @@ namespace PixelKingdom
                 case Biome.Forest: return p.ForestFloor;
                 case Biome.Pine: return p.PineFloor;
                 case Biome.Hills: return p.Hills;
-                case Biome.Mountain: return p.Mountain;
+                case Biome.Mountain: return p.Hills;   // Fuß des Gebirges: felsige Wiese, kein dunkler Untergrund
                 case Biome.Snow: return p.Snow;
                 case Biome.Desert: return p.Desert;
                 case Biome.Steppe: return p.Steppe;
@@ -245,6 +331,90 @@ namespace PixelKingdom
             }
             return p.Grass;
         }
+
+        // ------------------------------------------------------------------
+        //  Gebirge: Höhenfeld aus Abstand zum Rand (Hauptgrat entlang der Kette) + Grat-Rauschen
+        //  (Seitengrate, Schluchten). Die Höhe ist nie größer als der Abstand zum Rand – so ragen
+        //  die Berge in der Schrägansicht nie über ihr Gebiet hinaus.
+        // ------------------------------------------------------------------
+        const float Rise = 0.72f;     // Höhe -> Bildversatz nach oben (in Feldern)
+        const float Edge = 0.56f;    // Schwelle der (verwischten) Gebirgsmaske
+
+        float Ridged(float x, float y) { float n = 1f - Math.Abs(Noise(x, y) * 2f - 1f); return n * n; }
+
+        float MountMask(float u, float v) => Bil(mMask, u, v) + (Noise(u * 1.9f + 5, v * 1.9f + 11) - 0.5f) * 0.34f + (Noise(u * 5f + 2, v * 5f + 40) - 0.5f) * 0.1f;
+
+        /// <summary>Höhe des Gebirges an einem Bodenpunkt (in Feldern), &lt; 0 außerhalb.</summary>
+        float MountH(float u, float v)
+        {
+            float mv = MountMask(u, v);
+            if (mv < Edge) return -1f;
+            float e = Math.Min(1f, (mv - Edge) * 5f);
+            float d = Bil(mDist, u, v);
+            // Gipfel entlang des Hauptgrats, Seitengrate mit Schluchten dazwischen, feine Felsrippen
+            float pk = Noise(u * 0.55f + 3, v * 0.55f + 9);
+            float peaks = 0.28f + 1.3f * (float)Math.Pow(pk, 2.4);
+            float spurs = Ridged(u * 1.25f + 21, v * 1.25f + 2);
+            float ribs = Ridged(u * 3.3f + 7, v * 3.3f + 70);
+            float h = (float)Math.Pow(d, 0.95) * peaks * (0.62f + 0.5f * spurs) + ribs * 0.16f;
+            h *= e;
+            return Math.Min(h, Math.Max(0f, d - 0.5f) * 1.05f);
+        }
+
+        /// <summary>Welcher Bodenpunkt ist an dieser Bildstelle zu sehen? (Höhenstrahl von Süden, in Pixeln)</summary>
+        bool MountHit(MountGrid g, int gx, int gy, out int hitY, out float hitH)
+        {
+            hitY = gy; hitH = 0;
+            float u = (gx + 0.5f) / T, vs = (gy + 0.5f) / T;
+            int tMax = (int)(Math.Min(7.5f, Bil(mDist, u, vs) + 1.5f) * Rise * T);
+            for (int t = tMax; t >= 0; t--)
+            {
+                float h = GH(g, gx, gy - t);
+                if (h >= 0 && h * Rise * T >= t) { hitY = gy - t; hitH = h; return true; }
+            }
+            return false;
+        }
+
+        Px MountainPixel(int gx, int gy, float u, float v, float bay, MountGrid g)
+        {
+            if (!MountHit(g, gx, gy, out int hy, out float h)) return default;
+            int t = gy - hy;
+            float hv = (hy + 0.5f) / T;
+            // Kontur: Silhouette gegen dahinterliegendes Gelände (der Bildpunkt darüber sieht weiter nach Norden)
+            bool contour = true;
+            for (int k = 1; k <= 3 && contour; k++)
+            {
+                float hh = GH(g, gx, hy + k);
+                if (hh >= 0 && hh * Rise * T >= t + 1 - k - 0.2f) contour = false;
+            }
+            float mv = MountMask(u, hv);
+            if (mv < Edge + 0.035f && t < 3) contour = true;   // Fußlinie am Rand
+            if (contour) return p.MountD.Dark(0.25f);
+
+            // Licht von links (wie im Vorbild): Westhänge hell, Osthänge dunkel, Vorderseite mittel
+            float hx = Sample(g, gx + 1, hy, h) - Sample(g, gx - 1, hy, h), hyd = Sample(g, gx, hy + 1, h) - Sample(g, gx, hy - 1, h);
+            float nx = -hx * T / 2f * 0.55f, ny = -hyd * T / 2f * 0.55f;
+            float len = (float)Math.Sqrt(nx * nx + ny * ny + 1f);
+            float lum = (nx * -0.78f + ny * -0.12f + 0.62f) / len;
+            float tex = (Ridged(u * 3.6f + 1, hv * 1.5f + 2) - 0.45f) * 0.16f + (H01(gx >> 1, gy >> 1, 21) - 0.5f) * 0.05f;
+            float val = lum + tex + (bay - 0.5f) * 0.07f;
+
+            // Schnee auf den Höhen (im Schneegebiet tiefer)
+            float snowLine = p.SnowLine - Bil(mSnow, u, hv) * 1.1f + (Noise(u * 2.7f + 31, hv * 2.7f) - 0.5f) * 0.9f;
+            float sd = h - snowLine;
+            if (sd > 0.12f || (sd > -0.08f && bay < (sd + 0.08f) * 4f))
+            {
+                // Felsrippen schauen in steilen Schattenhängen heraus
+                if (val < 0.46f && H01(gx, gy >> 1, 23) < 0.16f) return p.MountB;
+                return val > 0.62f ? p.CapSnow : val > 0.46f ? p.CapSnow.Lerp(p.CapGrey, 0.5f) : p.CapGrey;
+            }
+            // vereinzelte grüne Flecken (Latschen, Almwiesen) an mittleren Hängen
+            if (h > 0.5f && h < snowLine - 0.7f && Noise(u * 2.1f + 50, hv * 2.1f + 3) > 0.74f)
+                return val > 0.66f ? p.PineLight : val > 0.42f ? p.Pine : p.PineDark;
+            return val > 0.74f ? p.MountC : val > 0.55f ? p.MountA : val > 0.36f ? p.MountB : p.MountD;
+        }
+
+        float Sample(MountGrid g, int gx, int gy, float fallback) { float h = GH(g, gx, gy); return h < 0 ? 0 : h; }
 
         float RiverDist(float u, float v, out bool near)
         {

@@ -101,7 +101,7 @@ Das Spiel ist für Android ausgelegt und bleibt am PC mit Tastatur und Maus spie
 ### Welt
 - **Prozedural und groß**: 480 × 336 Felder, aus einem Seed erzeugt. Dazu gehören:
   - der Heimatkontinent **Mittland**, die kalten **Nordlande**, das heiße **Südreich** und der Archipel **Inselbund**,
-  - lange, geschlossene **Gebirgsketten** aus wenigen großen, sich überlappenden Bergen mit Schneekappen – **unpassierbar**, auch für Späher (nur Pässe und Täler führen hindurch),
+  - lange, natürlich geformte **Gebirgsketten** mit Hauptgrat, Seitengraten, Schluchten, Almflecken und Schneegipfeln. Sie werden pixelgenau in den Boden gemalt, ragen in Schrägansicht auf und füllen genau das Gebirgsgebiet. Gebirge ist **unpassierbar**, auch für Späher – nur Pässe und Täler führen hindurch,
   - **Flüsse**, die bergab ins Meer fließen, sowie **Seen**, **Inseln**, Strände und Flachwasser,
   - **Klimazonen** mit Laub- und Nadelwald, Steppe, Wüste und fruchtbarem Schwemmland an Flüssen.
 - **Bodenschätze**: Eisen-, Gold- und Steinvorkommen liegen als Felsen auf der Karte.
