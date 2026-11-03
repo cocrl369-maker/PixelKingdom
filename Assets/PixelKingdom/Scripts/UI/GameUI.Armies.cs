@@ -35,7 +35,7 @@ namespace PixelKingdom
             }
             float rowH = 22;
             scrollArmyList = Scroll(list, scrollArmyList, rows.Count * rowH - list.height + 4);
-            GUI.BeginGroup(list);
+            BeginGroup(list);
             for (int i = 0; i < rows.Count; i++)
             {
                 var row = rows[i];
@@ -55,7 +55,7 @@ namespace PixelKingdom
                     else { var st = G.St(row.settlementId); if (st != null) { gm.SelectSettlement(st); SettlementTab = 2; Open = Window.None; } }
                 }
             }
-            GUI.EndGroup();
+            EndGroup();
             rects.Add(list);
 
             float x = c.x + 180, y = c.y, w = c.xMax - x;
@@ -102,7 +102,7 @@ namespace PixelKingdom
             var tl = new Rect(x, y, w, listH);
             Fill(tl, Palette.UIPanelDark);
             scrollTargets = Scroll(tl, scrollTargets, targets.Count * 15 - listH + 2);
-            GUI.BeginGroup(tl);
+            BeginGroup(tl);
             for (int i = 0; i < targets.Count; i++)
             {
                 var s = targets[i];
@@ -134,7 +134,7 @@ namespace PixelKingdom
                 bx -= 30;
                 if (Button(new Rect(bx, rr.y, 28, 13), "Hin", true, "Nur hinmarschieren, nicht angreifen")) Order(a, s, ArmyMission.Move);
             }
-            GUI.EndGroup();
+            EndGroup();
             rects.Add(tl);
             y += listH + 5;
 

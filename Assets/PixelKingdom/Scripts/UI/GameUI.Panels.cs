@@ -196,12 +196,12 @@ namespace PixelKingdom
             }
             int count = list.Count;
             float totalW = count * (cardW + gap) + (next.Count > 0 ? 120 : 0);
-            scrollCards = Scroll(c, scrollCards, totalW - c.width + 20);
+            scrollCards = Scroll(c, scrollCards, totalW - c.width + 20, true);   // Mausrad oder seitlich wischen
             // Pfeile
             if (scrollCards > 0 && Button(new Rect(c.x, c.y + 30, 10, 24), "<")) scrollCards = Mathf.Max(0, scrollCards - 120);
             if (scrollCards < totalW - c.width + 20 && Button(new Rect(c.xMax - 10, c.y + 30, 10, 24), ">")) scrollCards += 120;
             var clip = new Rect(c.x + 12, c.y, c.width - 24, c.height);
-            GUI.BeginGroup(clip);
+            BeginGroup(clip);
             if (next.Count > 0)
             {
                 float nx = count * (cardW + gap) - scrollCards;
@@ -244,7 +244,7 @@ namespace PixelKingdom
                 if (Game.NeedsSite(d.Type)) tip += Game.IsRemote(d.Type) ? "\n__Bauplatz__: frei wählbar, auch außerhalb der Stadt" : "\n__Bauplatz__: in der Stadt";
                 if (!ok) tip += "\n__Gesperrt__: " + why;
                 var cardScreen = new Rect(clip.x + card.x, clip.y + card.y, card.width, card.height);
-                if (hov && !PKInput.UsingTouch) { tooltip = tip; tipPos = Event.current.mousePosition + new Vector2(clip.x, clip.y); }
+                if (hov && !PKInput.UsingTouch) { tooltip = tip; tipPos = ptr; }
                 if (Clicked(card))
                 {
                     if (!ok) PinTip(tip);
@@ -252,7 +252,7 @@ namespace PixelKingdom
                     else if (TouchConfirm("bau" + b, tip) && G.QueueBuild(s, d.Type)) Toast($"{d.Name} wird gebaut.", 0);
                 }
             }
-            GUI.EndGroup();
+            EndGroup();
         }
 
         static string BuildingEffects(BuildingDef d)
@@ -449,7 +449,7 @@ namespace PixelKingdom
             y += 16;
             string mission = mine ? "__Befehl__: " + MissionLong(a) : MissionShort(a);
             if (mine && a.mission == (int)ArmyMission.Idle)
-                mission = PKInput.UsingTouch ? "__Befehl__: keiner – tippt auf ein Ziel oder 'Befehle'" : "__Befehl__: keiner – Rechtsklick auf ein Ziel oder 'Befehle'";
+                mission = PKInput.UsingTouch ? "__Befehl__: keiner – tippt auf ein Ziel, dann Befehl wählen" : "__Befehl__: keiner – Rechtsklick auf ein Ziel, dann Befehl wählen";
             Text(r.x + 8, y, mission, mine ? Palette.UIGood : Palette.UITextDim);
             Text(r.x + 8, y + 11, $"Moral {(int)(a.morale * 100)}%   Stärke {(int)Game.Strength(a.units)}", Palette.UITextDim);
             if (!mine) return;

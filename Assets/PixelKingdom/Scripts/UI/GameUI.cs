@@ -161,6 +161,7 @@ namespace PixelKingdom
 
         void Update()
         {
+            UpdatePointer();
             if (G == null) return;
             while (G.Notices.Count > 0) { var n = G.Notices.Dequeue(); Toast(n.Text, n.Kind); }
             if (report == null && G.Reports.Count > 0) report = G.Reports.Dequeue();
@@ -189,28 +190,32 @@ namespace PixelKingdom
             if (Event.current.type == EventType.Repaint) { rects.Clear(); modalThisFrame = false; tooltip = null; marks.Clear(); }
             modalNow = false;
 
-            // Eingaben gehen zuerst an die oberste Ebene (Fenster, Dialoge, Ereignisse).
-            // Nur wenn dort nichts getroffen wurde, erreicht der Klick die Leisten und Panels darunter.
+            // Unitys eigene Mausereignisse werden nicht benutzt (auf Android teils mit falscher Position).
             var et = Event.current.type;
-            bool input = et == EventType.MouseDown || et == EventType.MouseUp || et == EventType.MouseDrag || et == EventType.ScrollWheel;
-            if (input)
+            if (et == EventType.MouseDown || et == EventType.MouseUp || et == EventType.MouseDrag || et == EventType.ScrollWheel) return;
+
+            // Einmal pro Bild: Treffer-Durchlauf. Die oberste Ebene (Fenster, Dialoge, Ereignisse) bekommt den
+            // Klick zuerst; nur wenn dort nichts liegt, erreicht er die Leisten und Panels darunter.
+            if (et == EventType.Layout && hitFrame != Time.frameCount)
             {
-                var mpos = Event.current.mousePosition;
+                hitFrame = Time.frameCount;
+                hitPass = true;
+                groupOffset = Vector2.zero; groupStack.Clear();
                 int before = rects.Count;
+                bool mt = modalThisFrame;
                 DrawTopLayer();
-                bool overTop = modalNow;
-                foreach (var r in lastTopRects) if (r.Contains(mpos)) { overTop = true; break; }
-                // auch Fenster/Dialoge, die erst in diesem Bild aufgetaucht sind
-                for (int k = before; k < rects.Count && !overTop; k++) if (rects[k].Contains(mpos)) overTop = true;
+                bool overTop = modalNow || clickUsed;
+                Vector2 probe = clickPending ? clickPos : ptrDown ? pressStart : ptr;
+                for (int k = before; k < rects.Count && !overTop; k++) if (rects[k].Contains(probe)) overTop = true;
+                if (!overTop) DrawBackgroundLayer();
+                if (clickPending && (clickUsed || overTop || IsOverVirtual(clickPos))) LastUIPress = Time.unscaledTime;
                 if (rects.Count > before) rects.RemoveRange(before, rects.Count - before);
-                bool used = Event.current.type == EventType.Used;
-                if (!used && !overTop) DrawBackgroundLayer();
-                used |= Event.current.type == EventType.Used;
-                // Ein Druck auf die Oberfläche darf nie zusätzlich die Karte erreichen (Tablet & Maus)
-                if (et == EventType.MouseDown && (used || overTop || IsOverVirtual(mpos))) LastUIPress = Time.unscaledTime;
-                FinishFrame();
+                modalThisFrame = mt; modalNow = false; tooltip = null;
+                hitPass = false;
+                clickPending = false;
                 return;
             }
+            groupOffset = Vector2.zero; groupStack.Clear();
             DrawBackgroundLayer();
             int topStart = rects.Count;
             DrawTopLayer();
@@ -254,6 +259,8 @@ namespace PixelKingdom
                 case Window.Menu: DrawMenu(); break;
                 case Window.ConfirmWar: DrawConfirmWar(); break;
             }
+
+            if (gm.OrderMenu != null && !IsBlocking) DrawOrderMenu();
 
             if (gm.GameOver) DrawGameOver();
             else if (offlineReport != null) DrawOffline();
@@ -304,26 +311,17 @@ namespace PixelKingdom
         static float Wrapped(Rect r, string s, Color? c = null, TextAnchor a = TextAnchor.UpperLeft) => PixelFont.DrawWrapped(r, s, c ?? Palette.UIText, 1, a);
         void Centered(float y, string s, Color c, int scale = 1) => Text((VW - PixelFont.Width(s) * scale) / 2f, y, s, c, scale);
 
-        static bool Hover(Rect r) => r.Contains(Event.current.mousePosition);
-
         void Tip(Rect r, string text)
         {
             if (text == null) return;
             if (PKInput.UsingTouch)
             {
-                var e = Event.current;
-                if (e.type == EventType.MouseDown && r.Contains(e.mousePosition)) PinTip(text);
+                if (TappedPassive(r)) PinTip(text);
                 return;
             }
-            if (Hover(r)) { tooltip = text; tipPos = Event.current.mousePosition; }
+            if (Hover(r)) { tooltip = text; tipPos = ptr; }
         }
 
-        bool Clicked(Rect r, int button = 0)
-        {
-            var e = Event.current;
-            if (e.type == EventType.MouseDown && e.button == button && r.Contains(e.mousePosition)) { e.Use(); AudioManager.Click(); return true; }
-            return false;
-        }
 
         bool Button(Rect r, string label, bool enabled = true, string tip = null, string icon = null, bool selected = false, int ts = 1, bool confirm = false)
         {
@@ -423,12 +421,6 @@ namespace PixelKingdom
 
         static string Signed(float v) => (v >= 0 ? "+" : "") + (Mathf.Abs(v) < 10 ? v.ToString("0.0") : ((int)v).ToString());
 
-        float Scroll(Rect r, float value, float max)
-        {
-            var e = Event.current;
-            if (e.type == EventType.ScrollWheel && r.Contains(e.mousePosition)) { value += e.delta.y * 6; e.Use(); }
-            return Mathf.Clamp(value, 0, Mathf.Max(0, max));
-        }
 
         // ------------------------------------------------------------------
         //  HUD: Obere Leiste
@@ -554,12 +546,12 @@ namespace PixelKingdom
             var vr = new Rect(cx - vw / 2, cy - vh / 2, vw, vh);
             Fill(new Rect(vr.x, vr.y, vr.width, 1), Palette.UIText); Fill(new Rect(vr.x, vr.yMax, vr.width, 1), Palette.UIText);
             Fill(new Rect(vr.x, vr.y, 1, vr.height), Palette.UIText); Fill(new Rect(vr.xMax, vr.y, 1, vr.height + 1), Palette.UIText);
-            var e = Event.current;
-            if ((e.type == EventType.MouseDown || e.type == EventType.MouseDrag) && e.button == 0 && r.Contains(e.mousePosition))
+            if (HeldIn(r))
             {
-                float mx = (e.mousePosition.x - r.x) / w * WorldMap.W, mz = (r.yMax - e.mousePosition.y) / h * WorldMap.H;
+                var mp = Local(ptr);
+                float mx = (mp.x - r.x) / w * WorldMap.W, mz = (r.yMax - mp.y) / h * WorldMap.H;
                 gm.CamCtrl.JumpTo(new Vector2(mx, mz));
-                e.Use();
+                LastUIPress = Time.unscaledTime;
             }
             Tip(r, "Weltkarte – klicken zum Springen");
         }
@@ -796,6 +788,7 @@ namespace PixelKingdom
                 }
             }
             if (gm.CurrentMode == GameManager.Mode.PlaceBuilding) DrawPlacement(zoom);
+            if (gm.OrderPath != null) DrawOrderPath(zoom);
             // Mauszeiger-Kachel
             if (gm.HoverValid && (PKInput.UsingTouch || !MouseOverUI))
             {
@@ -868,19 +861,87 @@ namespace PixelKingdom
             }
             // Info am Mauszeiger
             if (!gm.HoverValid || !WorldToVirtual(new Vector3(gm.HoverX + 0.5f, gm.HoverY + 0.5f, 0), out var hv)) return;
-            string lbl; Color lc;
+            // Angaben immer im Vergleich zu einem normalen Gebäude: "+12 %" = 12 % mehr Ertrag als üblich
+            var lines = new List<string>(); Color lc;
             if (G.CanPlace(s, t, gm.HoverX, gm.HoverY, out string why))
             {
-                int site = Mathf.RoundToInt(G.SiteBonus(t, gm.HoverX, gm.HoverY) * 100), way = Mathf.RoundToInt(G.DistanceFactor(s, gm.HoverX, gm.HoverY) * 100);
-                lbl = $"Standort {site}%" + (way < 100 ? $" - Weg {way}%" : "");
-                if (G.Map.owner[WorldMap.Idx(gm.HoverX, gm.HoverY)] < 0) lbl += " - Niemandsland";
+                float site = G.SiteBonus(t, gm.HoverX, gm.HoverY), way = G.DistanceFactor(s, gm.HoverX, gm.HoverY);
+                string fn = Game.SiteFactorName(t);
+                bool prod = fn != null || way < 0.999f;
+                if (prod)
+                {
+                    lines.Add($"Ertrag hier: {Game.Rating(site * way)} ({Game.Diff(site * way)})");
+                    var parts = new List<string>();
+                    if (fn != null) parts.Add($"{fn}: {Game.Diff(site)}");
+                    if (way < 0.999f) parts.Add($"langer Weg: {Game.Diff(way)}");
+                    lines.Add(string.Join(", ", parts));
+                }
+                else lines.Add("Guter Bauplatz");
+                if (G.Map.owner[WorldMap.Idx(gm.HoverX, gm.HoverY)] < 0) lines.Add("Niemandsland - Nachbarn könnten Ärger machen");
                 lc = Palette.UIGood;
             }
-            else { lbl = why; lc = Palette.UIBad; }
-            var pr = new Rect(Mathf.Round(hv.x + 10), Mathf.Round(hv.y + 8), PixelFont.Width(lbl) + 8, 12);
+            else { lines.Add(why); lc = Palette.UIBad; }
+            float lw = 0; foreach (var l in lines) lw = Mathf.Max(lw, PixelFont.Width(l));
+            var pr = new Rect(Mathf.Round(hv.x + 10), Mathf.Round(hv.y + 8), lw + 8, lines.Count * 10 + 3);
             if (pr.xMax > VW - 4) pr.x = VW - 4 - pr.width;
+            if (pr.yMax > VH - 4) pr.y = hv.y - pr.height - 8;
             Fill(pr, new Color(Palette.UIPanelDark.r, Palette.UIPanelDark.g, Palette.UIPanelDark.b, 0.9f));
-            Text(pr.x + 4, pr.y + 2, lbl, lc);
+            for (int i = 0; i < lines.Count; i++) Text(pr.x + 4, pr.y + 2 + i * 10, lines[i], i == 0 ? lc : Palette.UIText);
+        }
+
+        // ---- Befehlsmenü für Heere ----
+        void DrawOrderPath(float zoom)
+        {
+            var path = gm.OrderPath;
+            float dot = Mathf.Max(2, Mathf.Round(zoom * 2));
+            var col = new Color(Palette.UIGood.r, Palette.UIGood.g, Palette.UIGood.b, 0.95f);
+            for (int i = 1; i < path.Count; i++)
+            {
+                if (!WorldToVirtual(new Vector3(WorldMap.X(path[i]) + 0.5f, WorldMap.Y(path[i]) + 0.5f, 0), out var v)) continue;
+                Fill(new Rect(Mathf.Round(v.x - dot / 2) + 1, Mathf.Round(v.y - dot / 2) + 1, dot, dot), Palette.UIShadow);
+                Fill(new Rect(Mathf.Round(v.x - dot / 2), Mathf.Round(v.y - dot / 2), dot, dot), col);
+            }
+            if (WorldToVirtual(new Vector3(gm.OrderX + 0.5f, gm.OrderY + 0.5f, 0), out var tv))
+            {
+                float sz = 16f * zoom / S;
+                Brackets(new Rect(tv.x - sz / 2, tv.y - sz / 2, sz, sz), 3, Palette.UIGood);
+            }
+        }
+
+        void DrawOrderMenu()
+        {
+            var a = G.A(gm.OrderArmy);
+            if (a == null) { gm.CloseOrderMenu(); return; }
+            var opts = gm.OrderMenu;
+            float w = Mathf.Min(230, VW - 16);
+            float rowH = 27;
+            float h = 32 + opts.Count * rowH + 18;
+            Vector2 anchor;
+            if (!WorldToVirtual(new Vector3(gm.OrderX + 0.5f, gm.OrderY + 0.5f, 0), out anchor)) anchor = new Vector2(VW / 2, VH / 2);
+            float x = anchor.x + 14, y = anchor.y - h / 2;
+            if (x + w > VW - 6) x = anchor.x - w - 14;
+            x = Mathf.Clamp(x, 6, VW - w - 6); y = Mathf.Clamp(y, 40, VH - h - 6);
+            var r = new Rect(Mathf.Round(x), Mathf.Round(y), w, h);
+            Panel(r);
+            Fill(new Rect(r.x + 1, r.y + 1, r.width - 2, 26), Palette.UIPanelDark);
+            string title = gm.OrderTarget ?? "";
+            if (PixelFont.Width(title) > w - 30) title = title.Substring(0, Mathf.Max(4, title.Length * (int)(w - 30) / Mathf.Max(1, PixelFont.Width(title)) - 1)) + ".";
+            Text(r.x + 6, r.y + 4, title, Palette.UIText);
+            int d = Mathf.Max(1, Mathf.CeilToInt(gm.OrderDays));
+            Text(r.x + 6, r.y + 15, $"{a.name}: Marsch ~{d} {(d == 1 ? "Tag" : "Tage")}", Palette.UITextDim);
+            if (Button(new Rect(r.xMax - 16, r.y + 3, 13, 12), "", true, "Abbrechen", "close")) { gm.CloseOrderMenu(); return; }
+            float oy = r.y + 32;
+            foreach (var o in opts)
+            {
+                if (Button(new Rect(r.x + 6, oy, w - 12, 14), o.Label, o.Enabled, o.Tip, o.Icon)) { gm.ExecuteOrder(o); return; }
+                if (!string.IsNullOrEmpty(o.Tip))
+                {
+                    var tl = PixelFont.Wrap(o.Tip, (int)w - 14);
+                    Text(r.x + 8, oy + 16, tl[0] + (tl.Count > 1 ? " ..." : ""), Palette.UITextDim);
+                }
+                oy += rowH;
+            }
+            if (Button(new Rect(r.x + 6, r.yMax - 17, w - 12, 13), "Abbrechen")) gm.CloseOrderMenu();
         }
 
         /// <summary>Eck-Klammern wie im Vorbild um die Auswahl.</summary>
@@ -904,8 +965,9 @@ namespace PixelKingdom
             else if (gm.CurrentMode == GameManager.Mode.PlaceBuilding)
             {
                 var d = Buildings.Get(gm.PlaceType);
-                hint = (PKInput.UsingTouch ? "Tippt zweimal auf ein grünes Feld für: " : "Linksklick auf ein grünes Feld für: ") + d.Name
-                     + (PKInput.UsingTouch ? "  (Zurück: abbrechen)" : "  (Esc/Rechtsklick: abbrechen, Shift: mehrere)");
+                hint = (PKInput.UsingTouch ? "Tippt zweimal auf ein Feld für: " : "Linksklick auf ein Feld für: ") + d.Name
+                     + (PKInput.UsingTouch ? "  (Zurück: abbrechen)" : "  (Esc/Rechtsklick: abbrechen, Shift: mehrere)")
+                     + "\nGrün = mehr Ertrag als üblich, Gelb = weniger. Die Angabe vergleicht mit einem normalen " + d.Name + ".";
             }
             else if (gm.CurrentMode == GameManager.Mode.PlaceSettlers)
             {

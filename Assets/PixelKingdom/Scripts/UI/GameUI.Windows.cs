@@ -53,7 +53,7 @@ namespace PixelKingdom
             Fill(list, Palette.UIPanelDark);
             float rowH = 22;
             scrollDip = Scroll(list, scrollDip, known.Count * rowH - list.height);
-            GUI.BeginGroup(list);
+            BeginGroup(list);
             for (int i = 0; i < known.Count; i++)
             {
                 var f = known[i];
@@ -70,7 +70,7 @@ namespace PixelKingdom
                 Text(rr.x + 13, rr.y + 11, $"{DipInfo.Names[(int)st]}  {(rv >= 0 ? "+" : "")}{(int)rv}", sel ? Palette.UIPanelDark : Palette.UITextDim);
                 if (Clicked(rr)) { dipSel = f.id; dipMessage = null; }
             }
-            GUI.EndGroup();
+            EndGroup();
             rects.Add(list);
 
             // Details
@@ -274,7 +274,7 @@ namespace PixelKingdom
             Fill(list, Palette.UIPanelDark);
             var sets = G.SettlementsOf(p.id).ToList();
             scrollRealm = Scroll(list, scrollRealm, sets.Count * 12 - list.height + 4);
-            GUI.BeginGroup(list);
+            BeginGroup(list);
             for (int i = 0; i < sets.Count; i++)
             {
                 var s = sets[i];
@@ -288,7 +288,7 @@ namespace PixelKingdom
                 Text(rr.x + 330, rr.y + 2, s.auto ? "Verwalter" : "", Palette.UITextDim);
                 if (Clicked(rr)) { gm.SelectSettlement(s); Open = Window.None; }
             }
-            GUI.EndGroup();
+            EndGroup();
             rects.Add(list);
         }
 
@@ -386,7 +386,7 @@ namespace PixelKingdom
                 foreach (var l in PixelFont.Wrap(e.text, (int)c.width - 20)) lines.Add((l, e.kind, false));
             }
             scrollLog = Scroll(list, scrollLog, lines.Count * 10 - list.height);
-            GUI.BeginGroup(list);
+            BeginGroup(list);
             for (int i = 0; i < lines.Count; i++)
             {
                 float y = i * 10 - scrollLog;
@@ -395,7 +395,7 @@ namespace PixelKingdom
                 var col = l.head ? Palette.UITextDim : l.kind == 1 ? Palette.UIGood : l.kind == 2 || l.kind == 3 ? Palette.UISand : l.kind == 4 ? Palette.UIGood : Palette.UIText;
                 Text(l.head ? 0 : 10, y, l.text, col);
             }
-            GUI.EndGroup();
+            EndGroup();
             if (lines.Count == 0) Text(c.x, c.y, "Noch ist nichts geschehen.", Palette.UITextDim);
         }
 

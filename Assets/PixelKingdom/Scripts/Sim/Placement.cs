@@ -82,6 +82,30 @@ namespace PixelKingdom
             return 1f;
         }
 
+        /// <summary>Was zählt beim Standort dieses Gebäudes? (für die Anzeige)</summary>
+        public static string SiteFactorName(BType t)
+        {
+            switch (t)
+            {
+                case BType.Bauernhof: return "Boden";
+                case BType.Holzfaeller: return "Bäume";
+                case BType.Steinbruch: return "Fels";
+                case BType.Mine: case BType.Goldmine: return "Erz";
+                case BType.Fischerhuette: return "Wasser";
+            }
+            return null;
+        }
+
+        /// <summary>Kurze Bewertung eines Ertragsfaktors (1 = so viel wie ein normales Gebäude).</summary>
+        public static string Rating(float f) => f >= 1.2f ? "sehr gut" : f >= 1f ? "gut" : f >= 0.8f ? "mittel" : f >= 0.6f ? "schwach" : "sehr schwach";
+
+        /// <summary>Abweichung vom normalen Ertrag als Text, z.B. "+12 %" oder "-20 %".</summary>
+        public static string Diff(float f)
+        {
+            int p = (int)Math.Round((f - 1f) * 100f);
+            return (p > 0 ? "+" : p < 0 ? "-" : "±") + Math.Abs(p) + " %";
+        }
+
         bool Near(int x, int y, int r, Func<int, bool> f)
         {
             for (int yy = y - r; yy <= y + r; yy++)

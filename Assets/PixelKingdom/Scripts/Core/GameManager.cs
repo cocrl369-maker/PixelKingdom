@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -273,6 +274,7 @@ namespace PixelKingdom
                 if (autosave <= 0) { autosave = 90f; SaveSystem.Save(Game); }
                 if (Game.CountSettlements(Game.PlayerId) == 0) GameOver = true;
                 if (Game.A(SelArmy) == null) SelArmy = -1;
+                if (OrderMenu != null && OrderArmy != SelArmy) CloseOrderMenu();
                 var sp = Game.Poi(SelPoi);
                 if (sp == null || (sp.type == 1 && sp.done)) SelPoi = -1;
                 var ss = Game.St(SelSettlement);
@@ -305,6 +307,7 @@ namespace PixelKingdom
             if (PKInput.KeyDown(PKKey.Escape))
             {
                 if (UI.CloseTopWindow()) { }
+                else if (OrderMenu != null) CloseOrderMenu();
                 else if (CurrentMode == Mode.PlaceBuilding) EndPlace();
                 else if (CurrentMode != Mode.None) CurrentMode = Mode.None;
                 else if (SelArmy >= 0 || SelSettlement >= 0) { SelArmy = -1; SelSettlement = -1; }
@@ -341,6 +344,7 @@ namespace PixelKingdom
 
         public void SelectArmy(ArmyData a, bool focus = false)
         {
+            CloseOrderMenu();
             SelArmy = a.id; SelSettlement = -1; SelPoi = -1;
             if (focus) CamCtrl.FocusOn(new Vector2(a.x, a.y));
         }
@@ -477,42 +481,76 @@ namespace PixelKingdom
             return best;
         }
 
+        // ------------------------------------------------------------------
+        //  Befehlsmenü: Ziel antippen -> Weg, Dauer und mögliche Befehle zur Auswahl
+        // ------------------------------------------------------------------
+        public List<OrderOption> OrderMenu;
+        public List<int> OrderPath;
+        public float OrderDays;
+        public int OrderArmy = -1, OrderX, OrderY;
+        public string OrderTarget;
+
+        public void CloseOrderMenu() { OrderMenu = null; OrderPath = null; OrderArmy = -1; }
+
+        /// <summary>Öffnet das Befehlsmenü für das gewählte Heer am Mauszeiger/Finger. Gibt false zurück, wenn kein Weg existiert.</summary>
+        bool OpenOrderMenu(ArmyData a)
+        {
+            var g = Game;
+            var s = SettlementNear(HoverPoint.x, HoverPoint.y, 1.2f);
+            if (s != null && !g.IsDiscovered(s.x, s.y)) s = null;
+            var poi = s == null ? g.PoiNear(HoverPoint.x, HoverPoint.y, 0.9f) : null;
+            if (poi != null && !g.IsDiscovered(poi.x, poi.y)) poi = null;
+            var opts = g.OrderOptions(a, HoverX, HoverY, s, poi);
+            int px = s != null ? s.x : poi != null ? poi.x : HoverX, py = s != null ? s.y : poi != null ? poi.y : HoverY;
+            var path = g.PreviewPath(a, px, py, out float days);
+            if (path == null) { UI.Toast(g.CanSail(a.faction) || g.S.seafaring ? "Dorthin führt kein Weg (Gebirge oder Meer)." : "Dorthin führt kein Weg – über das Meer braucht ihr Schiffe.", 2); CloseOrderMenu(); return false; }
+            OrderMenu = opts; OrderPath = path; OrderDays = days; OrderArmy = a.id; OrderX = px; OrderY = py;
+            OrderTarget = s != null ? s.name + (s.faction != g.PlayerId && g.F(s.faction) != null ? " (" + g.F(s.faction).name + ")" : "") : poi != null ? Game.PoiName(poi) : g.Map.BiomeName(WorldMap.Idx(HoverX, HoverY));
+            Game.Hint("order_menu", "Das Befehlsmenü: Die gepunktete Linie zeigt den Weg, oben steht, wie viele Tage der Marsch dauert. Wählt einen Befehl – erst dann zieht das Heer los. Tippt woanders hin, um ein anderes Ziel zu wählen.");
+            return true;
+        }
+
+        public void ExecuteOrder(OrderOption o)
+        {
+            var g = Game;
+            var a = g.A(OrderArmy);
+            CloseOrderMenu();
+            if (a == null || o == null || !o.Enabled) return;
+            var s = g.St(o.Target);
+            switch (o.Kind)
+            {
+                case 1: case 2:
+                    if (s == null) return;
+                    if (o.NeedsWar) { UI.AskWar(g.F(s.faction), a, s, o.Kind == 2); return; }
+                    OrderAttack(a, s, o.Kind == 2);
+                    return;
+                case 3:
+                    if (s != null && !g.OrderMove(a, s.x, s.y, ArmyMission.Return, s.id, out string w3)) UI.Toast(w3, 2);
+                    return;
+                case 4:
+                    { var p = g.Poi(o.Target); if (p != null) SendToPoi(a, p); }
+                    return;
+                case 5:
+                    if (!g.OrderMove(a, o.X, o.Y, ArmyMission.Found, -1, out string w5)) UI.Toast(w5, 2);
+                    else UI.Toast("Siedler ziehen dorthin und gründen einen neuen Ort.", 0);
+                    return;
+                default:
+                    if (!g.OrderMove(a, o.X, o.Y, ArmyMission.Move, -1, out string w0)) UI.Toast(w0, 2);
+                    return;
+            }
+        }
+
         void RightClick()
         {
             if (CurrentMode == Mode.PlaceBuilding) { EndPlace(); return; }
             var g = Game;
             var a = g.A(SelArmy);
             if (a == null || a.faction != g.PlayerId) return;
-            var s = SettlementNear(HoverPoint.x, HoverPoint.y, 1.2f);
-            if (a.settlers > 0 && a.units.Sum() == 0)
-            {
-                if (!g.OrderMove(a, HoverX, HoverY, ArmyMission.Found, -1, out string w)) UI.Toast(w, 2);
-                else UI.Toast("Siedler ziehen dorthin und gründen einen neuen Ort.", 0);
-                return;
-            }
-            var tp = g.PoiNear(HoverPoint.x, HoverPoint.y, 0.9f);
-            if (tp != null && s == null && g.IsDiscovered(tp.x, tp.y))
-            {
-                SendToPoi(a, tp);
-                return;
-            }
-            if (s != null && g.IsDiscovered(s.x, s.y))
-            {
-                if (s.faction == g.PlayerId)
-                {
-                    if (!g.OrderMove(a, s.x, s.y, ArmyMission.Return, s.id, out string w)) UI.Toast(w, 2);
-                    return;
-                }
-                bool raid = PKInput.Key(PKKey.Shift) || RaidMode;
-                if (!g.AtWar(g.PlayerId, s.faction))
-                {
-                    UI.AskWar(g.F(s.faction), a, s, raid);
-                    return;
-                }
-                OrderAttack(a, s, raid);
-                return;
-            }
-            if (!g.OrderMove(a, HoverX, HoverY, ArmyMission.Move, -1, out string why)) UI.Toast(why, 2);
+            // Tablet: immer erst das Befehlsmenü. PC: bei eindeutigem Ziel sofort, sonst Menü.
+            if (PKInput.UsingTouch) { OpenOrderMenu(a); return; }
+            if (!OpenOrderMenu(a)) return;
+            if (OrderMenu.Count == 1) { ExecuteOrder(OrderMenu[0]); return; }
+            if (PKInput.Key(PKKey.Shift)) { var raid = OrderMenu.FirstOrDefault(o => o.Kind == 2); if (raid != null) { ExecuteOrder(raid); return; } }
         }
 
         public void SendToPoi(ArmyData a, PoiData p)
