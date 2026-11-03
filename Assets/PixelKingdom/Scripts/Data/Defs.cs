@@ -246,3 +246,36 @@ namespace PixelKingdom
         public static int DayOfSeason(int day) => 1 + day % DaysPerSeason;
     }
 }
+
+namespace PixelKingdom
+{
+    /// <summary>Wissen: Verbesserungen, die einmal erforscht dauerhaft wirken (Schreibstube der Gelehrten).</summary>
+    public class TechDef
+    {
+        public string Name, Desc, Icon;
+        public float Gold, Wood, Stone, Iron;
+        public int Days, MinRank;
+        public BType Needs = BType.None;
+    }
+
+    public static class Techs
+    {
+        public const int Doppelaxt = 0, SchwererPflug = 1, Steinmetzkunst = 2, Kraeuterkunde = 3, Handelsgilde = 4,
+                         Kartografie = 5, Tiefbau = 6, Schmiedekunst = 7, Kettenhemden = 8, Fruchtfolge = 9;
+
+        public static readonly TechDef[] All =
+        {
+            new TechDef { Name = "Doppelaxt", Icon = "wood", Desc = "Holzfäller schlagen 25% mehr Holz.", Gold = 40, Wood = 30, Days = 6, MinRank = 0 },
+            new TechDef { Name = "Schwerer Pflug", Icon = "food", Desc = "Bauernhöfe ernten 20% mehr.", Gold = 60, Wood = 40, Iron = 5, Days = 8, MinRank = 0 },
+            new TechDef { Name = "Steinmetzkunst", Icon = "stone", Desc = "Steinbrüche liefern 25% mehr, Mauern schützen 10% besser.", Gold = 80, Stone = 30, Days = 10, MinRank = 1 },
+            new TechDef { Name = "Kräuterkunde", Icon = "smile", Desc = "Heilkundige Mönche: kein Fieber mehr, +4 Zufriedenheit, schnelleres Wachstum.", Gold = 90, Days = 10, MinRank = 1, Needs = BType.Kapelle },
+            new TechDef { Name = "Handelsgilde", Icon = "gold", Desc = "Bessere Preise am Markt und +8% Steuern.", Gold = 120, Wood = 30, Days = 12, MinRank = 1, Needs = BType.Markt },
+            new TechDef { Name = "Kartografie", Icon = "eye", Desc = "Heere sehen weiter und marschieren 10% schneller.", Gold = 100, Days = 10, MinRank = 1 },
+            new TechDef { Name = "Tiefbau", Icon = "iron", Desc = "Minen und Goldminen fördern 30% mehr.", Gold = 140, Wood = 60, Stone = 30, Days = 14, MinRank = 2, Needs = BType.Mine },
+            new TechDef { Name = "Schmiedekunst", Icon = "weapons", Desc = "Schmieden fertigen 30% mehr Waffen.", Gold = 150, Iron = 30, Days = 14, MinRank = 2, Needs = BType.Schmiede },
+            new TechDef { Name = "Kettenhemden", Icon = "sword", Desc = "Eure Truppen kämpfen 12% stärker.", Gold = 220, Iron = 60, Days = 18, MinRank = 2, Needs = BType.Schmiede },
+            new TechDef { Name = "Fruchtfolge", Icon = "food", Desc = "Felder ruhen abwechselnd: +15% Nahrung, auch im Winter etwas mehr.", Gold = 160, Days = 14, MinRank = 3, Needs = BType.Windmuehle },
+        };
+        public static int Count => All.Length;
+    }
+}

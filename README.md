@@ -76,7 +76,7 @@ Das Spiel ist für Android ausgelegt und bleibt am PC mit Tastatur und Maus spie
 | Pause / Tempo | Leertaste / 1, 2, 3 |
 | Reich / Heerführung / Diplomatie / Chronik / Hilfe | R / M / G / L / F1 |
 | Nächste Siedlung / Hauptstadt | Tab / H |
-| Farbpalette wechseln | P |
+| Gebäude platzieren | Bau-Karte anklicken, dann Linksklick auf ein grünes Feld (Shift: mehrere, Esc/Rechtsklick: abbrechen); am Tablet zweimal tippen |
 | Speichern | F5 (zusätzlich automatisch alle 90 s und beim Beenden) |
 | Touch-Simulation (Android testen) | F9 |
 
@@ -94,12 +94,14 @@ Das Spiel ist für Android ausgelegt und bleibt am PC mit Tastatur und Maus spie
 - **Nebel des Krieges**: Unerforschtes Land ist Pergament mit Tintenrand.
 - **Fraktionsfarben** auf Fahnen, Wappenröcken, Segeln und gestrichelten Grenzen.
 - **Pixelgenauer Zoom** in sechs Stufen, von der Weltkarte bis zur Nahansicht.
-- **Drei Farbpaletten**: Retro, Herbst und Terrakotta.
+- **Jahreszeiten färben die Welt**: Frühling/Sommer leuchtend grün, Herbst in Orange und Gold, Winter verschneit. Die Farben wechseln automatisch.
+- **Baustellen** sind an ihrem Holzgerüst zu erkennen.
+- Die Kamera endet am Kartenrand – kein leerer Raum dahinter.
 
 ### Welt
 - **Prozedural und groß**: 480 × 336 Felder, aus einem Seed erzeugt. Dazu gehören:
   - der Heimatkontinent **Mittland**, die kalten **Nordlande**, das heiße **Südreich** und der Archipel **Inselbund**,
-  - lange, lückenlose **Gebirgsketten** aus großen, mehrgipfligen Massiven mit Schneegipfeln,
+  - lange, geschlossene **Gebirgsketten** aus wenigen großen, sich überlappenden Bergen mit Schneekappen – **unpassierbar**, auch für Späher (nur Pässe und Täler führen hindurch),
   - **Flüsse**, die bergab ins Meer fließen, sowie **Seen**, **Inseln**, Strände und Flachwasser,
   - **Klimazonen** mit Laub- und Nadelwald, Steppe, Wüste und fruchtbarem Schwemmland an Flüssen.
 - **Bodenschätze**: Eisen-, Gold- und Steinvorkommen liegen als Felsen auf der Karte.
@@ -108,6 +110,10 @@ Das Spiel ist für Android ausgelegt und bleibt am PC mit Tastatur und Maus spie
 - **Ruinen**: Mit einem Heer oder Späher erkunden. Dort warten Gold, alte Waffen, heilige Relikte oder Landkarten – manchmal auch eine Falle.
 - **Räuberlager**: Sie überfallen Höfe in der Nähe und machen den Leuten Angst. Hebt sie mit einem Heer aus, dann gibt es Beute und Ansehen.
 - **Erlasse** (Reich-Übersicht): Wehrpflicht, Marktrecht, Erntedank, Freie Bauern, Pilgerwege. Jeder Rang erlaubt einen Erlass mehr.
+- **Fahrendes Volk**: Gaukler und Händler ohne festen Wohnsitz ziehen durchs Niemandsland. Besucht sie mit einem Heer: handeln (Waren und eine Karte), sie zum Bleiben einladen (+Bewohner) oder vertreiben. Nach einigen Wochen ziehen sie weiter.
+- **Wachtürme**: dürfen weit draußen stehen, decken die Umgebung auf und warnen vor Räubern.
+- **Wissen** (Reich-Übersicht, Reiter „Wissen“): Doppelaxt, Schwerer Pflug, Steinmetzkunst, Kräuterkunde, Handelsgilde, Kartografie, Tiefbau, Schmiedekunst, Kettenhemden, Fruchtfolge. Immer eine Forschung zugleich, Klöster beschleunigen.
+- **Reliquien**: In Ruinen gefundene Relikte bringen im Kloster (2 je Kloster) täglich Gold und Ansehen.
 - **Ritterturniere** (mit Turnierplatz): Sie bringen Ansehen und Zufriedenheit, die Fürsten werden euch gewogener, und zwei fahrende Ritter bleiben bei euch.
 - **Meister Aldo, der Chronist**, erklärt im Dialogfeld am unteren Bildschirmrand jede Neuerung, sobald sie zum ersten Mal vorkommt: erstes Heer, Winter, Hunger, Markt, Ruinen, Räuber, Erlasse, Druck des Kaisers und mehr. Die Tipps lassen sich im Menü abschalten.
 
@@ -118,12 +124,14 @@ Das Spiel ist für Android ausgelegt und bleibt am PC mit Tastatur und Maus spie
 
 ### Wirtschaft & Bürger
 - **6 Ressourcen**: Nahrung, Holz, Stein, Eisen, Gold und Waffen. Dazu kommen **Ansehen** und **Bevölkerung**.
-- **24 Gebäude** mit Standortbedingungen, neu sind Windmühle (+20 % Ernte), Kloster und Turnierplatz:
-  - Bauernhöfe brauchen fruchtbares Land, Fischer brauchen Wasser.
-  - Steinbrüche brauchen Hügel; Steinvorkommen erhöhen den Ertrag.
-  - Der Ertrag hängt vom Gelände im Stadtgebiet ab.
+- **25 Gebäude, frei platzierbar**: Ihr wählt für jedes Gebäude den Bauplatz auf der Karte.
+  - Holzfäller brauchen Bäume in der Nähe, Bauernhöfe Wiese oder fruchtbares Land, Fischer Wasser, Häfen die Meeresküste, Minen ein passendes Vorkommen, Steinbrüche Hügel oder Fels.
+  - Der **Standort** bestimmt den Ertrag (z. B. wie viele Bäume rund um den Holzfäller stehen).
+  - Stadtgebäude (Markt, Taverne, Kaserne …) müssen in der Stadt stehen. **Produktionsgebäude** (Höfe, Minen, Fischer, Mühlen, Wachtürme) dürfen bis zu 14 Felder weit draußen stehen – lange Wege kosten aber Ertrag und Bauzeit.
+  - **Fremdes Gebiet** ist tabu. Im **Niemandsland** sind Außenposten erlaubt, doch Nachbarn beschweren sich (**Grenzstreit**: zahlen, auf dem Recht bestehen oder räumen). Wächst ein Nachbar über euren Posten, bringt er kaum noch etwas.
+- **Übersichtlicher Anfang**: Gebäude, Truppen, Reiter und Fenster erscheinen erst, wenn sie freigeschaltet sind (Rang, nötige Gebäude, erste Nachbarn).
 - **Holzfällerei**: Holzfäller fällen sichtbar Bäume, an ihrer Stelle bleiben Stümpfe. Der Wald wächst langsam nach. Ein kahler Wald liefert wenig Holz.
-- **Erzabbau**: Eisenminen und Goldminen brauchen ein passendes Erzvorkommen im Stadtgebiet. Je mehr Vorkommen, desto höher der Ertrag. Jeder Spieler hat ein Eisen- und ein Steinvorkommen in Reichweite seines Startdorfs.
+- **Erzabbau**: Eisenminen und Goldminen stehen direkt an einem passenden Erzvorkommen. Je mehr Vorkommen, desto höher der Ertrag. Jeder Spieler hat ein Eisen- und ein Steinvorkommen in Reichweite seines Startdorfs.
 - **Realistische Bevölkerung**: Es arbeiten 60 % der Bewohner, Nahrungsbetriebe werden zuerst besetzt. Wachstum braucht Nahrung, Wohnraum und Zufriedenheit. Rekruten werden aus der Bevölkerung genommen.
 - **Zufriedenheit**: Steuern, Rationen, Überfüllung, Hunger, Krieg, Winter, frisch eroberte Städte und Verwaltungslast wirken sich aus. Den Zielwert seht ihr samt Gründen im Tooltip.
 - **Jahreszeiten**: Im Winter wachsen kaum Feldfrüchte, deshalb lohnt sich Vorratshaltung.
@@ -202,7 +210,8 @@ Assets/PixelKingdom/
     Core/      GameManager (Einstieg, Schleife, Eingabe), GameState (Speicherdaten), SaveSystem, PKInput
     Data/      Defs: Ressourcen, Ränge, Gebäude, Einheiten, Kalender – hier wird balanciert
     World/     WorldMap, WorldGenerator (Kontinente/Flüsse/Klima), Noise, Pathfinder (A*)
-    Sim/       Game (Kern), Economy, Military, Diplomacy, AI, Events, Story, WorldSetup, NameGen
+    Sim/       Game (Kern), Economy, Military, Diplomacy, AI, Events, Story, WorldSetup, NameGen,
+               Placement (Bauplätze), Realm (Ruinen/Lager/Erlasse/Turniere), Frontier (Grenzland, fahrendes Volk, Wissen)
     Art/       Pixelkunst ohne Unity: PixelCanvas, SpriteArt (Gebäude/Natur/Truppen), IconArt, GroundPainter (Kartenboden),
                MapLayout (Natur-Objekte je Kachel, Anordnung der Gebäude in Siedlungen), ArtPalette
     Render/    GroundRenderer, ObjectRenderer, EntityRenderer, SpriteLib (Atlas), QuadBatch, CameraController, Palette
@@ -213,15 +222,17 @@ Die Simulation (`World/`, `Sim/`, `Data/`) und die Pixelkunst (`Art/`) sind **ko
 
 ## Erweitern
 
-- **Neues Gebäude**: Wert am Ende von `BType` ergänzen und in `Buildings` definieren (Kosten, Produktion, Bedingungen). Dann eine Zeichenfunktion in `SpriteArt` schreiben und sie als `"b_" + Name` registrieren. Den Platz in der Siedlung legt `SettlementLayout` fest. Die Bau-Karte erscheint automatisch.
+- **Neues Gebäude**: Wert am Ende von `BType` ergänzen und in `Buildings` definieren (Kosten, Produktion, Bedingungen). Dann eine Zeichenfunktion in `SpriteArt` schreiben und sie als `"b_" + Name` registrieren. Wo es stehen darf, regelt `CanPlace` in `Sim/Placement.cs` (ggf. `IsRemote` und `SiteBonus` ergänzen). Die Bau-Karte erscheint automatisch.
 - **Neue Einheit**: `UType` und `Units.All` erweitern, dann `Units.Count` anpassen.
 - **Neues Ereignis**: In `Events.cs` eine ID in den Pool aufnehmen, dann einen `Describe`- und einen `ResolveEvent`-Fall schreiben.
 - **Neues Kapitel**: In `Story.cs` einen Eintrag in `Chapters` mit Intro, Zielen, Outro und Belohnung anlegen.
-- **Neue Farbpalette**: In `ArtPalette.All` hinzufügen.
+- **Neues Wissen**: In `Techs.All` (Data/Defs.cs) ergänzen und die Wirkung in `Sim/Frontier.cs` (`TechProd`, `CombatMult` …) einbauen.
+- **Jahreszeiten-Farben**: In `ArtPalette.All` (0 = Frühling/Sommer, 1 = Herbst, 2 = Winter).
 - **Neue Icons**: farbig in `IconArt` (16×16) oder schlicht in `PixelIcons` (12×12 ASCII-Art).
 
 ## Hinweise
 
 - Die Unity-Teile wurden gegen die Unity-Referenzassemblies kompiliert. Die Simulation wurde ohne Unity mit Bot-Spielern über tausende Tage getestet, darunter Story, Kaiser-Sturz und Seefahrt. Gebäude, Icons und Kartenausschnitte wurden außerhalb von Unity als Vorschaubilder gerendert und geprüft.
 - Spielstände aus älteren Versionen (kleinere Welt) werden nicht mehr geladen. Sie werden als `.alt-vN` gesichert, und es beginnt ein neues Spiel.
+- **Weiterentwickeln mit Claude Code**: siehe `ENTWICKLUNG.md` – dort stehen Aufbau, Stand und offene Ideen, damit eine neue Sitzung sofort weitermachen kann.
 - Der Spielstand liegt unter `Application.persistentDataPath/pixelkingdom_save.json`, eine Sicherung unter `.bak`.

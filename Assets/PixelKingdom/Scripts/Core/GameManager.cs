@@ -34,9 +34,49 @@ namespace PixelKingdom
         public const float SecondsPerDay = 5f;
 
         public int SelSettlement = -1, SelArmy = -1, SelPoi = -1;
-        public enum Mode { None, PlaceSettlers, TargetArmy }
+        public enum Mode { None, PlaceSettlers, TargetArmy, PlaceBuilding }
         public Mode CurrentMode;
         public int ModeSource = -1;
+        public BType PlaceType;
+        int placeTapX = -1, placeTapY = -1;
+
+        /// <summary>Bauplatz-Wahl starten: Die gültigen Felder leuchten, ein Klick (am Tablet: zweimal tippen) baut.</summary>
+        public void BeginPlace(SettlementData s, BType t)
+        {
+            CurrentMode = Mode.PlaceBuilding; ModeSource = s.id; PlaceType = t;
+            SelSettlement = -1; SelArmy = -1; SelPoi = -1; placeTapX = -1;
+            CamCtrl.FocusOn(new Vector2(s.x + 0.5f, s.y + 0.5f));
+            Game.Hint("place_building", "Wählt den Bauplatz! Grüne Felder sind erlaubt – je heller, desto besser der Standort. Holzfäller brauchen Wald, Bauernhöfe Wiesen, Minen ein Vorkommen. Werkstätten und Märkte müssen in der Stadt stehen, Höfe und Minen dürfen weiter hinaus – lange Wege kosten aber Ertrag.");
+        }
+
+        void EndPlace()
+        {
+            var s = Game.St(ModeSource);
+            CurrentMode = Mode.None;
+            if (s != null) SelectSettlement(s, false);
+        }
+
+        void TryPlace()
+        {
+            var g = Game;
+            var s = g.St(ModeSource);
+            if (s == null || s.faction != g.PlayerId) { CurrentMode = Mode.None; return; }
+            if (PKInput.UsingTouch && (placeTapX != HoverX || placeTapY != HoverY))
+            {
+                // Am Tablet: erstes Tippen zeigt den Platz, zweites Tippen baut
+                placeTapX = HoverX; placeTapY = HoverY;
+                return;
+            }
+            placeTapX = -1;
+            if (!g.CanPlace(s, PlaceType, HoverX, HoverY, out string why)) { UI.Toast("Hier nicht: " + why, 2); return; }
+            if (!g.CanBuild(s, PlaceType, out why)) { UI.Toast(why, 2); EndPlace(); return; }
+            if (g.QueueBuild(s, PlaceType, HoverX, HoverY))
+            {
+                UI.Toast(Buildings.Get(PlaceType).Name + " wird gebaut.", 0);
+                // Mit gehaltener Umschalttaste gleich weitere Gebäude derselben Art setzen
+                if (!(PKInput.Key(PKKey.Shift) && g.CanBuild(s, PlaceType, out _))) EndPlace();
+            }
+        }
 
         public bool HoverValid;
         public Vector2 HoverPoint;
@@ -265,6 +305,7 @@ namespace PixelKingdom
             if (PKInput.KeyDown(PKKey.Escape))
             {
                 if (UI.CloseTopWindow()) { }
+                else if (CurrentMode == Mode.PlaceBuilding) EndPlace();
                 else if (CurrentMode != Mode.None) CurrentMode = Mode.None;
                 else if (SelArmy >= 0 || SelSettlement >= 0) { SelArmy = -1; SelSettlement = -1; }
                 else UI.OpenWindow(GameUI.Window.Menu);
@@ -356,6 +397,7 @@ namespace PixelKingdom
             if (!SetHover(screen)) return;
             var sel = Game.A(SelArmy);
             if (CurrentMode == Mode.TargetArmy) { CurrentMode = Mode.None; if (sel != null) RightClick(); return; }
+            if (CurrentMode == Mode.PlaceBuilding) { TryPlace(); return; }
             if (CurrentMode == Mode.None && sel != null && sel.faction == Game.PlayerId)
             {
                 // Tippen auf ein anderes eigenes Heer wählt dieses; Tippen auf das gewählte Heer wählt ab
@@ -395,6 +437,7 @@ namespace PixelKingdom
                 if (g.A(SelArmy) != null) RightClick();
                 return;
             }
+            if (CurrentMode == Mode.PlaceBuilding) { TryPlace(); return; }
             if (CurrentMode == Mode.PlaceSettlers)
             {
                 var src = g.St(ModeSource);
@@ -436,6 +479,7 @@ namespace PixelKingdom
 
         void RightClick()
         {
+            if (CurrentMode == Mode.PlaceBuilding) { EndPlace(); return; }
             var g = Game;
             var a = g.A(SelArmy);
             if (a == null || a.faction != g.PlayerId) return;
@@ -474,7 +518,7 @@ namespace PixelKingdom
         public void SendToPoi(ArmyData a, PoiData p)
         {
             if (!Game.OrderMove(a, p.x, p.y, ArmyMission.Poi, p.id, out string why)) UI.Toast(why, 2);
-            else UI.Toast(p.type == 0 ? $"{a.name} zieht zur Ruine." : $"{a.name} greift das Räuberlager an.", p.type == 1 ? 3 : 0);
+            else UI.Toast(p.type == 0 ? $"{a.name} zieht zur Ruine." : p.type == 2 ? $"{a.name} besucht das fahrende Volk." : $"{a.name} greift das Räuberlager an.", p.type == 1 ? 3 : 0);
         }
 
         public void OrderAttack(ArmyData a, SettlementData s, bool raid)

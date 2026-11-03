@@ -188,95 +188,42 @@ namespace PixelKingdom
                     }
             }
 
-            bool Inside(int x, int y) => walls == 0 || (Math.Abs(x - cx) < WR && Math.Abs(y - cy) < WR);
-
-            (int x, int y) Find(Func<int, int, bool> pred, bool preferInside, float minD = 0)
-            {
-                for (int pass = 0; pass < 2; pass++)
-                {
-                    bool needSpace = pass == 0;
-                    if (preferInside)
-                        foreach (var t in tiles) if (t.d >= minD && Free(t.x, t.y) && !OnWallLine(t.x, t.y) && Inside(t.x, t.y) && pred(t.x, t.y) && (!needSpace || Spaced(t.x, t.y))) return (t.x, t.y);
-                    foreach (var t in tiles) if (t.d >= minD && Free(t.x, t.y) && !OnWallLine(t.x, t.y) && pred(t.x, t.y) && (!needSpace || Spaced(t.x, t.y))) return (t.x, t.y);
-                }
-                return (-1, -1);
-            }
-
-            bool Near(int x, int y, Func<int, bool> f)
-            {
-                for (int dy = -1; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++)
-                    {
-                        int nx = x + dx, ny = y + dy;
-                        if (WorldMap.In(nx, ny) && f(WorldMap.Idx(nx, ny))) return true;
-                    }
-                return false;
-            }
-
-            void Put(string name, (int x, int y) t, bool tinted = false)
-            {
-                if (t.x < 0) return;
-                Use(t.x, t.y); bld.Add(WorldMap.Idx(t.x, t.y));
-                res.Add(new Placed(name, t.x + 0.5f, t.y + 0.28f, false, tinted));
-            }
-
-            // Große Gebäude im Inneren
-            if (s.buildings[(int)BType.Kathedrale] > 0)
-            {
-                var t = Find((x, y) => Free(x - 1, y) && Free(x + 1, y) && Free(x, y + 1), true, 1.5f);
-                if (t.x >= 0) { Use(t.x - 1, t.y); Use(t.x + 1, t.y); Use(t.x, t.y + 1); Use(t.x - 1, t.y + 1); Use(t.x + 1, t.y + 1); Put("b_Kathedrale", t); }
-            }
-            if (s.buildings[(int)BType.Kloster] > 0) Put("b_Kloster", Find((x, y) => Free(x + 1, y), false, 2.5f));
-            if (s.buildings[(int)BType.Turnierplatz] > 0) { var tt = Find((x, y) => Free(x - 1, y) && Free(x + 1, y), false, 2f); if (tt.x >= 0) { Use(tt.x - 1, tt.y); Use(tt.x + 1, tt.y); } Put("b_Turnierplatz", tt, true); }
-            for (int k = 0; k < Math.Min(2, s.buildings[(int)BType.Windmuehle]); k++)
-                Put("b_Windmuehle", Find((x, y) => map.biome[WorldMap.Idx(x, y)] == Biome.Fertile || map.biome[WorldMap.Idx(x, y)] == Biome.Grass, false, 2f));
-            BType[] inner = { BType.Markt, BType.Taverne, BType.Kapelle, BType.Kaserne, BType.Archerie, BType.Stall, BType.Werkstatt, BType.Lagerhaus, BType.Schmiede, BType.Brunnen };
-            foreach (var bt in inner)
-                for (int k = 0; k < Math.Min(3, s.buildings[(int)bt]); k++)
-                    Put("b_" + bt, Find((x, y) => true, true), bt == BType.Kaserne);
-
-            // Landschaftsgebundene Gebäude
+            // Gebäude stehen dort, wo sie gebaut wurden (vom Spieler gewählt oder von der KI gesucht)
             string field = season == Season.Winter ? "f_snow" : season == Season.Fruehling ? "f_green" : "f_wheat";
-            for (int k = 0; k < Math.Min(10, s.buildings[(int)BType.Bauernhof]); k++)
+            foreach (var b in s.placed) if (WorldMap.In(b.x, b.y)) Use(b.x, b.y);
+            foreach (var q in s.queue) if (q.kind == 0 && q.x >= 0 && WorldMap.In(q.x, q.y)) Use(q.x, q.y);
+            bool FreeField(int x, int y)
             {
-                var t = Find((x, y) => map.biome[WorldMap.Idx(x, y)] == Biome.Fertile || map.biome[WorldMap.Idx(x, y)] == Biome.Grass || map.biome[WorldMap.Idx(x, y)] == Biome.Steppe, false, 1.5f);
-                if (t.x < 0) t = Find((x, y) => true, false, 1.5f);
-                if (t.x < 0) break;
-                Put("b_Bauernhof", t);
-                int fields = 0;
-                for (int dy = -1; dy <= 1 && fields < 2; dy++)
-                    for (int dx = -1; dx <= 1 && fields < 2; dx++)
+                if (!WorldMap.In(x, y)) return false;
+                int i = WorldMap.Idx(x, y);
+                if (used.Contains(i) || !map.Buildable(i) || map.deposit[i] != 0 || g.BuildingOwnerAt(x, y) != -1) return false;
+                int o = map.owner[i];
+                return o == s.faction || o == -1;
+            }
+            foreach (var b in s.placed)
+            {
+                var bt = (BType)b.type;
+                uint hh = (uint)(b.x * 73856093 ^ b.y * 19349663);
+                string name = bt == BType.Wohnhaus ? "b_Wohnhaus" + (hh % 3) : "b_" + bt;
+                float ox = bt == BType.Wohnhaus ? ((hh >> 6) % 3 - 1) * 0.08f : 0f;
+                bool tinted = bt == BType.Kaserne || bt == BType.Turnierplatz || bt == BType.Wachturm;
+                res.Add(new Placed(name, b.x + 0.5f + ox, b.y + 0.28f, false, tinted));
+                if (bt == BType.Bauernhof)
+                {
+                    int fields = 0;
+                    for (int k = 0; k < 8 && fields < 2; k++)
                     {
-                        if (dx == 0 && dy == 0) continue;
-                        int fx = t.x + dx, fy = t.y + dy;
-                        if (!Free(fx, fy) || OnWallLine(fx, fy)) continue;
+                        int fx = b.x + WorldMap.DX8[(k + (int)(hh % 8)) % 8], fy = b.y + WorldMap.DY8[(k + (int)(hh % 8)) % 8];
+                        if (!FreeField(fx, fy)) continue;
                         Use(fx, fy);
                         res.Add(new Placed(field, fx + 0.5f, fy + 0.05f, true));
                         fields++;
                     }
+                }
             }
-            for (int k = 0; k < Math.Min(5, s.buildings[(int)BType.Fischerhuette]); k++)
-                Put("b_Fischerhuette", Find((x, y) => map.coast[WorldMap.Idx(x, y)], false));
-            if (s.buildings[(int)BType.Hafen] > 0)
-                Put("b_Hafen", Find((x, y) => Near(x, y, i => map.IsSea(i)), false));
-            for (int k = 0; k < Math.Min(6, s.buildings[(int)BType.Holzfaeller]); k++)
-                Put("b_Holzfaeller", Find((x, y) => Near(x, y, i => map.baseTrees[i] > 0), false, 1.5f));
-            for (int k = 0; k < Math.Min(4, s.buildings[(int)BType.Steinbruch]); k++)
-                Put("b_Steinbruch", Find((x, y) => Near(x, y, i => map.biome[i] == Biome.Hills || map.biome[i] == Biome.Mountain || map.deposit[i] == WorldMap.DepStone), false, 1.5f));
-            for (int k = 0; k < Math.Min(4, s.buildings[(int)BType.Mine]); k++)
-                Put("b_Mine", Find((x, y) => Near(x, y, i => map.deposit[i] == WorldMap.DepIron), false));
-            for (int k = 0; k < Math.Min(3, s.buildings[(int)BType.Goldmine]); k++)
-                Put("b_Goldmine", Find((x, y) => Near(x, y, i => map.deposit[i] == WorldMap.DepGold), false));
-
-            // Wohnhäuser zum Schluss (füllen die Stadt)
-            int houses = Math.Min(36, s.buildings[(int)BType.Wohnhaus]);
-            for (int k = 0; k < houses; k++)
-            {
-                var t = Find((x, y) => true, true);
-                if (t.x < 0) break;
-                Use(t.x, t.y); bld.Add(WorldMap.Idx(t.x, t.y));
-                uint hh = (uint)(t.x * 73856093 ^ t.y * 19349663);
-                res.Add(new Placed("b_Wohnhaus" + (hh % 3), t.x + 0.5f + ((hh >> 6) % 3 - 1) * 0.08f, t.y + 0.28f));
-            }
+            // Baustellen mit Gerüst
+            foreach (var q in s.queue)
+                if (q.kind == 0 && q.x >= 0) res.Add(new Placed("b_scaffold", q.x + 0.5f, q.y + 0.28f));
             return res;
         }
     }

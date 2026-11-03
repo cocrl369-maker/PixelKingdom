@@ -186,11 +186,23 @@ namespace PixelKingdom
         {
             var p = G.Player;
             var c = WindowFrame("Euer Reich: " + p.name, 520, 330, false);
-            string[] tabs = { "Rang", "Erlasse & Feste", "Siedlungen" };
+            string[] tabs = { "Rang", "Erlasse & Feste", "Siedlungen", "Wissen" };
+            bool edictsOpen = p.rank >= 1;
+            if (!edictsOpen && realmTab == 1) realmTab = 0;
+            int shownTab = 0;
             for (int t = 0; t < tabs.Length; t++)
-                if (Button(new Rect(c.x + t * 104, c.y, 100, 15), tabs[t], true, null, null, realmTab == t)) realmTab = t;
+            {
+                if (t == 1 && !edictsOpen) continue;
+                if (Button(new Rect(c.x + shownTab * 104, c.y, 100, 15), tabs[t], true, null, null, realmTab == t))
+                {
+                    realmTab = t;
+                    if (t == 3) G.Hint("tab_tech", "Das Wissen: Eure Gelehrten erforschen Verbesserungen – bessere Äxte, schwerere Pflüge, Kettenhemden. Immer nur eines zugleich; Klöster und Kapellen beschleunigen die Arbeit. Was erforscht ist, gilt für immer.");
+                }
+                shownTab++;
+            }
             c = new Rect(c.x, c.y + 21, c.width, c.height - 21);
             if (realmTab == 1) { DrawEdicts(c); return; }
+            if (realmTab == 3) { DrawTechs(c); return; }
             if (realmTab == 2) { DrawRealmSettlements(c); return; }
             // Rangleiter
             float x = c.x, y = c.y;
@@ -280,6 +292,54 @@ namespace PixelKingdom
             rects.Add(list);
         }
 
+        void DrawTechs(Rect c)
+        {
+            float x = c.x, y = c.y;
+            var p = G.Player;
+            if (G.S.researching >= 0)
+            {
+                var cur = Techs.All[G.S.researching];
+                float frac = 1f - Mathf.Clamp01(G.S.researchLeft / Mathf.Max(1, cur.Days));
+                Text(x, y, $"__In Arbeit__: {cur.Name} - noch ~{Mathf.CeilToInt(G.S.researchLeft / G.ResearchSpeed)} Tage", Palette.UISand);
+                Bar(new Rect(x, y + 11, 200, 3), frac, Palette.UIText);
+            }
+            else Text(x, y, "__Wissen__ - wählt, woran eure Gelehrten arbeiten (immer nur eines).", Palette.UISand);
+            y += 20;
+            float colW = (c.width - 6) / 2f;
+            int shown = 0, later = 0;
+            for (int t = 0; t < Techs.Count; t++)
+            {
+                var d = Techs.All[t];
+                if (d.MinRank > p.rank) { later++; continue; }
+                bool known = G.HasTech(t);
+                bool can = G.CanResearch(t, out string why);
+                float cx = x + (shown % 2) * (colW + 6), cy = y + (shown / 2) * 30;
+                var row = new Rect(cx, cy, colW, 28);
+                Fill(row, known ? Palette.UIPanelLight : Palette.UIPanelDark);
+                Icon(new Rect(cx + 3, cy + 3, 12, 12), d.Icon, known ? Palette.UIGood : Palette.UIText);
+                Text(cx + 18, cy + 4, "__" + d.Name + "__" + (known ? "  (erforscht)" : ""), known ? Palette.UIGood : Palette.UIText);
+                var cost = new System.Collections.Generic.List<string>();
+                if (d.Gold > 0) cost.Add((int)d.Gold + " Gold"); if (d.Wood > 0) cost.Add((int)d.Wood + " Holz");
+                if (d.Stone > 0) cost.Add((int)d.Stone + " Stein"); if (d.Iron > 0) cost.Add((int)d.Iron + " Eisen");
+                if (!known) Text(cx + 18, cy + 16, string.Join(", ", cost) + $", {d.Days} Tage", Palette.UITextDim);
+                string tip = "__" + d.Name + "__\n" + d.Desc + (known ? "" : "\n__Kosten__: " + string.Join(", ", cost) + "\n__Dauer__: " + d.Days + " Tage")
+                           + (d.Needs != BType.None ? "\n__Benötigt__: " + Buildings.Get(d.Needs).Name : "") + (!known && !can ? "\n__Noch nicht__: " + why : "");
+                Tip(new Rect(cx, cy, colW - 64, 28), tip);
+                if (!known && Button(new Rect(row.xMax - 62, cy + 7, 58, 14), "Forschen", can, can ? d.Desc : why, null))
+                {
+                    if (TouchConfirm("tech" + t, tip)) G.StartResearch(t);
+                }
+                shown++;
+            }
+            y += ((shown + 1) / 2) * 30 + 4;
+            if (later > 0) { Text(x, y, $"{later} weitere Kenntnisse mit höherem Rang.", Palette.UITextDim); y += 12; }
+            if (G.S.relics > 0)
+            {
+                int housed = Mathf.Min(G.S.relics, 2 * G.CountBuildings(BType.Kloster));
+                Text(x, y, $"__Reliquien__: {G.S.relics} gefunden, {housed} im Kloster" + (housed < G.S.relics ? " (jedes Kloster bewahrt 2)" : "") + $" - +{housed * 1.2f:0.#} Gold/Tag durch Pilger", Palette.UISand);
+            }
+        }
+
         void DrawEdicts(Rect c)
         {
             float x = c.x, y = c.y;
@@ -349,6 +409,7 @@ namespace PixelKingdom
                 "KARTE: WASD/Pfeile oder rechte Maustaste ziehen zum Bewegen. Mausrad (oder Q/E) zoomt in Pixelstufen.\n" +
                 "AUSWAHL: Linksklick auf Siedlung oder Heer. Rechtsklick gibt einem Heer ein Ziel. Shift+Rechtsklick auf eine feindliche Stadt: Überfall statt Eroberung.\n" +
                 "TABLET: Tippen wählt aus. Ist ein Heer gewählt, gibt Tippen ihm ein Ziel (Tippen auf das Heer selbst wählt ab). Ein Finger verschiebt die Karte, zwei Finger zoomen. Lange drücken zeigt Geländeinfos oder befiehlt einen Überfall. Wichtige Aktionen (Bauen, Diplomatie) bestätigt ihr durch zweimaliges Tippen. Zurück-Taste = Esc. Am PC simuliert F9 die Touch-Steuerung.\n" +
+                "BAUEN: Gebäudekarte wählen, dann den Bauplatz auf der Karte (grün = erlaubt, heller = besserer Standort). Holzfäller brauchen Wald, Bauernhöfe Wiesen, Minen ein Vorkommen. Höfe, Minen, Fischer und Wachtürme dürfen weit draußen stehen – lange Wege kosten Ertrag, und im Niemandsland gibt es Streit mit Nachbarn. Fremdes Gebiet ist tabu. Baustellen erkennt ihr am Gerüst.\n" +
                 "HEERE: Truppen in einer Siedlung ausbilden (Reiter 'Truppen'), dann 'Heer aufstellen' und 'Ausrücken'. Heer anklicken: Am Mauszeiger steht, was ein Rechtsklick bewirkt (marschieren, einrücken, erobern). Die Heerführung (M) listet alle Heere, Ziele mit Entfernung, Teilen, Vereinen und Truppentausch mit der Garnison.\n" +
                 "STORY: Ihr bestimmt das Tempo. Nach jedem Kapitel gibt es eine Friedenszeit. Der Druck des Kaiserreichs steigt langsam – zahlt den Zehnt, um ihn zu senken, oder erhebt euch, wenn ihr bereit seid.\n" +
                 "ZEIT: Leertaste Pause, 1/2/3 Tempo. Tab: nächste Siedlung, H: Hauptstadt.\n" +

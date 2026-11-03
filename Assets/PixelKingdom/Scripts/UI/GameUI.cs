@@ -431,20 +431,26 @@ namespace PixelKingdom
             if (Clicked(left)) ToggleWindow(Window.Realm);
 
             // Mitte: Kacheln
-            string[] icons = { "food", "wood", "stone", "iron", "gold", "weapons", "people", "smile", "prestige" };
-            int n = icons.Length;
+            // Eisen und Waffen erst zeigen, wenn sie eine Rolle spielen
+            bool showIron = p.res[(int)Res.Iron] > 0.5f || p.res[(int)Res.Weapons] > 0.5f || p.rank >= 2 || G.CountBuildings(BType.Mine) > 0;
+            var idx = new List<int>();
+            for (int k = 0; k < 9; k++) if (showIron || (k != 3 && k != 5)) idx.Add(k);
+            string[] allIcons = { "food", "wood", "stone", "iron", "gold", "weapons", "people", "smile", "prestige" };
+            int n = idx.Count;
+            var icons = idx.Select(k => allIcons[k]).ToArray();
             float tw = 30, gap = 4;
             float total = n * tw + (n - 1) * gap;
             float x0 = Mathf.Max(left.xMax + 8, (VW - total) / 2f);
             float cap = G.Storage(p.id);
             float pop = G.TotalPop(p.id);
             float happy = G.SettlementsOf(p.id).Any() ? G.SettlementsOf(p.id).Average(s => s.happiness) : 0;
-            for (int i = 0; i < n; i++)
+            for (int ii = 0; ii < n; ii++)
             {
-                var r = new Rect(x0 + i * (tw + gap), 4, tw, 22);
+                int i = idx[ii];
+                var r = new Rect(x0 + ii * (tw + gap), 4, tw, 22);
                 Mark("resources", new Rect(r.x - 2, r.y, r.width + 4, 33));
                 rects.Add(new Rect(r.x, r.y, r.width, 32));
-                IconTile(r, icons[i]);
+                IconTile(r, icons[ii]);
                 string val; string tip; Color col = Palette.UIText; float frac = -1;
                 if (i < ResInfo.Count)
                 {
@@ -494,8 +500,12 @@ namespace PixelKingdom
                 ("book", "Chronik (L)", Window.Log),
                 ("scroll", "Hilfe (F1)", Window.Help),
             };
+            bool armiesKnown = G.ArmiesOf(G.PlayerId).Any() || G.TotalSoldiers(G.PlayerId) > 0 || G.Player.rank >= 1;
+            bool diploKnown = G.Factions.Any(f => !f.isPlayer && f.alive && f.knownToPlayer != 0);
             foreach (var it in items)
             {
+                if (it.w == Window.Armies && !armiesKnown) continue;
+                if (it.w == Window.Diplomacy && !diploKnown) continue;
                 if (Button(new Rect(4, y, 22, 20), "", true, it.tip, it.icon, Open == it.w)) ToggleWindow(it.w);
                 y += 23;
             }
@@ -767,6 +777,7 @@ namespace PixelKingdom
                     Text(lr.x + 3, lr.y + 1, t, poi.type == 1 ? Palette.UIGood : Palette.UIText);
                 }
             }
+            if (gm.CurrentMode == GameManager.Mode.PlaceBuilding) DrawPlacement(zoom);
             // Mauszeiger-Kachel
             if (gm.HoverValid && (PKInput.UsingTouch || !MouseOverUI))
             {
@@ -811,6 +822,49 @@ namespace PixelKingdom
             }
         }
 
+        // ---- Bauplatz-Wahl: gültige Felder hervorheben, Standortgüte anzeigen ----
+        readonly List<(int x, int y, float q)> placeCells = new List<(int x, int y, float q)>();
+        int placeKey = int.MinValue; float placeTime;
+
+        void DrawPlacement(float zoom)
+        {
+            var s = G.St(gm.ModeSource);
+            if (s == null) return;
+            var t = gm.PlaceType;
+            int key = s.id * 977 + (int)t * 31 + G.S.day * 7 + s.queue.Count;
+            if (key != placeKey || Time.unscaledTime - placeTime > 1f)
+            {
+                placeKey = key; placeTime = Time.unscaledTime; placeCells.Clear();
+                int r = Game.MaxRemote;
+                for (int y = s.y - r; y <= s.y + r; y++)
+                    for (int x = s.x - r; x <= s.x + r; x++)
+                        if (G.CanPlace(s, t, x, y, out _)) placeCells.Add((x, y, G.SiteBonus(t, x, y) * G.DistanceFactor(s, x, y)));
+            }
+            float sz = 16f * zoom / S;
+            foreach (var c in placeCells)
+            {
+                if (!WorldToVirtual(new Vector3(c.x + 0.5f, c.y + 0.5f, 0), out var v)) continue;
+                float a = Mathf.Clamp(0.12f + (c.q - 0.4f) * 0.3f, 0.1f, 0.45f);
+                var col = c.q >= 1f ? new Color(0.45f, 0.95f, 0.35f, a) : new Color(0.95f, 0.85f, 0.3f, a);
+                Fill(new Rect(Mathf.Round(v.x - sz / 2 + 1), Mathf.Round(v.y - sz / 2 + 1), Mathf.Max(1, sz - 2), Mathf.Max(1, sz - 2)), col);
+            }
+            // Info am Mauszeiger
+            if (!gm.HoverValid || !WorldToVirtual(new Vector3(gm.HoverX + 0.5f, gm.HoverY + 0.5f, 0), out var hv)) return;
+            string lbl; Color lc;
+            if (G.CanPlace(s, t, gm.HoverX, gm.HoverY, out string why))
+            {
+                int site = Mathf.RoundToInt(G.SiteBonus(t, gm.HoverX, gm.HoverY) * 100), way = Mathf.RoundToInt(G.DistanceFactor(s, gm.HoverX, gm.HoverY) * 100);
+                lbl = $"Standort {site}%" + (way < 100 ? $" - Weg {way}%" : "");
+                if (G.Map.owner[WorldMap.Idx(gm.HoverX, gm.HoverY)] < 0) lbl += " - Niemandsland";
+                lc = Palette.UIGood;
+            }
+            else { lbl = why; lc = Palette.UIBad; }
+            var pr = new Rect(Mathf.Round(hv.x + 10), Mathf.Round(hv.y + 8), PixelFont.Width(lbl) + 8, 12);
+            if (pr.xMax > VW - 4) pr.x = VW - 4 - pr.width;
+            Fill(pr, new Color(Palette.UIPanelDark.r, Palette.UIPanelDark.g, Palette.UIPanelDark.b, 0.9f));
+            Text(pr.x + 4, pr.y + 2, lbl, lc);
+        }
+
         /// <summary>Eck-Klammern wie im Vorbild um die Auswahl.</summary>
         void Brackets(Rect r, int len = 4, Color? col = null)
         {
@@ -828,6 +882,12 @@ namespace PixelKingdom
             if (gm.CurrentMode == GameManager.Mode.TargetArmy)
             {
                 hint = (PKInput.UsingTouch ? "Tippt" : "Klickt") + " auf das Ziel für das Heer: Gelände, eigene Stadt oder Feind  (" + (PKInput.UsingTouch ? "Zurück" : "Esc") + ": abbrechen)";
+            }
+            else if (gm.CurrentMode == GameManager.Mode.PlaceBuilding)
+            {
+                var d = Buildings.Get(gm.PlaceType);
+                hint = (PKInput.UsingTouch ? "Tippt zweimal auf ein grünes Feld für: " : "Linksklick auf ein grünes Feld für: ") + d.Name
+                     + (PKInput.UsingTouch ? "  (Zurück: abbrechen)" : "  (Esc/Rechtsklick: abbrechen, Shift: mehrere)");
             }
             else if (gm.CurrentMode == GameManager.Mode.PlaceSettlers)
             {

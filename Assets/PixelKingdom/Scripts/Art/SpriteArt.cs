@@ -1083,6 +1083,57 @@ static void Massif(PixelCanvas c, int cx, int gy, int w, int h, bool snowy, ArtP
             Flag(c, cx, gy - 20, 1);
         }
 
+        static void Geruest(PixelCanvas c, int cx, int gy)
+        {
+            // halb hochgezogene Mauern mit Holzgerüst, Bretterboden und Baumaterial
+            Wall(c, cx - 9, gy - 5, 18, 6, WallStyle.Stone);
+            c.Rect(cx - 9, gy - 6, 18, 1, Mortar);
+            for (int x = cx - 9; x <= cx + 9; x += 6)
+            {
+                c.VLine(x, gy - 17, gy, Log); c.VLine(x + 1, gy - 17, gy, LogD);
+            }
+            for (int yy = gy - 16; yy <= gy - 6; yy += 5) { c.HLine(cx - 10, cx + 10, yy, Plank); c.HLine(cx - 10, cx + 10, yy + 1, PlankD); }
+            // Querstreben
+            for (int k = 0; k < 5; k++) { c.Set(cx - 8 + k, gy - 11 + k, LogL); c.Set(cx + 4 + k, gy - 15 + k, LogL); }
+            // Kran mit Seil
+            c.VLine(cx + 10, gy - 22, gy - 16, Log); c.HLine(cx + 3, cx + 11, gy - 22, Log);
+            c.VLine(cx + 4, gy - 21, gy - 18, ClothD); Block(c, cx + 3, gy - 16, 2);
+            // Material am Boden
+            c.Rect(cx - 15, gy - 2, 5, 3, LogD); c.HLine(cx - 15, cx - 11, gy - 2, LogEnd);
+            Block(c, cx + 12, gy, 3);
+            c.Set(cx - 3, gy - 18, Skin); c.Set(cx - 3, gy - 17, Red);
+        }
+
+        static void Wachturm(PixelCanvas c, int cx, int gy)
+        {
+            // Steinsockel, hölzerner Turm mit Plattform und Dach
+            Wall(c, cx - 5, gy - 6, 11, 7, WallStyle.Stone);
+            c.Rect(cx - 4, gy - 20, 9, 14, Plank); c.VLine(cx - 4, gy - 20, gy - 7, PlankL); c.VLine(cx + 4, gy - 20, gy - 7, PlankD);
+            for (int y = gy - 18; y < gy - 7; y += 3) c.HLine(cx - 4, cx + 4, y, PlankDD);
+            Window(c, cx - 1, gy - 15, 2, 2, true);
+            c.Rect(cx - 7, gy - 23, 15, 3, Log); c.HLine(cx - 7, cx + 7, gy - 23, LogL);
+            for (int x = cx - 7; x <= cx + 7; x += 2) c.Set(x, gy - 24, LogD);
+            Gable(c, cx, gy - 25, 7, 6, RoofBrown, Plank);
+            Flag(c, cx + 6, gy - 25, 6);
+        }
+
+        static void FahrendesVolk(PixelCanvas c, int cx, int gy)
+        {
+            // zwei Planwagen und ein bunt geflicktes Zelt mit Feuer
+            foreach (int wx in new[] { cx - 12, cx + 9 })
+            {
+                c.Rect(wx - 6, gy - 5, 12, 3, Plank); c.HLine(wx - 6, wx + 5, gy - 5, PlankL);
+                c.Ellipse(wx, gy - 8, 6, 4, wx < cx ? Cloth : H("#C8A060"));
+                c.HLine(wx - 5, wx + 5, gy - 8, ClothD);
+                c.Ellipse(wx - 4, gy - 1, 1.6f, 1.6f, LogD); c.Ellipse(wx + 4, gy - 1, 1.6f, 1.6f, LogD);
+            }
+            c.Tri(cx - 6, gy, cx - 1, gy - 10, cx + 4, gy, Red);
+            c.Tri(cx - 1, gy - 10, cx + 4, gy, cx, gy, H("#8E3028"));
+            c.VLine(cx - 1, gy - 9, gy - 1, Gold);
+            c.Set(cx + 6, gy - 2, FireL); c.Set(cx + 5, gy - 1, Fire); c.Set(cx + 7, gy - 1, Fire);
+            c.Set(cx - 4, gy - 3, Skin); c.Set(cx - 4, gy - 2, Blue);
+        }
+
         // ==================================================================
         //  Zusammenstellung
         // ==================================================================
@@ -1128,6 +1179,9 @@ static void Massif(PixelCanvas c, int cx, int gy, int w, int h, bool snowy, ArtP
             Add("p_camp", 56, Raeuberlager);
             Add("b_Kloster", 64, Kloster);
             Add("b_Turnierplatz", 64, Turnierplatz);
+            Add("b_scaffold", 48, Geruest);
+            Add("b_Wachturm", 48, Wachturm);
+            Add("p_nomads", 56, FahrendesVolk);
             Add("b_Mauer", 32, (c, x, y) => Tower(c, x, y, true));
             // Zentren
             Add("c_dorf", 48, Dorfhaus);

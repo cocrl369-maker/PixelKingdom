@@ -76,6 +76,7 @@ namespace PixelKingdom
             }
             R("Gebäude", build);
             R("Steuern", -s.taxRate * 140f + 7f);
+            if (HasTech(f, Techs.Kraeuterkunde)) R("Kräuterkunde", 4);
             R("Rationen", (s.rations - 1) * 9f);
             int housing = Housing(s);
             if (s.pop > housing) R("Überfüllung", -Math.Min(20, (s.pop - housing) * 1.5f));
@@ -130,7 +131,8 @@ namespace PixelKingdom
                 if (n == 0) continue;
                 var d = Buildings.Get(b);
                 float staff = d.Jobs == 0 ? 1f : (d.FoodBuilding ? foodStaff : otherStaff);
-                float terr = d.Need == TerrainNeed.None ? 1f : TerrainBonus(s, d.Need);
+                // Standort & Entfernung jedes einzelnen Gebäudes zählen (statt pauschalem Geländebonus)
+                float terr = NeedsSite(d.Type) ? SiteSum(s, d.Type) / n : (d.Need == TerrainNeed.None ? 1f : TerrainBonus(s, d.Need));
                 // Verbrauch prüfen (z.B. Schmiede braucht Eisen)
                 float useFactor = 1f;
                 for (int r = 0; r < ResInfo.Count; r++)
@@ -138,6 +140,7 @@ namespace PixelKingdom
                 useFactor = Clamp(useFactor, 0, 1);
                 float eff = n * staff * terr * happyMod * (1f + rankBonus) * useFactor;
                 if (d.Type == BType.Bauernhof) eff *= 1f + 0.2f * Math.Min(2, s.buildings[(int)BType.Windmuehle]);
+                eff *= TechProd(f, d.Type);
                 if (eff <= 0) continue;
                 for (int r = 0; r < ResInfo.Count; r++)
                 {
@@ -159,6 +162,7 @@ namespace PixelKingdom
             if (f.isEmperor) tax *= 1.6f;
             if (EdictOn(f, Edicts.Marktrecht) && HasMarket(f.id)) tax *= 1.15f;
             if (EdictOn(f, Edicts.FreieBauern)) tax *= 0.8f;
+            if (HasTech(f, Techs.Handelsgilde)) tax *= 1.08f;
             if (EdictOn(f, Edicts.Erntedank)) Add(f, (int)Res.Gold, -1f, delta);
             if (EdictOn(f, Edicts.Pilgerwege))
             {
@@ -189,7 +193,7 @@ namespace PixelKingdom
             }
             else if (s.pop < housing)
             {
-                float wells = 1f + Math.Min(3, s.buildings[(int)BType.Brunnen]) * 0.15f;
+                float wells = 1f + Math.Min(3, s.buildings[(int)BType.Brunnen]) * 0.15f + (HasTech(f, Techs.Kraeuterkunde) ? 0.15f : 0f);
                 float g = s.pop * 0.011f * (s.happiness / 55f) * wells * (s.rations == 2 ? 1.2f : s.rations == 0 ? 0.7f : 1f);
                 if (s.happiness < 25) g = -s.pop * 0.004f; // Abwanderung
                 s.pop = Math.Min(housing, s.pop + g + 0.05f);
@@ -198,7 +202,7 @@ namespace PixelKingdom
             {
                 s.pop = Math.Max(5, s.pop - (s.pop - housing) * 0.05f);
             }
-            if (!s.isCapitalOfEmperor && s.buildings[(int)BType.Brunnen] == 0 && s.pop > 60 && Rng.NextDouble() < 0.002 && !Offline)
+            if (!s.isCapitalOfEmperor && s.buildings[(int)BType.Brunnen] == 0 && !HasTech(f, Techs.Kraeuterkunde) && s.pop > 60 && Rng.NextDouble() < 0.002 && !Offline)
             {
                 s.pop *= 0.9f;
                 if (f.isPlayer) Notify($"Krankheit in {s.name}! Ein Brunnen hätte geholfen.", 2);
@@ -210,6 +214,8 @@ namespace PixelKingdom
 
             // Unruhen
             if (s.happiness < 15 && !Offline && Rng.NextDouble() < 0.02) Revolt(s);
+
+            if (PlacedMismatch(s)) EnsurePlaced(s);
 
             // Holzfällerei: Bäume werden sichtbar gefällt und wachsen langsam nach
             Forestry(s);
@@ -224,14 +230,14 @@ namespace PixelKingdom
         void Forestry(SettlementData s)
         {
             int r = Radius(s) + 1;
-            int cutters = s.buildings[(int)BType.Holzfaeller];
             bool changed = false;
-            for (int k = 0; k < cutters; k++)
+            // Jeder Holzfäller schlägt Bäume rund um seine Hütte
+            foreach (var b in s.placed)
             {
-                if (Rng.NextDouble() > 0.12) continue;
+                if (b.type != (int)BType.Holzfaeller || Rng.NextDouble() > 0.12) continue;
                 for (int t = 0; t < 6; t++)
                 {
-                    int x = s.x + Rng.Next(-r, r + 1), y = s.y + Rng.Next(-r, r + 1);
+                    int x = b.x + Rng.Next(-2, 3), y = b.y + Rng.Next(-2, 3);
                     if (!WorldMap.In(x, y)) continue;
                     int i = WorldMap.Idx(x, y);
                     if (Map.trees[i] == 0 || (Map.ownerSettlement[i] != s.id && Map.ownerSettlement[i] != -1)) continue;
@@ -243,6 +249,11 @@ namespace PixelKingdom
             for (int k = 0; k < 6; k++)
             {
                 int x = s.x + Rng.Next(-r - 2, r + 3), y = s.y + Rng.Next(-r - 2, r + 3);
+                if (k >= 3 && s.placed.Count > 0)
+                {
+                    var b = s.placed[Rng.Next(s.placed.Count)];
+                    if (b.type == (int)BType.Holzfaeller) { x = b.x + Rng.Next(-3, 4); y = b.y + Rng.Next(-3, 4); }
+                }
                 if (!WorldMap.In(x, y)) continue;
                 int i = WorldMap.Idx(x, y);
                 if (Map.trees[i] < Map.baseTrees[i] && Rng.NextDouble() < 0.35) { Map.trees[i]++; DirtyTrees.Add(i); changed = true; }
@@ -357,6 +368,7 @@ namespace PixelKingdom
             s.faction = newFaction;
             s.queue.Clear();
             s.auto = false;
+            RebuildOccupancy();
             SettlementsDirty = true;
             var oldF = F(old);
             if (oldF != null && oldF.capital == s.id) oldF.capital = -1;
@@ -400,7 +412,7 @@ namespace PixelKingdom
             why = null;
             if (f.rank < d.MinRank) { why = "Benötigt Rang: " + Ranks.Get(d.MinRank).Name; return false; }
             if (CountWithQueue(s, t) >= d.Max) { why = "Maximum erreicht"; return false; }
-            if (d.Need != TerrainNeed.None && !TerrainOk(s, d.Need, out why)) return false;
+            if (!f.isPlayer && d.Need != TerrainNeed.None && !TerrainOk(s, d.Need, out why)) return false;
             if (t == BType.Burg && s.buildings[(int)BType.Mauer] == 0) { why = "Benötigt erst eine Mauer"; return false; }
             if (t == BType.Kathedrale && s.buildings[(int)BType.Kapelle] == 0) { why = "Benötigt erst eine Kapelle"; return false; }
             if (s.queue.Count >= 6) { why = "Bauschlange voll"; return false; }
@@ -408,13 +420,22 @@ namespace PixelKingdom
             return true;
         }
 
-        public bool QueueBuild(SettlementData s, BType t)
+        /// <summary>Gibt einen Bauauftrag. Ohne Bauplatz (x &lt; 0) wird der beste freie Platz gesucht.</summary>
+        public bool QueueBuild(SettlementData s, BType t, int x = -1, int y = -1)
         {
             if (!CanBuild(s, t, out _)) return false;
+            if (NeedsSite(t))
+            {
+                if (x < 0) { if (!FindSite(s, t, out x, out y)) return false; }
+                else if (!CanPlace(s, t, x, y, out _)) return false;
+            }
+            else x = y = -1;
             var f = F(s.faction); var d = Buildings.Get(t);
             Pay(f, d.Cost, BuildCostMult(s, t));
             float days = d.Days * (1f + CountWithQueue(s, t) * 0.08f);
-            s.queue.Add(new QueueItem { kind = 0, type = (int)t, daysLeft = days, total = days });
+            if (x >= 0 && f.isPlayer && Dist(s.x, s.y, x, y) > TownRadius(s)) days *= 1f + (Dist(s.x, s.y, x, y) - TownRadius(s)) * 0.04f; // lange Wege
+            s.queue.Add(new QueueItem { kind = 0, type = (int)t, daysLeft = days, total = days, x = x, y = y });
+            if (x >= 0) { if (tileBuilding == null) RebuildOccupancy(); tileBuilding[WorldMap.Idx(x, y)] = s.id; }
             return true;
         }
 
@@ -452,6 +473,7 @@ namespace PixelKingdom
                 s.queue.RemoveAt(index);
                 float mult = BuildCostMult(s, (BType)q.type);
                 for (int r = 0; r < ResInfo.Count; r++) f.res[r] += d.Cost[r] * mult * 0.8f;
+                if (q.x >= 0) RebuildOccupancy();
             }
             else
             {
@@ -474,6 +496,8 @@ namespace PixelKingdom
             if (q.kind == 0)
             {
                 s.buildings[q.type]++;
+                if (q.x >= 0) s.placed.Add(new BuildingPos(q.type, q.x, q.y));
+                else EnsurePlaced(s);
                 SettlementsDirty = true;
                 terrainCounts.Remove(s.id);
                 f.prestige += 1f;
@@ -590,7 +614,8 @@ namespace PixelKingdom
         {
             float p = ResInfo.BasePrice[r] * (1f + S.priceDrift[r]);
             if (Season == Season.Winter && r == (int)Res.Food) p *= 1.4f;
-            return buy ? p * 1.3f : p * 0.7f;
+            bool guild = HasTech(Techs.Handelsgilde);
+            return buy ? p * (guild ? 1.2f : 1.3f) : p * (guild ? 0.8f : 0.7f);
         }
 
         public bool Buy(int r, int amount)

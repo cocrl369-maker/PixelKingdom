@@ -187,6 +187,7 @@ namespace PixelKingdom
             }
             if (!Offline) EventsDay();
             PoisDay();
+            FrontierDay();
             StoryDay();
             MarketDrift();
             CheckEliminations();
@@ -282,6 +283,8 @@ namespace PixelKingdom
             for (int i = 0; i < N; i++) if (oldOwner[i] != Map.owner[i]) DirtyTiles.Add(i);
             terrainCounts.Clear();
             SettlementsDirty = false;
+            RebuildOccupancy();
+            foreach (var s in S.settlements) if (PlacedMismatch(s)) EnsurePlaced(s);
         }
 
         /// <summary>Zählt im Gebiet der Siedlung: [fruchtbar, Bäume, Hügel, Berg, Küste, Wasser, Eisen, Gold, Stein]</summary>

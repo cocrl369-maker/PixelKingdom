@@ -40,6 +40,7 @@ namespace PixelKingdom
         public int researching = -1;
         public float researchLeft;
         public int relics;
+        public int nextBorderDay = 120, nextNomadDay = 60;
         public StoryData story = new StoryData();
     }
 

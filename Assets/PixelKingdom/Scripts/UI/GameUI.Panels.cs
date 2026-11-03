@@ -28,16 +28,18 @@ namespace PixelKingdom
             var r = BottomPanel(380, 84);
             Panel(r);
             if (CloseButton(r)) gm.SelPoi = -1;
-            SpriteLib.DrawUI(new Rect(r.x + 6, r.y + 6, 44, 40), p.type == 0 ? "p_ruin" : "p_camp");
+            SpriteLib.DrawUI(new Rect(r.x + 6, r.y + 6, 44, 40), Game.PoiSprite(p));
             float x = r.x + 56, y = r.y + 7;
             Text(x, y, "__" + Game.PoiName(p) + "__"); y += 13;
-            string desc = p.type == 0
+            string desc = p.type == 2
+                ? "Gaukler, Händler und Kesselflicker ohne festen Wohnsitz. Ein Heer oder Späher kann sie besuchen: handeln, sie zum Bleiben einladen – oder vertreiben. Bald ziehen sie weiter."
+                : p.type == 0
                 ? (p.done ? "Hier wurde schon alles durchsucht." : "Alte Mauern aus vergessener Zeit. Ein Heer oder Späher kann sie erkunden – Gold, Waffen, Relikte oder alte Karten warten. Manchmal auch eine Falle.")
                 : $"Räuber plündern von hier aus die Gegend und machen den Leuten Angst. Hebt das Lager mit einem Heer aus! __Wachen__: ~{Mathf.Max(1, Mathf.RoundToInt(p.guards.Sum() / 5f) * 5)} Mann.";
             Wrapped(new Rect(x, y, r.xMax - x - 8, 40), desc, Palette.UITextDim);
             if (p.type == 0 && p.done) return;
             var nearest = G.ArmiesOf(G.PlayerId).Where(a => a.units.Sum() > 0).OrderBy(a => (a.x - p.x) * (a.x - p.x) + (a.y - p.y) * (a.y - p.y)).FirstOrDefault();
-            string label = p.type == 0 ? "Nächstes Heer schicken" : "Nächstes Heer angreifen lassen";
+            string label = p.type == 1 ? "Nächstes Heer angreifen lassen" : "Nächstes Heer schicken";
             if (Button(new Rect(r.xMax - 168, r.yMax - 19, 160, 14), label, nearest != null, nearest != null ? "Schickt " + nearest.name : "Ihr habt kein Heer im Feld. Stellt eines in einer Siedlung auf (Reiter 'Truppen').", "army"))
                 gm.SendToPoi(nearest, p);
         }
@@ -63,7 +65,9 @@ namespace PixelKingdom
         {
             var r = BottomPanel(580, 136);
             string[] tabs = { "Übersicht", "Bauen", "Truppen", "Markt" };
-            for (int i = 0; i < tabs.Length; i++)
+            int tabCount = G.HasMarket(G.PlayerId) ? 4 : 3;
+            if (SettlementTab >= tabCount) SettlementTab = 0;
+            for (int i = 0; i < tabCount; i++)
             {
                 var tr = new Rect(r.x + 4 + i * 66, r.y - 15, 64, 16);
                 if (Button(tr, tabs[i], true, i == 1 ? "Gebäude errichten (B)" : null, null, SettlementTab == i))
@@ -181,18 +185,35 @@ namespace PixelKingdom
         {
             var f = G.Player;
             float cardW = 50, cardH = 50, gap = 8;
-            int count = Buildings.Count;
-            float totalW = count * (cardW + gap);
+            // Nur freigeschaltete Gebäude zeigen – der Anfang bleibt übersichtlich
+            var list = new System.Collections.Generic.List<int>();
+            var next = new System.Collections.Generic.List<string>();
+            for (int b = 0; b < Buildings.Count; b++)
+            {
+                var bd = Buildings.Get(b);
+                if (bd.MinRank <= f.rank) list.Add(b);
+                else if (bd.MinRank == f.rank + 1) next.Add(bd.Name);
+            }
+            int count = list.Count;
+            float totalW = count * (cardW + gap) + (next.Count > 0 ? 120 : 0);
             scrollCards = Scroll(c, scrollCards, totalW - c.width + 20);
             // Pfeile
             if (scrollCards > 0 && Button(new Rect(c.x, c.y + 30, 10, 24), "<")) scrollCards = Mathf.Max(0, scrollCards - 120);
             if (scrollCards < totalW - c.width + 20 && Button(new Rect(c.xMax - 10, c.y + 30, 10, 24), ">")) scrollCards += 120;
             var clip = new Rect(c.x + 12, c.y, c.width - 24, c.height);
             GUI.BeginGroup(clip);
-            for (int b = 0; b < count; b++)
+            if (next.Count > 0)
             {
+                float nx = count * (cardW + gap) - scrollCards;
+                Text(nx + 2, 16, "Ab Rang", Palette.UITextDim);
+                Text(nx + 2, 26, Ranks.Get(f.rank + 1).Name + ":", Palette.UITextDim);
+                for (int k = 0; k < next.Count && k < 5; k++) Text(nx + 6, 38 + k * 9, next[k], Palette.UITextDim);
+            }
+            for (int li = 0; li < count; li++)
+            {
+                int b = list[li];
                 var d = Buildings.Get(b);
-                float x = b * (cardW + gap) - scrollCards;
+                float x = li * (cardW + gap) - scrollCards;
                 if (x + cardW < 0 || x > clip.width) continue;
                 bool ok = G.CanBuild(s, d.Type, out string why);
                 bool locked = !ok && why != "Nicht genug Ressourcen";
@@ -220,13 +241,14 @@ namespace PixelKingdom
                 string tip = $"__{d.Name}__\n{d.Desc}\n__Kosten__: {CostLong(d.Cost, mult)}\n__Bauzeit__: ~{d.Days} Tage";
                 if (d.Jobs > 0) tip += $"\n__Arbeiter__: {d.Jobs}";
                 if (BuildingEffects(d) != null) tip += "\n__Wirkung__: " + BuildingEffects(d);
-                if (d.Need != TerrainNeed.None) tip += $"\n__Standortbonus__: {Mathf.RoundToInt(G.TerrainBonus(s, d.Need) * 100)}%";
+                if (Game.NeedsSite(d.Type)) tip += Game.IsRemote(d.Type) ? "\n__Bauplatz__: frei wählbar, auch außerhalb der Stadt" : "\n__Bauplatz__: in der Stadt";
                 if (!ok) tip += "\n__Gesperrt__: " + why;
                 var cardScreen = new Rect(clip.x + card.x, clip.y + card.y, card.width, card.height);
                 if (hov && !PKInput.UsingTouch) { tooltip = tip; tipPos = Event.current.mousePosition + new Vector2(clip.x, clip.y); }
                 if (Clicked(card))
                 {
                     if (!ok) PinTip(tip);
+                    else if (Game.NeedsSite(d.Type)) gm.BeginPlace(s, d.Type);
                     else if (TouchConfirm("bau" + b, tip) && G.QueueBuild(s, d.Type)) Toast($"{d.Name} wird gebaut.", 0);
                 }
             }
@@ -268,9 +290,15 @@ namespace PixelKingdom
             if (armySelFor != s.id) { System.Array.Clear(armySel, 0, armySel.Length); armySelFor = s.id; }
             float y = c.y + 1;
             float x = c.x + 2;
+            var hidden = new System.Collections.Generic.List<string>();
             for (int u = 0; u < Units.Count; u++)
             {
                 var d = Units.Get(u);
+                if (d.MinRank > G.Player.rank || (d.Needs != BType.None && s.buildings[(int)d.Needs] == 0 && s.garrison[u] == 0))
+                {
+                    if (d.MinRank <= G.Player.rank) hidden.Add(Buildings.Get(d.Needs).Name);
+                    continue;
+                }
                 bool ok1 = G.CanTrain(s, (UType)u, 1, out string why);
                 bool locked = !ok1 && why != "Nicht genug Ressourcen" && why != "Zu wenige Bewohner" && why != "Warteschlange voll";
                 var rowR = new Rect(x, y, 300, 15);
@@ -289,6 +317,7 @@ namespace PixelKingdom
                 if (Button(new Rect(x + 262, y, 24, 13), "+5", ok5)) G.QueueTrain(s, (UType)u, 5);
                 y += 15;
             }
+            if (hidden.Count > 0 && y < c.yMax - 10) Text(x, y + 3, "Weitere Truppen mit: " + string.Join(", ", hidden), Palette.UITextDim);
 
             // Heer aufstellen
             float ax = c.x + 300, ay = c.y + 1;

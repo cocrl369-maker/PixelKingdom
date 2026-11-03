@@ -13,6 +13,15 @@ namespace PixelKingdom
     {
         public const int MaxRemote = 14;
         int[] tileBuilding;           // -1 frei, sonst Siedlungs-Id (Gebäude, Zentrum, Mauer, Baustelle)
+        bool ignoreFog;
+
+        /// <summary>Stimmen Gebäudezahl und Bauplätze nicht überein (z.B. nach Eroberung oder Story-Ereignis)?</summary>
+        public bool PlacedMismatch(SettlementData s)
+        {
+            int need = 0;
+            for (int t = 0; t < Buildings.Count; t++) if (NeedsSite((BType)t)) need += s.buildings[t];
+            return need != s.placed.Count;
+        }
 
         /// <summary>Gebäude, die ihre Arbeit auch fern der Stadt tun (Anbau, Abbau, Wache).</summary>
         public static bool IsRemote(BType t) =>
@@ -40,7 +49,7 @@ namespace PixelKingdom
                 foreach (var b in s.placed) Mark(b.x, b.y);
                 foreach (var q in s.queue) if (q.kind == 0 && q.x >= 0) Mark(q.x, q.y);
             }
-            foreach (var p in S.pois) if (!(p.type == 1 && p.done)) tileBuilding[WorldMap.Idx(p.x, p.y)] = -2;
+            foreach (var p in S.pois) if (p.type != 2 && !(p.type == 1 && p.done)) tileBuilding[WorldMap.Idx(p.x, p.y)] = -2;
         }
 
         public float DistanceFactor(SettlementData s, int x, int y)
@@ -89,7 +98,7 @@ namespace PixelKingdom
             if (!WorldMap.In(x, y)) { why = "Außerhalb der Karte"; return false; }
             int i = WorldMap.Idx(x, y);
             var f = F(s.faction);
-            if (f.isPlayer && !Map.disc[i]) { why = "Unerforschtes Gebiet"; return false; }
+            if (f.isPlayer && !ignoreFog && !Map.disc[i]) { why = "Unerforschtes Gebiet"; return false; }
             bool mineType = t == BType.Mine || t == BType.Goldmine || t == BType.Steinbruch;
             if (Map.IsWater(i) || Map.river[i]) { why = "Im Wasser kann man nicht bauen"; return false; }
             if (Map.biome[i] == Biome.Mountain || Map.biome[i] == Biome.Snow) { why = "Zu steil – Gebirge"; return false; }
@@ -166,6 +175,8 @@ namespace PixelKingdom
         public void EnsurePlaced(SettlementData s)
         {
             if (tileBuilding == null) RebuildOccupancy();
+            ignoreFog = true;
+            bool removed = false;
             for (int t = 0; t < Buildings.Count; t++)
             {
                 var bt = (BType)t;
@@ -175,7 +186,7 @@ namespace PixelKingdom
                 while (have > s.buildings[t])
                 {
                     int idx = s.placed.FindLastIndex(b => b.type == t);
-                    s.placed.RemoveAt(idx); have--;
+                    s.placed.RemoveAt(idx); have--; removed = true;
                 }
                 while (have < s.buildings[t])
                 {
@@ -185,6 +196,8 @@ namespace PixelKingdom
                     have++;
                 }
             }
+            ignoreFog = false;
+            if (removed) RebuildOccupancy();
         }
 
         bool FindAnySite(SettlementData s, out int bx, out int by)
@@ -210,7 +223,9 @@ namespace PixelKingdom
             foreach (var b in s.placed)
             {
                 if (b.type != (int)t) continue;
-                sum += SiteBonus(t, b.x, b.y) * DistanceFactor(s, b.x, b.y);
+                int own = Map.owner[WorldMap.Idx(b.x, b.y)];
+                float occupied = own >= 0 && own != s.faction ? 0.3f : 1f; // von Nachbarn überwachsenes Land: kaum Ertrag
+                sum += SiteBonus(t, b.x, b.y) * DistanceFactor(s, b.x, b.y) * occupied;
                 n++;
             }
             var d = Buildings.Get(t);

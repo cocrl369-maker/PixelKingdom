@@ -34,6 +34,7 @@ namespace PixelKingdom
             var bi = Map.biome[WorldMap.Idx(s.x, s.y)];
             if (bi == Biome.Hills) b += 0.15f;
             if (s.isCapitalOfEmperor) b += 0.3f;
+            if (s.buildings[(int)BType.Mauer] > 0 && HasTech(F(s.faction), Techs.Steinmetzkunst)) b += 0.1f;
             return b;
         }
 
@@ -61,7 +62,7 @@ namespace PixelKingdom
             for (int u = 0; u < Units.Count; u++) if (a.units[u] > 0) sp = Math.Min(sp, Units.Get(u).Speed);
             if (a.settlers > 0) sp = Math.Min(sp, 2.5f);
             if (sp == float.MaxValue) sp = 3f;
-            return sp * (0.8f + 0.2f * a.morale);
+            return sp * (0.8f + 0.2f * a.morale) * (a.faction == S.playerFaction && HasTech(Techs.Kartografie) ? 1.1f : 1f);
         }
 
         public int ArmySize(ArmyData a) => a.units.Sum() + a.settlers;
@@ -159,7 +160,7 @@ namespace PixelKingdom
                 return CanFoundAt(a.faction, tx, ty, out string why) ? "Hier eine Siedlung gründen" : "Gründen nicht möglich: " + why;
             var poi = PoiNear(tx + 0.5f, ty + 0.5f, 0.9f);
             if (poi != null && target == null && G_IsDisc(poi.x, poi.y))
-                return poi.type == 0 ? (poi.done ? "Ruine (bereits durchsucht)" : "Ruine erkunden") : "Räuberlager angreifen";
+                return poi.type == 0 ? (poi.done ? "Ruine (bereits durchsucht)" : "Ruine erkunden") : poi.type == 1 ? "Räuberlager angreifen" : "Fahrendes Volk besuchen";
             if (target != null)
             {
                 if (target.faction == a.faction) return "In " + target.name + " einrücken (Garnison)";
@@ -291,6 +292,7 @@ namespace PixelKingdom
         {
             int v = 3;
             for (int u = 0; u < Units.Count; u++) if (a.units[u] > 0) v = Math.Max(v, Units.Get(u).Vision);
+            if (a.faction == S.playerFaction && HasTech(Techs.Kartografie)) v += 2;
             return a.atSea ? v + 2 : v;
         }
 
@@ -474,7 +476,7 @@ namespace PixelKingdom
             var att = ToF(a.units);
             var def = ToF(st.garrison);
             def[(int)UType.Miliz] += levy;
-            bool won = Fight(att, def, bonus, a.morale, 1f);
+            bool won = Fight(att, def, bonus, a.morale * CombatMult(a.faction), CombatMult(st.faction));
             var attLeft = Round(att); var defLeft = Round(def);
             for (int u = 0; u < Units.Count; u++) { rep.AttLoss[u] = a.units[u] - attLeft[u]; a.units[u] = attLeft[u]; }
             int milLeft = defLeft[(int)UType.Miliz];
@@ -574,7 +576,7 @@ namespace PixelKingdom
             float terrain = bi == Biome.Hills || bi == Biome.Forest || bi == Biome.Pine ? 0.15f : 0f;
             var fa = ToF(a.units); var fb = ToF(b.units);
             // Siedler kämpfen nicht
-            bool won = Fight(fa, fb, terrain, a.morale, b.morale);
+            bool won = Fight(fa, fb, terrain, a.morale * CombatMult(a.faction), b.morale * CombatMult(b.faction));
             var la = Round(fa); var lb = Round(fb);
             for (int u = 0; u < Units.Count; u++) { rep.AttLoss[u] = a.units[u] - la[u]; a.units[u] = la[u]; rep.DefLoss[u] = b.units[u] - lb[u]; b.units[u] = lb[u]; }
             rep.AttackerWon = won;

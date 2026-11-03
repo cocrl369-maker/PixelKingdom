@@ -11,7 +11,7 @@ namespace PixelKingdom
         public IReadOnlyList<PoiData> Pois => S.pois;
         public PoiData Poi(int id) { foreach (var p in S.pois) if (p.id == id) return p; return null; }
 
-        public static string PoiName(PoiData p) => p.type == 0 ? (p.done ? "Erkundete Ruine" : "Alte Ruine") : "Räuberlager";
+        public static string PoiName(PoiData p) => p.type == 0 ? (p.done ? "Erkundete Ruine" : "Alte Ruine") : p.type == 1 ? "Räuberlager" : "Fahrendes Volk";
 
         public PoiData PoiNear(float x, float y, float r)
         {
@@ -75,6 +75,7 @@ namespace PixelKingdom
         {
             var f = F(a.faction);
             a.mission = (int)ArmyMission.Idle;
+            if (p.type == 2) { VisitNomads(a, p); return; }
             if (p.type == 0)
             {
                 if (p.done) { if (f.isPlayer) Notify("Die Ruine wurde bereits durchsucht.", 0); return; }
@@ -85,7 +86,7 @@ namespace PixelKingdom
                 string msg;
                 if (roll < 0.38) { int g = 80 + rr.Next(140); f.res[(int)Res.Gold] += g; msg = $"In den Ruinen lag ein vergessener Schatz: {g} Gold!"; }
                 else if (roll < 0.58) { f.res[(int)Res.Iron] += 25; f.res[(int)Res.Weapons] += 15; msg = "Eine alte Waffenkammer: 25 Eisen und 15 Waffen."; }
-                else if (roll < 0.76) { f.prestige += 20; foreach (var s in SettlementsOf(f.id)) s.happiness = Math.Min(100, s.happiness + 6); msg = "Ein heiliges Relikt! Das Volk pilgert herbei (+20 Ansehen, +Zufriedenheit)."; }
+                else if (roll < 0.76) { f.prestige += 20; foreach (var s in SettlementsOf(f.id)) s.happiness = Math.Min(100, s.happiness + 6); S.relics++; msg = "Ein heiliges Relikt! Das Volk pilgert herbei (+20 Ansehen, +Zufriedenheit). In einem Kloster aufbewahrt, bringt es dauerhaft Pilger und Gold."; }
                 else if (roll < 0.9) { Reveal(p.x, p.y, 28); msg = "Eine alte Landkarte zeigt die Umgebung."; }
                 else
                 {
@@ -102,7 +103,7 @@ namespace PixelKingdom
             Array.Copy(a.units, rep.AttStart, Units.Count);
             Array.Copy(p.guards, rep.DefStart, Units.Count);
             var att = ToF(a.units); var def = ToF(p.guards);
-            bool won = Fight(att, def, 0.15f, a.morale, 1f);
+            bool won = Fight(att, def, 0.15f, a.morale * CombatMult(a.faction), 1f);
             var la = Round(att); var ld = Round(def);
             for (int u = 0; u < Units.Count; u++) { rep.AttLoss[u] = a.units[u] - la[u]; a.units[u] = la[u]; rep.DefLoss[u] = p.guards[u] - ld[u]; p.guards[u] = ld[u]; }
             rep.AttackerWon = won;
@@ -136,6 +137,11 @@ namespace PixelKingdom
                 SettlementData target = null; float bd = 13f;
                 foreach (var s in SettlementsOf(PlayerId)) { float d = Dist(s.x, s.y, p.x, p.y); if (d < bd) { bd = d; target = s; } }
                 if (target == null || InPeace) continue;
+                if (WatchtowerNear(p.x, p.y, 12) && Rng.NextDouble() < 0.5)
+                {
+                    Notify($"Die Wächter auf dem Wachturm sahen die Räuber kommen – {target.name} war gewarnt, der Überfall blieb aus.", 1);
+                    continue;
+                }
                 QueueEvent(new PendingEvent { id = "camp_raid", a = target.id, b = p.id, v = (float)Math.Round(30 + Player.res[(int)Res.Gold] * 0.1f) });
             }
         }

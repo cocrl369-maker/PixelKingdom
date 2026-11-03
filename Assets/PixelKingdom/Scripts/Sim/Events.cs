@@ -78,6 +78,8 @@ namespace PixelKingdom
             string sn = s != null ? s.name : "eurem Dorf";
             switch (e.id)
             {
+                case "border": BorderView(e, v); break;
+                case "nomads": NomadsView(e, v); break;
                 case "harvest":
                     v.Title = "Reiche Ernte"; v.Icon = "food";
                     v.Text = $"Die Felder um {sn} tragen in diesem Jahr außergewöhnlich gut. Die Scheunen sind voll.";
@@ -245,6 +247,8 @@ namespace PixelKingdom
             void AllHappy(float v) { foreach (var x in SettlementsOf(p.id)) x.happiness = Math.Min(100, x.happiness + v); }
             switch (e.id)
             {
+                case "border": BorderResolve(e, option); break;
+                case "nomads": NomadsResolve(e, option); break;
                 case "harvest":
                     if (option == 0) res[0] += 60; else { res[0] += 20; AllHappy(15); }
                     break;

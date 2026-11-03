@@ -47,7 +47,7 @@ namespace PixelKingdom
             foreach (var p in game.Pois)
             {
                 if (p.type == 1 && p.done) continue;
-                var sp = SpriteLib.Get(p.type == 0 ? "p_ruin" : "p_camp");
+                var sp = SpriteLib.Get(Game.PoiSprite(p));
                 if (sp == null) continue;
                 float wx = p.x + 0.5f, wy = p.y + 0.3f;
                 qb.Add(sp, wx, wy, QuadBatch.DepthOf(wy), p.done ? faded : white);
@@ -115,6 +115,8 @@ namespace PixelKingdom
             {
                 int h = s.faction * 7919 + SettlementLayout.CenterLevel(game, s) * 31 + (int)game.Season * 977 + Palette.Index * 13;
                 for (int i = 0; i < s.buildings.Length; i++) h = h * 17 + s.buildings[i];
+                foreach (var b in s.placed) h = h * 31 + b.x * 1009 + b.y * 13 + b.type;
+                foreach (var q in s.queue) if (q.kind == 0) h = h * 29 + q.x * 997 + q.y;
                 return h;
             }
         }
