@@ -415,6 +415,7 @@ namespace PixelKingdom
             if (!f.isPlayer && d.Need != TerrainNeed.None && !TerrainOk(s, d.Need, out why)) return false;
             if (t == BType.Burg && s.buildings[(int)BType.Mauer] == 0) { why = Loc.T("Benötigt erst eine Mauer"); return false; }
             if (t == BType.Kathedrale && s.buildings[(int)BType.Kapelle] == 0) { why = Loc.T("Benötigt erst eine Kapelle"); return false; }
+            if (t == BType.Werft && s.buildings[(int)BType.Hafen] == 0) { why = Loc.T("Braucht einen Hafen"); return false; }
             if (s.queue.Count >= 6) { why = Loc.T("Bauschlange voll"); return false; }
             if (checkCost && !CanAfford(f, d.Cost, BuildCostMult(s, t))) { why = Loc.T("Nicht genug Ressourcen"); return false; }
             return true;
@@ -447,6 +448,7 @@ namespace PixelKingdom
             if (d.Needs != BType.None && s.buildings[(int)d.Needs] == 0) { why = Loc.T("Benötigt ") + Buildings.Get(d.Needs).Name; return false; }
             if (s.queue.Count >= 6) { why = Loc.T("Warteschlange voll"); return false; }
             if (s.pop - count < 8) { why = Loc.T("Zu wenige Bewohner"); return false; }
+            if (GarrisonFree(s) < count) { why = Loc.F("Garnison voll ({0}/{1}) – baut eine Kaserne oder stellt ein Heer auf", GarrisonCount(s) + GarrisonQueued(s), GarrisonCap(s)); return false; }
             if (!CanAfford(f, d.Cost, count)) { why = Loc.T("Nicht genug Ressourcen"); return false; }
             return true;
         }
@@ -474,6 +476,12 @@ namespace PixelKingdom
                 float mult = BuildCostMult(s, (BType)q.type);
                 for (int r = 0; r < ResInfo.Count; r++) f.res[r] += d.Cost[r] * mult * 0.8f;
                 if (q.x >= 0) RebuildOccupancy();
+            }
+            else if (q.kind == 2)
+            {
+                s.queue.RemoveAt(index);
+                var c = ShipCost(q.type == 1);
+                for (int r = 0; r < ResInfo.Count; r++) f.res[r] += c[r] * 0.8f;
             }
             else
             {
@@ -504,6 +512,7 @@ namespace PixelKingdom
                 if (f.isPlayer) Notify(Loc.F("{0} in {1} fertiggestellt.", (Buildings.Get(q.type).Name), (s.name)), 1, false);
                 OnBuildingFinished(s, (BType)q.type);
             }
+            else if (q.kind == 2) ShipFinished(s, q);
             else
             {
                 s.garrison[q.type] += q.count;
@@ -552,6 +561,7 @@ namespace PixelKingdom
                 if (Try(BType.Kapelle)) return BType.Kapelle;
             }
             if (s.buildings[(int)BType.Steinbruch] == 0 && Try(BType.Steinbruch)) return BType.Steinbruch;
+            if (GarrisonFree(s) < 6 && s.pop > 50 && Try(BType.Kaserne)) return BType.Kaserne;
             if (s.buildings[(int)BType.Brunnen] == 0 && s.pop > 40 && Try(BType.Brunnen)) return BType.Brunnen;
             if (s.buildings[(int)BType.Markt] == 0 && Try(BType.Markt)) return BType.Markt;
             if (f.res[(int)Res.Wood] > Storage(f.id) * 0.85f && Try(BType.Lagerhaus)) return BType.Lagerhaus;

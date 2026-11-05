@@ -1003,6 +1003,81 @@ namespace PixelKingdom
             }
         }
 
+        /// <summary>Holk: breiter Rumpf, zwei Masten, Kastell achtern.</summary>
+        static void Ship2(PixelCanvas c, int cx, int gy)
+        {
+            c.Rect(cx - 13, gy - 5, 26, 5, Plank);
+            c.HLine(cx - 13, cx + 12, gy - 5, PlankL); c.HLine(cx - 10, cx + 9, gy, PlankD);
+            c.Rect(cx + 6, gy - 9, 8, 4, PlankD); c.HLine(cx + 6, cx + 13, gy - 9, PlankL);   // Achterkastell
+            c.Set(cx - 14, gy - 6, Plank); c.Set(cx - 15, gy - 7, PlankD);
+            foreach (var (mx, top, w) in new[] { (cx - 5, gy - 24, 6), (cx + 3, gy - 19, 4) })
+            {
+                c.VLine(mx, top, gy - 6, Beam);
+                for (int y = top + 2; y <= gy - 8; y++)
+                {
+                    int half = w + (y - top) / 4;
+                    for (int x = mx - half; x <= mx + half; x++) if (x != mx) c.Set(x, y, ((y - gy) / 3) % 2 == 0 ? Px.Tint : Cloth);
+                }
+            }
+            Flag(c, cx - 5, gy - 24, 1);
+            for (int x = cx - 10; x <= cx + 4; x += 4) c.Set(x, gy - 3, PlankDD);   // Stückpforten
+        }
+
+        /// <summary>Karavelle: schlank, drei Masten mit Lateinersegeln.</summary>
+        static void Ship3(PixelCanvas c, int cx, int gy)
+        {
+            c.Rect(cx - 15, gy - 5, 30, 5, PlankD);
+            c.HLine(cx - 15, cx + 14, gy - 5, Plank); c.HLine(cx - 12, cx + 11, gy, PlankDD);
+            c.Rect(cx + 8, gy - 9, 8, 4, Plank); c.HLine(cx + 8, cx + 15, gy - 9, PlankL);
+            c.Set(cx - 16, gy - 6, Plank); c.Set(cx - 17, gy - 7, Plank); c.Set(cx - 18, gy - 8, PlankD);
+            foreach (var (mx, top) in new[] { (cx - 8, gy - 22), (cx, gy - 27), (cx + 8, gy - 21) })
+            {
+                c.VLine(mx, top, gy - 6, Beam);
+                // dreieckiges Lateinersegel
+                c.Tri(mx - 1, top + 2, mx - 1, gy - 8, mx - 9, gy - 8, Cloth);
+                c.Tri(mx - 1, top + 4, mx - 1, gy - 8, mx - 6, gy - 8, Px.Tint);
+            }
+            Flag(c, cx, gy - 27, 1);
+            for (int x = cx - 12; x <= cx + 6; x += 3) c.Set(x, gy - 3, PlankDD);
+        }
+
+        static void Feldlager(PixelCanvas c, int cx, int gy)
+        {
+            // Palisadenring (hinten), Zelte, Fahne, Waffenständer
+            for (int x = cx - 14; x <= cx + 14; x += 2) { c.VLine(x, gy - 11, gy - 5, LogD); c.Set(x, gy - 12, LogL); }
+            foreach (var (tx, big) in new[] { (cx - 7, 1), (cx + 6, 0) })
+            {
+                int h = big == 1 ? 13 : 11, w = big == 1 ? 7 : 6;
+                c.Tri(tx - w, gy - 1, tx, gy - 1 - h, tx + w, gy - 1, Cloth);
+                c.Tri(tx, gy - 1 - h, tx + w, gy - 1, tx + 1, gy - 1, ClothD);
+                c.HLine(tx - w + 2, tx + w - 2, gy - 4, Px.Tint);
+                c.Tri(tx - 2, gy - 1, tx, gy - 5, tx + 2, gy - 1, K);
+            }
+            // Palisade vorne (niedrig, mit Tor in der Mitte)
+            for (int x = cx - 15; x <= cx + 15; x += 2) { if (Math.Abs(x - cx) <= 3) continue; c.VLine(x, gy - 1, gy, Log); c.Set(x, gy - 2, LogL); }
+            c.VLine(cx + 14, gy - 22, gy - 4, Beam);
+            c.Rect(cx + 15, gy - 22, 6, 4, Px.Tint); c.HLine(cx + 15, cx + 20, gy - 19, Px.TintDark);
+            // Speere
+            for (int k = 0; k < 3; k++) { c.VLine(cx - 1 + k * 2, gy - 12, gy - 4, LogD); c.Set(cx - 1 + k * 2, gy - 13, IronL); }
+        }
+
+        static void Werft(PixelCanvas c, int cx, int gy)
+        {
+            // Helling mit halbfertigem Rumpf, Kran, Holzstapel
+            c.Rect(cx - 16, gy - 2, 32, 3, PlankD); c.HLine(cx - 16, cx + 15, gy - 2, Plank);
+            for (int k = 0; k < 7; k++) { int x = cx - 11 + k * 3; c.VLine(x, gy - 9 + Math.Abs(k - 3), gy - 3, k % 2 == 0 ? Plank : PlankD); }
+            c.HLine(cx - 12, cx + 8, gy - 3, PlankDD);
+            c.HLine(cx - 11, cx + 7, gy - 9, LogL);
+            // Kran
+            c.VLine(cx + 12, gy - 24, gy - 2, Beam); c.HLine(cx + 2, cx + 13, gy - 24, Beam);
+            c.Set(cx + 11, gy - 23, Beam); c.Set(cx + 10, gy - 22, Beam);
+            c.VLine(cx + 3, gy - 23, gy - 16, ClothD); c.Rect(cx + 1, gy - 16, 5, 2, LogD);
+            // Schuppen
+            c.Rect(cx - 17, gy - 14, 8, 11, Plank); c.HLine(cx - 17, cx - 10, gy - 14, PlankL);
+            RoofArea(c, cx - 18, gy - 18, 10, 4, RoofSlate, 0);
+            Crate(c, cx + 15, gy);
+        }
+
         static void Ship(PixelCanvas c, int cx, int gy)
         {
             c.Rect(cx - 9, gy - 4, 18, 4, Plank);
@@ -1168,6 +1243,10 @@ namespace PixelKingdom
             foreach (UType u in Enum.GetValues(typeof(UType))) { var uu = u; Add("u_" + u, 32, (c, x, y) => Unit(c, x, y, uu)); }
             Add("u_cart", 32, (c, x, y) => Unit(c, x, y, (UType)99));
             Add("u_ship", 40, Ship);
+            Add("u_ship2", 48, Ship2);
+            Add("u_ship3", 56, Ship3);
+            Add("b_Feldlager", 48, Feldlager);
+            Add("b_Werft", 48, Werft);
             Add("u_banner", 24, (c, x, y) =>
             {
                 c.VLine(x, y - 16, y, Beam); c.Set(x, y - 17, Gold);

@@ -26,11 +26,17 @@ namespace PixelKingdom
             days = 0;
             var path = Pathfinder.Find(Map, (int)Math.Floor(a.x), (int)Math.Floor(a.y), tx, ty, CanSail(a.faction));
             if (path == null) return null;
+            if (!CheckTransport(a, path, out _))
+            {
+                var land = Pathfinder.Find(Map, (int)Math.Floor(a.x), (int)Math.Floor(a.y), tx, ty, false);
+                if (land != null) path = land;
+            }
             float cost = 0;
             for (int i = 1; i < path.Count; i++)
             {
                 float c = Map.MoveCost(path[i], true);
                 if (c == float.MaxValue) c = 1f;
+                if (a.faction == S.playerFaction && Map.IsSea(path[i])) c /= SeaSpeed * 1.6f;
                 int dx = WorldMap.X(path[i]) - WorldMap.X(path[i - 1]), dy = WorldMap.Y(path[i]) - WorldMap.Y(path[i - 1]);
                 cost += c * (dx != 0 && dy != 0 ? 1.414f : 1f);
             }
@@ -76,6 +82,14 @@ namespace PixelKingdom
                 list.Add(new OrderOption { Kind = 0, Label = Loc.T("Nur hinziehen"), Icon = "arrow", Mission = ArmyMission.Move, X = tx, Y = ty });
                 return list;
             }
+            for (int dy = -1; dy <= 1; dy++)
+                for (int dx = -1; dx <= 1; dx++)
+                    if (IsOwnCamp(a.faction, tx + dx, ty + dy))
+                    {
+                        list.Add(new OrderOption { Kind = 0, Label = Loc.T("Im Feldlager lagern"), Icon = "flag", Mission = ArmyMission.Move, X = tx + dx, Y = ty + dy,
+                            Tip = Loc.F("Das Heer erholt sich und verteidigt sich um 30 % besser (voll bis {0} Mann).", CampCapacity) });
+                        return list;
+                    }
             list.Add(new OrderOption { Kind = 0, Label = Loc.T("Hierher marschieren"), Icon = "arrow", Mission = ArmyMission.Move, X = tx, Y = ty, Tip = Loc.T("Das Heer zieht an diesen Ort und wartet dort.") });
             return list;
         }

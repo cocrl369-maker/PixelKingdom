@@ -99,6 +99,13 @@ namespace PixelKingdom
                 why = S.seafaring || a.faction != S.playerFaction ? Loc.T("Kein Weg dorthin.") : Loc.T("Kein Weg dorthin (über das Meer braucht ihr Schiffe).");
                 return false;
             }
+            if (!CheckTransport(a, path, out why))
+            {
+                // Zu wenige Schiffe: gibt es einen Landweg?
+                var land = Pathfinder.Find(Map, sx, sy, tx, ty, false);
+                if (land == null) return false;
+                path = land; why = null;
+            }
             a.path = path; a.pathIndex = 1; a.mission = (int)mission; a.target = target; a.targetX = tx; a.targetY = ty;
             if (path.Count <= 1) Arrive(a);
             return true;
@@ -150,7 +157,7 @@ namespace PixelKingdom
         public void ExchangeTroops(ArmyData a, SettlementData s, int unit, int n)
         {
             if (n > 0) { n = Math.Min(n, s.garrison[unit]); s.garrison[unit] -= n; a.units[unit] += n; }
-            else { n = Math.Min(-n, a.units[unit]); a.units[unit] -= n; s.garrison[unit] += n; }
+            else { n = Math.Min(Math.Min(-n, a.units[unit]), F(s.faction).isPlayer ? GarrisonFree(s) : int.MaxValue); a.units[unit] -= n; s.garrison[unit] += n; }
         }
 
         /// <summary>Was würde ein Befehl an diesen Ort bewirken? (Vorschau für die Oberfläche)</summary>
@@ -259,6 +266,7 @@ namespace PixelKingdom
                     float tx = WorldMap.X(next) + 0.5f, ty = WorldMap.Y(next) + 0.5f;
                     float cost = Map.MoveCost(next, true);
                     if (cost == float.MaxValue) cost = 1f;
+                    if (a.faction == S.playerFaction && Map.IsSea(next)) cost /= SeaSpeed * 1.6f;   // Schiffe sind schneller als Fußtruppen, bessere noch mehr
                     float dx = tx - a.x, dy = ty - a.y;
                     float dist = (float)Math.Sqrt(dx * dx + dy * dy);
                     float can = budget / cost;
@@ -350,9 +358,17 @@ namespace PixelKingdom
 
         void MergeIntoGarrison(ArmyData a, SettlementData st)
         {
-            for (int u = 0; u < Units.Count; u++) st.garrison[u] += a.units[u];
-            st.pop += a.settlers;
-            RemoveArmy(a);
+            st.pop += a.settlers; a.settlers = 0;
+            int free = F(st.faction).isPlayer ? Math.Max(0, GarrisonCap(st) - GarrisonCount(st)) : int.MaxValue;
+            for (int u = 0; u < Units.Count && free > 0; u++)
+            {
+                int n = Math.Min(free, a.units[u]);
+                st.garrison[u] += n; a.units[u] -= n; free -= n;
+            }
+            if (a.units.Sum() <= 0) { RemoveArmy(a); return; }
+            // Kein Platz mehr: der Rest lagert als Heer vor der Stadt
+            a.mission = (int)ArmyMission.Idle;
+            if (F(a.faction).isPlayer) Notify(Loc.F("Die Garnison von {0} ist voll – {1} Mann lagern vor der Stadt. Baut eine Kaserne oder ein Feldlager.", st.name, a.units.Sum()), 2);
         }
 
         public void ExploreNext(ArmyData a)
@@ -469,7 +485,7 @@ namespace PixelKingdom
 
             float siege = 0;
             for (int u = 0; u < Units.Count; u++) siege += a.units[u] * Units.Get(u).Siege;
-            float bonus = Math.Max(0, DefenseBonus(st) - siege);
+            float bonus = Math.Max(0, DefenseBonus(st) - siege - NavalSiegeBonus(a, st));
             if (raid) bonus *= 0.5f; // Überfälle zielen auf das Umland
             rep.DefBonus = bonus;
 
@@ -573,7 +589,7 @@ namespace PixelKingdom
             Array.Copy(a.units, rep.AttStart, Units.Count);
             Array.Copy(b.units, rep.DefStart, Units.Count);
             var bi = Map.biome[WorldMap.Idx((int)b.x, (int)b.y)];
-            float terrain = bi == Biome.Hills || bi == Biome.Forest || bi == Biome.Pine ? 0.15f : 0f;
+            float terrain = (bi == Biome.Hills || bi == Biome.Forest || bi == Biome.Pine ? 0.15f : 0f) + CampBonus(b);
             var fa = ToF(a.units); var fb = ToF(b.units);
             // Siedler kämpfen nicht
             bool won = Fight(fa, fb, terrain, a.morale * CombatMult(a.faction), b.morale * CombatMult(b.faction));
@@ -586,7 +602,7 @@ namespace PixelKingdom
             loser.morale = Math.Max(0.4f, loser.morale - 0.25f);
             if (loser.settlers > 0 && loser.units.Sum() == 0) loser.settlers = 0; // Siedler zerstreut
             F(loser.faction).warWeariness += 4;
-            rep.Outcome = (won ? af.name : bf.name) + " siegt.";
+            rep.Outcome = Loc.F("{0} siegt.", won ? af.name : bf.name);
             if (loser.units.Sum() + loser.settlers <= 0) RemoveArmy(loser); else SendHome(loser);
             if (winner.units.Sum() + winner.settlers <= 0) RemoveArmy(winner);
             if (af.isPlayer || bf.isPlayer)

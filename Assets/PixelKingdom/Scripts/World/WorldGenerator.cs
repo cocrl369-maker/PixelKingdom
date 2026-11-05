@@ -33,6 +33,11 @@ namespace PixelKingdom
             B(266, 182, 46, 30, 1); B(238, 196, 28, 20, 1); B(292, 160, 22, 24, 1, 0.9f);
             // Südreich (warm, unten rechts)
             B(264, 52, 48, 34, 2); B(292, 82, 24, 26, 2); B(236, 34, 26, 18, 2, 0.9f);
+            // Zwei große Inseln im fernen Osten – nur mit Schiffen erreichbar
+            // Eisenfels (Nordosten): rau, gebirgig, reich an Erz
+            B(364, 168, 30, 28, 4); B(378, 142, 18, 18, 4, 0.95f); B(348, 190, 20, 14, 4, 0.95f); B(380, 186, 14, 14, 4, 0.9f);
+            // Smaragdinsel (Südosten): warm, feucht, fruchtbar
+            B(362, 60, 31, 28, 5); B(378, 86, 17, 16, 5, 0.95f); B(346, 36, 20, 15, 5, 0.95f); B(380, 40, 14, 14, 5, 0.9f);
             // Inselbund (Archipel in der Mitte)
             for (int i = 0; i < 12; i++)
                 B(208 + Jit(rnd, 16), 82 + (float)rnd.NextDouble() * 70, 4 + (float)rnd.NextDouble() * 7, 4 + (float)rnd.NextDouble() * 6, 3, 0.95f);
@@ -43,18 +48,20 @@ namespace PixelKingdom
                 for (int x = 0; x < W; x++)
                 {
                     int i = WorldMap.Idx(x, y);
-                    // Planungskoordinaten (die Kontinentformen sind für 320x224 entworfen und werden skaliert)
+                    // Planungskoordinaten (die Kontinentformen sind für 400x224 entworfen und werden skaliert)
                     float fx = x / WorldMap.Scale, fy = y / WorldMap.Scale;
                     // Domain warp für organische Küsten
                     float wx = fx + (n2.Fbm(fx * 0.02f + ox, fy * 0.02f, 3) - 0.5f) * 34f;
                     float wy = fy + (n2.Fbm(fx * 0.02f, fy * 0.02f + oy, 3) - 0.5f) * 34f;
 
                     float mask = -1f; byte bestCont = 0;
+                    float islandMask = 0f;
                     foreach (var b in blobs)
                     {
                         float dx = (wx - b.x) / b.rx, dy = (wy - b.y) / b.ry;
                         float v = (1f - (float)Math.Sqrt(dx * dx + dy * dy)) * b.w;
                         if (v > mask) { mask = v; bestCont = b.cont; }
+                        if (b.cont == 4 && v > islandMask) islandMask = v;
                     }
                     // Kartenrand ist immer Meer
                     float edge = Math.Min(Math.Min(x, W - 1 - x), Math.Min(y, H - 1 - y)) / 10f;
@@ -67,6 +74,7 @@ namespace PixelKingdom
                     float ridge = n3.Ridged(fx * 0.021f + ox * 0.5f, fy * 0.021f, 4);
                     float inland = Clamp01(mask * 2.2f);
                     e += (float)Math.Pow(ridge, 3.6) * 0.66f * inland;
+                    e += Clamp01(islandMask * 2f) * (0.05f + (float)Math.Pow(ridge, 2.5) * 0.25f);   // Eisenfels: Hochland und Gipfel
 
                     map.h[i] = e;
                     map.cont[i] = bestCont;
@@ -84,8 +92,10 @@ namespace PixelKingdom
                     t -= Math.Max(0, map.h[i] - WorldMap.Sea) * 0.7f;
                     if (map.cont[i] == 2) t += 0.14f;      // Südreich: heiß & trocken
                     else if (map.cont[i] == 1) t -= 0.12f; // Nordlande: rau
+                    else if (map.cont[i] == 4) t -= 0.06f; // Eisenfels: kühl
+                    else if (map.cont[i] == 5) t += 0.06f; // Smaragdinsel: warm
                     temp[i] = t;
-                    moist[i] = n4.Fbm(x * 0.025f + 300, y * 0.025f + 300, 4) - (map.cont[i] == 2 ? 0.08f : 0f);
+                    moist[i] = n4.Fbm(x * 0.025f + 300, y * 0.025f + 300, 4) - (map.cont[i] == 2 ? 0.08f : 0f) + (map.cont[i] == 5 ? 0.12f : 0f);
                 }
 
             // --- Wasser klassifizieren --------------------------------------------------
@@ -207,6 +217,7 @@ namespace PixelKingdom
             {
                 var b = map.biome[i];
                 double r = dr.NextDouble();
+                if (map.cont[i] == 4) r *= 0.5;   // Eisenfels: doppelt so viel Erz
                 if (b == Biome.Mountain) map.deposit[i] = r < 0.07 ? WorldMap.DepIron : r < 0.085 ? WorldMap.DepGold : (byte)0;
                 else if (b == Biome.Hills) map.deposit[i] = r < 0.035 ? WorldMap.DepIron : r < 0.04 ? WorldMap.DepGold : r < 0.1 ? WorldMap.DepStone : (byte)0;
                 else if (b == Biome.Desert) map.deposit[i] = r < 0.004 ? WorldMap.DepGold : r < 0.02 ? WorldMap.DepStone : (byte)0;
@@ -299,7 +310,7 @@ namespace PixelKingdom
                 if (comp[s] >= 0 || map.IsSea(s)) continue;
                 members.Clear();
                 comp[s] = id; q.Enqueue(s);
-                var counts = new int[4];
+                var counts = new int[WorldMap.ContinentCount];
                 while (q.Count > 0)
                 {
                     int c = q.Dequeue(); members.Add(c); counts[map.cont[c]]++;
@@ -313,7 +324,7 @@ namespace PixelKingdom
                     }
                 }
                 int best = 0;
-                for (int c = 1; c < 4; c++) if (counts[c] > counts[best]) best = c;
+                for (int c = 1; c < WorldMap.ContinentCount; c++) if (counts[c] > counts[best]) best = c;
                 foreach (int m in members) map.cont[m] = (byte)best;
                 id++;
             }

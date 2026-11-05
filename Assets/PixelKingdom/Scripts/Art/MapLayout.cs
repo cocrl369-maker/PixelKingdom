@@ -174,7 +174,7 @@ namespace PixelKingdom
                 uint hh = (uint)(b.x * 73856093 ^ b.y * 19349663);
                 string name = bt == BType.Wohnhaus ? "b_Wohnhaus" + (hh % 3) : "b_" + bt;
                 float ox = bt == BType.Wohnhaus ? ((hh >> 6) % 3 - 1) * 0.08f : 0f;
-                bool tinted = bt == BType.Kaserne || bt == BType.Turnierplatz || bt == BType.Wachturm;
+                bool tinted = bt == BType.Kaserne || bt == BType.Turnierplatz || bt == BType.Wachturm || bt == BType.Feldlager;
                 res.Add(new Placed(name, b.x + 0.5f + ox, b.y + 0.28f, false, tinted));
                 if (bt == BType.Bauernhof)
                 {

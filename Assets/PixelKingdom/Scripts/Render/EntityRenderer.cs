@@ -219,7 +219,7 @@ namespace PixelKingdom
         {
             unchecked
             {
-                int h = a.faction * 31 + (a.atSea ? 7 : 0) + a.settlers * 13 + Palette.Index * 101;
+                int h = a.faction * 31 + (a.atSea ? 7 + game.ShipClass * 997 : 0) + a.settlers * 13 + Palette.Index * 101;
                 for (int u = 0; u < Units.Count; u++) h = h * 7 + Mathf.Min(a.units[u], 6);
                 return h;
             }
@@ -241,7 +241,11 @@ namespace PixelKingdom
                 if (s.Overlay != null) qb.Add(s.Overlay, dx, dy, z - 0.002f, fc, v.flip);
                 if (s.Shadow != null) sb.Add(s.Shadow, dx, dy, 0f, white);
             }
-            if (a.atSea) Put("u_ship", 0, -0.1f);
+            if (a.atSea)
+            {
+                int cls = a.faction == game.S.playerFaction ? game.ShipClass : 1;
+                Put(cls >= 3 ? "u_ship3" : cls == 2 ? "u_ship2" : "u_ship", 0, -0.1f);
+            }
             else if (a.settlers > 0 && a.units[0] + a.units[1] + a.units[2] + a.units[3] == 0) { Put("u_cart", 0, -0.1f); Put("u_banner", -0.45f, 0.05f); }
             else
             {

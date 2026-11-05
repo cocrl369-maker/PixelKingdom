@@ -100,8 +100,9 @@ Das Spiel ist für Android ausgelegt und bleibt am PC mit Tastatur und Maus spie
 - Die Kamera endet am Kartenrand – kein leerer Raum dahinter.
 
 ### Welt
-- **Prozedural und groß**: 480 × 336 Felder, aus einem Seed erzeugt. Dazu gehören:
+- **Prozedural und groß**: 600 × 336 Felder, aus einem Seed erzeugt. Dazu gehören:
   - der Heimatkontinent **Mittland**, die kalten **Nordlande**, das heiße **Südreich** und der Archipel **Inselbund**,
+  - zwei große Inseln weit im Osten, nur mit Schiffen erreichbar: das raue, erzreiche **Eisenfels** und die grüne, fruchtbare **Smaragdinsel** – jeweils mit eigenen Herrschern und freien Dörfern,
   - lange, natürlich geformte **Gebirgsketten** mit Hauptgrat, Seitengraten, Schluchten, Almflecken und Schneegipfeln. Sie werden pixelgenau in den Boden gemalt, ragen in Schrägansicht auf und füllen genau das Gebirgsgebiet. Gebirge ist **unpassierbar**, auch für Späher – nur Pässe und Täler führen hindurch,
   - **Flüsse**, die bergab ins Meer fließen, sowie **Seen**, **Inseln**, Strände und Flachwasser,
   - **Klimazonen** mit Laub- und Nadelwald, Steppe, Wüste und fruchtbarem Schwemmland an Flüssen.
@@ -139,7 +140,16 @@ Das Spiel ist für Android ausgelegt und bleibt am PC mit Tastatur und Maus spie
 - **Markt** mit schwankenden Preisen, dazu Lagerkapazität und Handelsabkommen.
 - **Unruhen und Aufstände**: Unzufriedene Städte können sich lossagen.
 
+### Seefahrt
+- **Hafen und Wissen „Schiffbau“** (ab Grafschaft) schalten die Seefahrt frei – vor oder nach dem Sturz des Kaisers.
+- **Handelsschiffe** bringen täglich Gold; Handelsabkommen und eigene Häfen auf anderen Kontinenten erhöhen den Ertrag.
+- **Kriegsschiffe** tragen Heere übers Meer (genug Plätze nötig), schützen vor **Piraten** und beschießen Küstenstädte bei Belagerungen.
+- **Schiffsklassen** Kogge → Holk → Karavelle: Das Wissen der Schiffbauer (Schiffbau, Kielbau, Seekarten & Kompass) und die Größe der **Werft** bestimmen, wie groß, schnell und wehrhaft die Flotte ist. Auf See segeln Heere deutlich schneller als zu Fuß.
+- Der Reiter **„Hafen“** erscheint nur in Hafenstädten.
+
 ### Militär
+- **Garnisonsplätze**: Jede Kaserne bietet 40 Plätze (Archerie, Stall und Burg weitere). Wer keinen Platz hat, lagert als Heer vor der Stadt.
+- **Feldlager**: frei platzierbare Lager auch weit draußen. Heere dort erholen sich, verteidigen sich um 30 % besser (bis 60 Mann) und sehen weit ins Land.
 - **6 Einheiten**: Miliz, Speerträger, Bogenschützen, Ritter, Rammen und Späher.
 - **Konter-System**: Speer schlägt Ritter, Ritter schlagen Bogen, Bogen schlagen Speer. Bogenschützen schießen zuerst, Rammen brechen Mauern.
 - **Heere ziehen über die Karte**: Die Wegsuche (A*) berücksichtigt Wald, Hügel, Furten und Gebirge.

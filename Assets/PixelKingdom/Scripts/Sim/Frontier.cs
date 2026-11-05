@@ -48,6 +48,11 @@ namespace PixelKingdom
             int t = S.researching;
             S.researching = -1;
             if (!S.techs.Contains(t)) S.techs.Add(t);
+            if (t == Techs.Schiffbau && !S.seafaring)
+            {
+                S.seafaring = true;
+                Say(Aldo, "advisor", Loc.T("Unsere Schiffbauer bauen jetzt hochseetaugliche Koggen! Im Hafen könnt ihr Handels- und Kriegsschiffe bauen. Und Kapitäne erzählen von zwei großen Inseln weit im Osten – noch hat sie kein Herrscher vom Festland betreten."));
+            }
             Notify(Loc.F("Erforscht: {0}! {1}", (Techs.All[t].Name), (Techs.All[t].Desc)), 1);
             Hint("first_tech", Loc.T("Euer erstes Wissen! Was erforscht ist, wirkt für immer und überall in eurem Reich. Neue Kenntnisse werden mit höherem Rang und neuen Gebäuden möglich."));
         }

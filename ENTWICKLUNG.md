@@ -69,6 +69,9 @@ Die Unity-Teile kompilieren gegen das NuGet-Paket `UnityEngine.Modules` (Ziel `n
 
 ## Stand (zuletzt erledigt)
 
+- Seefahrt (`Sim/Navy.cs`): Handels- und Kriegsschiffe, Klassen Kogge/Holk/Karavelle (Wissen × Werft), Seehandel, Transportplätze, Piraten, Beschuss von Küstenstädten.
+- Garnisonsplätze je Kaserne (`GarrisonCap`), Feldlager für Heere (Erholung, +30 % Verteidigung, Sicht).
+- Welt 600 × 336 mit zwei großen Inseln im Osten (Kontinente 4 „Eisenfels“, 5 „Smaragdinsel“). Spielstand-Version 5.
 - Eigene Zeiger-Eingabe: Klicks gehen nie mehr „durch“ Fenster; Wischen scrollt Listen und die Bauleiste.
 - Befehlsmenü für Heere (`Sim/Orders.cs`): Ziel antippen → Weg, Marschdauer, mögliche Befehle.
 - Verständliche Ertragsangaben beim Bauen (Vergleich mit einem normalen Gebäude, z. B. „+12 %“).

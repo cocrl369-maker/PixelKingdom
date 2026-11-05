@@ -126,17 +126,20 @@ namespace PixelKingdom
             }
 
             // ---------------- Übersee ---------------------------------------------------------
-            for (int cont = 1; cont <= 3; cont++)
+            for (int cont = 1; cont < WorldMap.ContinentCount; cont++)
             {
-                int lords = cont == 3 ? 2 : 4;
+                // Kultur (Namen): die beiden großen Inseln im Osten ähneln den Nordlanden bzw. dem Inselbund
+                int cul = cont == 4 ? 1 : cont == 5 ? 3 : cont;
+                bool island = cont >= 4;
+                int lords = cont == 3 ? 2 : island ? 3 : 4;
                 for (int k = 0; k < lords; k++)
                 {
-                    var c = Pick(s => s.cont == cont, cont == 3 ? 12 : 24);
+                    var c = Pick(s => s.cont == cont, cont == 3 ? 12 : island ? 18 : 24);
                     if (c == null) break;
-                    var f = NewFaction("", NameGen.Leader(r, cont), cont, cont);
+                    var f = NewFaction("", NameGen.Leader(r, cul), cont, cul);
                     f.loyalty = 0; // kennen den Kaiser nicht
                     var capS = NewSettlement(f, c, 60 + r.Next(90), true);
-                    f.name = NameGen.RealmName(cont, capS.name);
+                    f.name = NameGen.RealmName(cul, capS.name);
                     int extra = r.Next(1, 4);
                     for (int e = 0; e < extra; e++)
                     {
@@ -149,7 +152,7 @@ namespace PixelKingdom
                 {
                     var c = Pick(s => s.cont == cont, 14);
                     if (c == null) break;
-                    var f = NewFaction("", Loc.T("Ältester ") + NameGen.Leader(r, cont).Split(' ')[1], cont, cont);
+                    var f = NewFaction("", Loc.T("Ältester ") + NameGen.Leader(r, cul).Split(' ')[1], cont, cul);
                     f.isFree = true; f.aggression *= 0.2f; f.loyalty = 0;
                     var st = NewSettlement(f, c, 20 + r.Next(20), true);
                     f.name = Loc.T("Freidorf ") + st.name;

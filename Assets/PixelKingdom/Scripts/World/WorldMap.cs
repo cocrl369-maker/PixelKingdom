@@ -7,11 +7,12 @@ namespace PixelKingdom
     /// <summary>Statische Weltkarte (aus dem Seed erzeugt) + veränderliche Laufzeitdaten (Besitz, Erkundung).</summary>
     public class WorldMap
     {
-        public const int W = 480, H = 336;
-        /// <summary>Maßstab gegenüber der ursprünglichen Kartenplanung (320x224).</summary>
+        public const int W = 600, H = 336;
+        /// <summary>Maßstab gegenüber der ursprünglichen Kartenplanung (400x224).</summary>
         public const float Scale = 1.5f;
         public const float Sea = 0.40f;
-        public static readonly LArr ContinentNames = new LArr(Loc.T("Mittland"), Loc.T("Nordlande"), Loc.T("Südreich"), Loc.T("Inselbund"));
+        public static readonly LArr ContinentNames = new LArr("Mittland", "Nordlande", "Südreich", "Inselbund", "Eisenfels", "Smaragdinsel");
+        public const int ContinentCount = 6;
 
         public readonly float[] h = new float[W * H];
         public readonly Biome[] biome = new Biome[W * H];

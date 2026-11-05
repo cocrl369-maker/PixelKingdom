@@ -66,7 +66,7 @@ namespace PixelKingdom
         None = -1,
         Wohnhaus, Bauernhof, Fischerhuette, Holzfaeller, Steinbruch, Mine, Lagerhaus, Markt, Taverne,
         Kapelle, Brunnen, Schmiede, Kaserne, Archerie, Stall, Mauer, Burg, Hafen, Kathedrale, Werkstatt, Goldmine,
-        Windmuehle, Kloster, Turnierplatz, Wachturm,
+        Windmuehle, Kloster, Turnierplatz, Wachturm, Feldlager, Werft,
     }
 
     public enum TerrainNeed { None, Coast, Forest, Hills, Mountain, Fertile, Iron, Gold }
@@ -100,7 +100,7 @@ namespace PixelKingdom
         public static readonly int Count = Enum.GetValues(typeof(BType)).Length - 1;
         public static readonly BuildingDef[] All;
 
-        static float[] R(float food = 0, float wood = 0, float stone = 0, float iron = 0, float gold = 0, float weapons = 0)
+        internal static float[] R(float food = 0, float wood = 0, float stone = 0, float iron = 0, float gold = 0, float weapons = 0)
             => new[] { food, wood, stone, iron, gold, weapons };
 
         static Buildings()
@@ -132,8 +132,8 @@ namespace PixelKingdom
                 Cost = R(wood: 10, stone: 25), Days = 2, Happiness = 3, Max = 3 });
             Add(new BuildingDef { Type = BType.Schmiede, Name = "Schmiede", Icon = "anvil", Desc = "Fertigt Waffen aus Eisen und Holz.",
                 Cost = R(wood: 40, stone: 30, gold: 25), Days = 4, Jobs = 3, Prod = R(weapons: 1.2f), Use = R(wood: 0.8f, iron: 1.0f), MinRank = 1, Max = 4 });
-            Add(new BuildingDef { Type = BType.Kaserne, Name = "Kaserne", Icon = "sword", Desc = "Bildet Speerträger aus.",
-                Cost = R(wood: 50, stone: 30, gold: 30), Days = 4, Defense = 0.05f, Max = 1 });
+            Add(new BuildingDef { Type = BType.Kaserne, Name = "Kaserne", Icon = "sword", Desc = "Bildet Speerträger aus und bietet Platz für 40 Soldaten in der Garnison.",
+                Cost = R(wood: 50, stone: 30, gold: 30), Days = 4, Defense = 0.05f, Max = 3 });
             Add(new BuildingDef { Type = BType.Archerie, Name = "Archerie", Icon = "bow", Desc = "Bildet Bogenschützen aus.",
                 Cost = R(wood: 60, stone: 10, gold: 25), Days = 4, Defense = 0.05f, Max = 1 });
             Add(new BuildingDef { Type = BType.Stall, Name = "Stall", Icon = "horse", Desc = "Bildet Ritter aus.",
@@ -156,6 +156,10 @@ namespace PixelKingdom
                 Cost = R(wood: 60, stone: 90, gold: 80), Days = 10, Jobs = 3, Prod = R(food: 1.0f), Happiness = 5, Prestige = 0.8f, MinRank = 2, Max = 1 });
             Add(new BuildingDef { Type = BType.Wachturm, Name = "Wachturm", Icon = "eye", Desc = "Späht weit ins Land und warnt vor Feinden. Darf auch weit draußen stehen.",
                 Cost = R(wood: 30, stone: 15), Days = 3, MinRank = 1, Max = 6 });
+            Add(new BuildingDef { Type = BType.Feldlager, Name = "Feldlager", Icon = "army", Desc = "Befestigtes Lager für eure Heere, auch weit draußen. Heere hier erholen sich und verteidigen sich besser (bis 60 Mann). Sieht weit ins Land.",
+                Cost = R(wood: 60, stone: 30, gold: 30), Days = 5, MinRank = 1, Max = 3 });
+            Add(new BuildingDef { Type = BType.Werft, Name = "Werft", Icon = "anchor", Desc = "Schiffbauer an der Küste. Jede Ausbaustufe erlaubt größere Schiffe und eine größere Flotte. Braucht einen Hafen.",
+                Cost = R(wood: 120, stone: 30, iron: 10, gold: 60), Days = 8, Jobs = 4, MinRank = 2, Max = 2 });
             Add(new BuildingDef { Type = BType.Turnierplatz, Name = "Turnierplatz", Icon = "flag", Desc = "Ermöglicht Ritterturniere (Reich-Übersicht): Ansehen, gute Laune und Freunde.",
                 Cost = R(wood: 80, stone: 20, gold: 100), Days = 6, Happiness = 4, Prestige = 0.3f, MinRank = 3, Max = 1 });
         }
@@ -278,7 +282,7 @@ namespace PixelKingdom
     public static class Techs
     {
         public const int Doppelaxt = 0, SchwererPflug = 1, Steinmetzkunst = 2, Kraeuterkunde = 3, Handelsgilde = 4,
-                         Kartografie = 5, Tiefbau = 6, Schmiedekunst = 7, Kettenhemden = 8, Fruchtfolge = 9;
+                         Kartografie = 5, Tiefbau = 6, Schmiedekunst = 7, Kettenhemden = 8, Schiffbau = 9, Kielbau = 10, Kompass = 11, Fruchtfolge = 12;
 
         public static readonly TechDef[] All =
         {
@@ -291,6 +295,9 @@ namespace PixelKingdom
             new TechDef { Name = "Tiefbau", Icon = "iron", Desc = "Minen und Goldminen fördern 30% mehr.", Gold = 140, Wood = 60, Stone = 30, Days = 14, MinRank = 2, Needs = BType.Mine },
             new TechDef { Name = "Schmiedekunst", Icon = "weapons", Desc = "Schmieden fertigen 30% mehr Waffen.", Gold = 150, Iron = 30, Days = 14, MinRank = 2, Needs = BType.Schmiede },
             new TechDef { Name = "Kettenhemden", Icon = "sword", Desc = "Eure Truppen kämpfen 12% stärker.", Gold = 220, Iron = 60, Days = 18, MinRank = 2, Needs = BType.Schmiede },
+            new TechDef { Name = "Schiffbau", Icon = "anchor", Desc = "Hochseetaugliche Koggen: Seefahrt, Handels- und Kriegsschiffe im Hafen.", Gold = 120, Wood = 80, Days = 10, MinRank = 2, Needs = BType.Hafen },
+            new TechDef { Name = "Kielbau", Icon = "anchor", Desc = "Größere Schiffe (Holk): mehr Platz, schneller, stärker. Braucht eine Werft.", Gold = 200, Wood = 120, Iron = 20, Days = 14, MinRank = 2, Needs = BType.Werft },
+            new TechDef { Name = "Seekarten & Kompass", Icon = "eye", Desc = "Die besten Schiffe (Karavelle): schnell, geräumig, wehrhaft. Braucht eine große Werft.", Gold = 320, Wood = 150, Iron = 40, Days = 18, MinRank = 3, Needs = BType.Werft },
             new TechDef { Name = "Fruchtfolge", Icon = "food", Desc = "Felder ruhen abwechselnd: +15% Nahrung, auch im Winter etwas mehr.", Gold = 160, Days = 14, MinRank = 3, Needs = BType.Windmuehle },
         };
         public static int Count => All.Length;

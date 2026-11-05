@@ -64,16 +64,21 @@ namespace PixelKingdom
         void DrawOwnSettlement(SettlementData s)
         {
             var r = BottomPanel(580, 136);
-            string[] tabs = { Loc.T("Übersicht"), Loc.T("Bauen"), Loc.T("Truppen"), Loc.T("Markt") };
-            int tabCount = G.HasMarket(G.PlayerId) ? 4 : 3;
-            if (SettlementTab >= tabCount) SettlementTab = 0;
-            for (int i = 0; i < tabCount; i++)
+            string[] tabs = { Loc.T("Übersicht"), Loc.T("Bauen"), Loc.T("Truppen"), Loc.T("Markt"), Loc.T("Hafen") };
+            // Reiter erscheinen erst, wenn es sie braucht: Markt mit Markt/Hafen, Hafen nur in Hafenstädten
+            var shown = new System.Collections.Generic.List<int> { 0, 1, 2 };
+            if (G.HasMarket(G.PlayerId)) shown.Add(3);
+            if (s.buildings[(int)BType.Hafen] > 0) shown.Add(4);
+            if (!shown.Contains(SettlementTab)) SettlementTab = 0;
+            for (int k = 0; k < shown.Count; k++)
             {
-                var tr = new Rect(r.x + 4 + i * 66, r.y - 15, 64, 16);
+                int i = shown[k];
+                var tr = new Rect(r.x + 4 + k * 66, r.y - 15, 64, 16);
                 if (Button(tr, tabs[i], true, i == 1 ? Loc.T("Gebäude errichten (B)") : null, null, SettlementTab == i))
                 {
                     SettlementTab = i;
                     if (i == 2) G.Hint("tab_troops", Loc.T("Truppen: Oben bildet ihr Soldaten aus – sie kommen aus der Bevölkerung. Rechts stellt ihr aus der Garnison ein Heer zusammen und lasst es mit 'Ausrücken' losziehen. Speere schlagen Ritter, Ritter schlagen Bogenschützen, Bogenschützen schlagen Speere."));
+                    if (i == 4) G.Hint("tab_harbor", Loc.T("Der Hafen: Hier baut ihr Handelsschiffe (Gold durch Seehandel) und Kriegsschiffe (tragen Heere übers Meer, schützen vor Piraten). Wie groß und schnell eure Schiffe sind, hängt vom Wissen der Schiffbauer und von der Größe eurer Werft ab."));
                     if (i == 3) G.Hint("tab_market", Loc.T("Der Markt: Tauscht Waren gegen Gold und umgekehrt. Ihr braucht dafür einen Markt oder einen Hafen."));
                 }
             }
@@ -91,6 +96,7 @@ namespace PixelKingdom
                 case 1: TabBuild(s, content); break;
                 case 2: TabTroops(s, content); break;
                 case 3: TabMarket(content); break;
+                case 4: TabHarbor(s, content); break;
             }
         }
 
@@ -153,7 +159,8 @@ namespace PixelKingdom
             // Garnison & Aktionen
             float gx = c.x + 344, gy = c.y + 2;
             if (gx + 150 > c.xMax) return;
-            Text(gx, gy + 2, Loc.T("Garnison"), Palette.UITextDim);
+            Text(gx, gy + 2, Loc.F("Garnison {0}/{1}", G.GarrisonCount(s), G.GarrisonCap(s)), G.GarrisonFree(s) == 0 ? Palette.UIGood : Palette.UITextDim);
+            Tip(new Rect(gx, gy, 120, 11), Loc.T("__Garnison__\nSo viele Soldaten haben in der Stadt Platz. Jede Kaserne bietet 40 Plätze, Archerie, Stall und Burg weitere. Was keinen Platz hat, lagert als Heer vor der Stadt – oder in einem Feldlager."));
             gy += 13;
             int shown = 0;
             for (int u = 0; u < Units.Count; u++)
@@ -285,6 +292,45 @@ namespace PixelKingdom
             return parts.Count == 0 ? Loc.T("nichts") : string.Join(", ", parts);
         }
 
+        // ------------------------------------------------------------------
+        //  Hafen: Flotte, Schiffsklasse, Seehandel
+        // ------------------------------------------------------------------
+        void TabHarbor(SettlementData s, Rect c)
+        {
+            float x = c.x + 2, y = c.y + 1;
+            int cls = G.ShipClass;
+            Icon(new Rect(x, y, 12, 12), "anchor", Palette.UIText);
+            Text(x + 16, y + 2, Loc.F("Flotte: {0} Handelsschiffe, {1} Kriegsschiffe (Platz für {2})", G.S.merchantShips, G.S.warShips, G.FleetMax));
+            y += 14;
+            Text(x + 16, y, Loc.F("Schiffsklasse: {0}", cls == 0 ? Loc.T("keine") : G.ShipClassName), Palette.UISand);
+            string need;
+            if (G.ShipTech == 0) need = Loc.T("Erforscht 'Schiffbau' (Reich > Wissen), um Schiffe zu bauen.");
+            else if (cls < 3 && G.ShipTech <= cls) need = Loc.F("Nächste Klasse ({0}): Wissen der Schiffbauer erweitern ({1}).", Game.ShipClassNames[cls + 1], cls == 1 ? Loc.T("Kielbau") : Loc.T("Seekarten & Kompass"));
+            else if (cls < 3) need = Loc.F("Nächste Klasse ({0}): größere Werft bauen.", Game.ShipClassNames[cls + 1]);
+            else need = Loc.T("Die besten Schiffe der Welt.");
+            Text(x + 16, y + 10, need, Palette.UITextDim);
+            Tip(new Rect(x, y, 300, 20), Loc.F("__Schiffsklasse__\nKogge, Holk, Karavelle: größere Schiffe tragen mehr Soldaten, segeln schneller, verdienen mehr und kämpfen besser.\n__Wissen__: {0}  __Werft__: {1}\nDie Klasse ist das Kleinere von beidem.", Game.ShipClassNames[G.ShipTech], Game.ShipClassNames[Mathf.Min(3, G.YardLevel)]));
+            y += 24;
+            Text(x + 16, y, Loc.F("Seehandel: +{0:0.#} Gold/Tag   Unterhalt: -{1:0.#}", G.SeaTradeIncome, G.FleetUpkeep), Palette.UIText);
+            Tip(new Rect(x, y, 300, 10), Loc.F("__Seehandel__\nJedes Handelsschiff bringt täglich Gold. Handelsabkommen und eigene Häfen auf anderen Kontinenten erhöhen den Ertrag (derzeit x{0:0.0}).", G.SeaTradeFactor));
+            y += 11;
+            Text(x + 16, y, Loc.F("Transport: bis {0} Mann pro Fahrt   Tempo auf See: x{1:0.0}", G.TransportCapacity, G.SeaSpeed), Palette.UIText);
+            Tip(new Rect(x, y, 300, 10), Loc.T("__Transport__\nZieht ein Heer übers Meer, braucht es genug Schiffe: Kriegsschiffe tragen viele Soldaten, Handelsschiffe nur wenige. Kriegsschiffe beschießen außerdem Küstenstädte bei Belagerungen."));
+            // Bauknöpfe
+            float bx = c.xMax - 150, by = c.y + 4;
+            foreach (bool war in new[] { false, true })
+            {
+                bool ok = G.CanBuildShip(s, war, out string why);
+                string label = war ? Loc.T("Kriegsschiff bauen") : Loc.T("Handelsschiff bauen");
+                string tip = (war ? Loc.T("__Kriegsschiff__\nTrägt Heere übers Meer, schützt vor Piraten, hilft bei Belagerungen.") : Loc.T("__Handelsschiff__\nBringt täglich Gold durch Seehandel."))
+                             + Loc.T("\n__Kosten__: ") + CostLong(G.ShipCost(war), 1) + (ok ? "" : Loc.T("\n__Gesperrt__: ") + why);
+                if (Button(new Rect(bx, by, 146, 15), label, ok, tip, war ? "sword" : "gold")) G.QueueShip(s, war);
+                Text(bx + 4, by + 17, CostText(G.ShipCost(war), 1), CanAfford(G.ShipCost(war), 1) ? Palette.UITextDim : Palette.UIGood);
+                by += 32;
+            }
+            if (s.buildings[(int)BType.Werft] == 0) Text(bx, by + 2, Loc.T("Tipp: Eine Werft erlaubt größere Schiffe."), Palette.UITextDim);
+        }
+
         void TabTroops(SettlementData s, Rect c)
         {
             if (armySelFor != s.id) { System.Array.Clear(armySel, 0, armySel.Length); armySelFor = s.id; }
@@ -317,7 +363,8 @@ namespace PixelKingdom
                 if (Button(new Rect(x + 262, y, 24, 13), "+5", ok5)) G.QueueTrain(s, (UType)u, 5);
                 y += 15;
             }
-            if (hidden.Count > 0 && y < c.yMax - 10) Text(x, y + 3, Loc.T("Weitere Truppen mit: ") + string.Join(", ", hidden), Palette.UITextDim);
+            if (hidden.Count > 0 && y < c.yMax - 20) { Text(x, y + 3, Loc.T("Weitere Truppen mit: ") + string.Join(", ", hidden), Palette.UITextDim); y += 11; }
+            if (y < c.yMax - 10) Text(x, y + 3, Loc.F("Platz in der Garnison: {0} von {1} frei", G.GarrisonFree(s), G.GarrisonCap(s)), G.GarrisonFree(s) == 0 ? Palette.UIGood : Palette.UITextDim);
 
             // Heer aufstellen
             float ax = c.x + 300, ay = c.y + 1;

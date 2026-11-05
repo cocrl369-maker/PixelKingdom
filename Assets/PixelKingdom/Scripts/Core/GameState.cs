@@ -8,7 +8,7 @@ namespace PixelKingdom
     [Serializable]
     public class GameState
     {
-        public const int CurrentVersion = 4;   // 4 = Gebäude mit Bauplatz, Wissen, Fahrendes Volk
+        public const int CurrentVersion = 5;   // 4 = Gebäude mit Bauplatz, Wissen, Fahrendes Volk
         public int version = CurrentVersion;
         public int seed;
         public int day;
@@ -41,6 +41,8 @@ namespace PixelKingdom
         public float researchLeft;
         public int relics;
         public int nextBorderDay = 120, nextNomadDay = 60;
+        public int merchantShips, warShips;      // Flotte des Spielers
+        public int nextPirateDay = 200;
         public StoryData story = new StoryData();
     }
 

@@ -188,6 +188,8 @@ namespace PixelKingdom
             if (!Offline) EventsDay();
             PoisDay();
             FrontierDay();
+            NavyDay();
+            CampsDay();
             StoryDay();
             MarketDrift();
             CheckEliminations();

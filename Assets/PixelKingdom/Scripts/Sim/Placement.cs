@@ -26,7 +26,7 @@ namespace PixelKingdom
         /// <summary>Gebäude, die ihre Arbeit auch fern der Stadt tun (Anbau, Abbau, Wache).</summary>
         public static bool IsRemote(BType t) =>
             t == BType.Bauernhof || t == BType.Fischerhuette || t == BType.Holzfaeller || t == BType.Steinbruch || t == BType.Mine ||
-            t == BType.Goldmine || t == BType.Windmuehle || t == BType.Hafen || t == BType.Wachturm;
+            t == BType.Goldmine || t == BType.Windmuehle || t == BType.Hafen || t == BType.Wachturm || t == BType.Feldlager || t == BType.Werft;
 
         /// <summary>Mauer und Burg haben keinen eigenen Bauplatz (Ring bzw. Ortszentrum).</summary>
         public static bool NeedsSite(BType t) => t != BType.Mauer && t != BType.Burg;
@@ -145,6 +145,7 @@ namespace PixelKingdom
                     if (!Near(x, y, 1, j => Map.IsWater(j) || Map.river[j])) { why = Loc.T("Muss am Wasser stehen"); return false; }
                     break;
                 case BType.Hafen:
+                case BType.Werft:
                     if (!Near(x, y, 1, j => Map.IsSea(j))) { why = Loc.T("Muss an der Meeresküste stehen"); return false; }
                     break;
                 case BType.Steinbruch:
