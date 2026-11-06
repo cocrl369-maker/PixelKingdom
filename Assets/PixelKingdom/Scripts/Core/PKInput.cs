@@ -1,5 +1,5 @@
 using UnityEngine;
-#if !ENABLE_LEGACY_INPUT_MANAGER && ENABLE_INPUT_SYSTEM
+#if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
 
@@ -8,12 +8,13 @@ namespace PixelKingdom
     public enum PKKey { W, A, S, D, Q, E, Up, Down, Left, Right, Space, Escape, Tab, Alpha1, Alpha2, Alpha3, B, R, L, H, P, G, M, F1, F5, F9, Shift, Delete, Plus, Minus }
 
     /// <summary>
-    /// Kapselt die Eingabe, damit das Spiel sowohl mit dem alten Input Manager
-    /// als auch mit dem neuen Input System (Unity 6 Standard) läuft.
+    /// Kapselt die Eingabe. Ist das neue Input System aktiv ("Input System Package (New)" oder "Both"),
+    /// wird immer dieses benutzt – der alte Input Manager gilt in Unity 6 als veraltet ("Legacy").
+    /// Nur wenn ausschließlich der alte Input Manager aktiv ist, wird er verwendet.
     /// </summary>
     public static partial class PKInput
     {
-#if ENABLE_LEGACY_INPUT_MANAGER || !ENABLE_INPUT_SYSTEM
+#if !ENABLE_INPUT_SYSTEM
         static KeyCode Map(PKKey k)
         {
             switch (k)

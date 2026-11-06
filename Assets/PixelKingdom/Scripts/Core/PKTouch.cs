@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
-#if !ENABLE_LEGACY_INPUT_MANAGER && ENABLE_INPUT_SYSTEM
+#if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
 
@@ -53,7 +53,7 @@ namespace PixelKingdom
             if (touches.Count > 0) lastTouchTime = Time.unscaledTime;
         }
 
-#if ENABLE_LEGACY_INPUT_MANAGER || !ENABLE_INPUT_SYSTEM
+#if !ENABLE_INPUT_SYSTEM
         static void ReadRealTouches()
         {
             for (int i = 0; i < Input.touchCount; i++)

@@ -18,6 +18,8 @@ namespace PixelKingdom
         Vector2 dragDelta;
         float wheel;
         bool hitPass;                         // true während des Treffer-Durchlaufs
+        float lastDeviceInput = -100f;        // wann zuletzt Maus/Finger direkt gelesen wurden
+        bool clickFromGui; float clickTime;   // Ersatz-Klick aus Unitys GUI-Ereignissen
         int hitFrame = -1;
         readonly List<Vector2> groupStack = new List<Vector2>();
         Vector2 groupOffset;
@@ -26,7 +28,10 @@ namespace PixelKingdom
 
         void UpdatePointer()
         {
-            clickPending = false; clickUsed = false; dragDelta = Vector2.zero;
+            // Ein Ersatz-Klick aus den GUI-Ereignissen bleibt kurz erhalten, bis der Treffer-Durchlauf ihn verarbeitet
+            bool keepGuiClick = clickPending && clickFromGui && Time.unscaledTime - clickTime < 0.3f;
+            if (!keepGuiClick) { clickPending = false; clickFromGui = false; }
+            clickUsed = false; dragDelta = Vector2.zero;
             wheel = PKInput.UsingTouch ? 0f : PKInput.Scroll;
             bool pressed, released, down; Vector2 sp;
             if (PKInput.UsingTouch)
@@ -46,6 +51,8 @@ namespace PixelKingdom
                 pressed = PKInput.MouseDown(0); released = PKInput.MouseUp(0); down = PKInput.Mouse(0);
                 multiTouch = false;
             }
+            if (pressed || released || down) lastDeviceInput = Time.unscaledTime;
+            if (keepGuiClick) return;
             ptrPrev = ptr;
             ptr = ScreenToVirtual(sp);
             if (pressed)
@@ -62,6 +69,26 @@ namespace PixelKingdom
                 ptrDown = false;
             }
             if (!down && !released) ptrDown = false;
+        }
+
+        /// <summary>
+        /// Sicherheitsnetz: Liefert das Eingabesystem gar nichts (z.B. falsche Einstellung "Active Input Handling"),
+        /// werden Unitys eigene GUI-Mausereignisse als Klick genommen.
+        /// </summary>
+        void GuiEventFallback(Event e)
+        {
+            if (Time.unscaledTime - lastDeviceInput < 1f) return;   // Eingabesystem funktioniert – nichts tun
+            if (e.type == EventType.MouseDown && e.button == 0)
+            {
+                ptr = pressStart = e.mousePosition;
+                if (IsOverVirtual(ptr) || IsBlocking) LastUIPress = Time.unscaledTime;
+            }
+            else if (e.type == EventType.MouseUp && e.button == 0)
+            {
+                ptr = e.mousePosition;
+                clickPending = true; clickFromGui = true; clickPos = ptr; clickTime = Time.unscaledTime;
+            }
+            else if (e.type == EventType.ScrollWheel) wheel = -e.delta.y / 3f;
         }
 
         /// <summary>Zeigerposition im aktuellen Gruppen-Koordinatensystem.</summary>
