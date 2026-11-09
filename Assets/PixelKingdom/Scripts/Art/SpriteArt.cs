@@ -1041,6 +1041,68 @@ namespace PixelKingdom
             for (int x = cx - 12; x <= cx + 6; x += 3) c.Set(x, gy - 3, PlankDD);
         }
 
+        static void Steintafel(PixelCanvas c, int cx, int gy)
+        {
+            var runeGlow = H("#7FE0F0"); var runeL = H("#D8FAFF"); var moss = H("#5E8C45");
+            // Sockel
+            c.Rect(cx - 7, gy - 3, 15, 4, StoneD); c.HLine(cx - 7, cx + 7, gy - 3, Stone);
+            // aufrechter Stein mit abgerundeter Spitze
+            c.Rect(cx - 5, gy - 22, 11, 19, Stone);
+            c.Ellipse(cx, gy - 22, 5.5f, 3, Stone);
+            c.VLine(cx - 5, gy - 21, gy - 4, StoneL); c.VLine(cx + 5, gy - 21, gy - 4, StoneD);
+            // leuchtende Runen
+            int[] rows = { gy - 20, gy - 16, gy - 12, gy - 8 };
+            for (int k = 0; k < rows.Length; k++)
+            {
+                int y = rows[k];
+                c.Set(cx - 3 + k % 2, y, runeGlow); c.Set(cx - 2 + k % 2, y + 1, runeL);
+                c.Set(cx + 1, y, runeGlow); c.Set(cx + 2, y - 1 + k % 2, runeGlow); c.Set(cx + 2, y + 1, runeL);
+            }
+            // Moos und Glimmen
+            c.Set(cx - 5, gy - 6, moss); c.Set(cx - 4, gy - 5, moss); c.Set(cx + 4, gy - 4, moss); c.Set(cx + 5, gy - 13, moss);
+            c.Set(cx - 8, gy - 12, runeL); c.Set(cx + 8, gy - 17, runeGlow); c.Set(cx + 9, gy - 9, runeL);
+        }
+
+        static void Drachenhort(PixelCanvas c, int cx, int gy)
+        {
+            var rock = H("#6E655E"); var rockL = H("#8E857C"); var rockD = H("#4A433E"); var bone = H("#EDE6D2");
+            // Felsen mit Höhleneingang
+            c.Ellipse(cx, gy - 9, 17, 11, rock);
+            c.Ellipse(cx - 4, gy - 13, 11, 7, rockL);
+            c.Ellipse(cx + 8, gy - 6, 8, 6, rockD);
+            c.Ellipse(cx, gy - 4, 7, 6, K);
+            c.Rect(cx - 7, gy - 4, 15, 5, K);
+            // Goldschimmer im Eingang
+            c.Ellipse(cx, gy - 1, 5, 2, GoldD); c.HLine(cx - 3, cx + 3, gy - 2, Gold); c.Set(cx - 1, gy - 3, GoldL); c.Set(cx + 2, gy - 2, GoldL);
+            // Drachenschädel vor der Höhle
+            c.Rect(cx - 15, gy - 4, 7, 4, bone); c.Rect(cx - 9, gy - 3, 3, 2, bone);
+            c.Set(cx - 13, gy - 3, K); c.Set(cx - 15, gy - 5, bone); c.Set(cx - 16, gy - 6, bone);
+            for (int k = 0; k < 3; k++) c.Set(cx - 9 + k, gy - 1, K);
+            // Rippen rechts
+            for (int k = 0; k < 4; k++) { c.VLine(cx + 10 + k * 2, gy - 4 + (k % 2), gy, bone); }
+            // Wächter-Statue (stilisiert) links oben
+            c.Rect(cx - 13, gy - 18, 4, 8, rockL); c.Rect(cx - 14, gy - 21, 6, 3, rockL); c.Set(cx - 12, gy - 20, H("#E8892F"));
+        }
+
+        static void HeiligeQuelle(PixelCanvas c, int cx, int gy)
+        {
+            var water = H("#58A8D8"); var waterL = H("#B8E6F8"); var sparkle = H("#FFFFFF"); var moss = H("#5E8C45");
+            // Steinkreis um ein Becken
+            c.Ellipse(cx, gy - 4, 13, 5.5f, StoneD);
+            c.Ellipse(cx, gy - 4.5f, 11, 4.2f, water);
+            c.HLine(cx - 6, cx + 2, gy - 6, waterL); c.HLine(cx - 2, cx + 5, gy - 4, waterL);
+            for (int k = 0; k < 7; k++)
+            {
+                double a = Math.PI * 2 * k / 7;
+                int x = cx + (int)Math.Round(Math.Cos(a) * 13), y = gy - 4 + (int)Math.Round(Math.Sin(a) * 5.5);
+                c.Rect(x - 1, y - 2, 3, 3, Stone); c.Set(x - 1, y - 2, StoneL); c.Set(x + 1, y - 1, moss);
+            }
+            // Funkeln über dem Wasser
+            c.Set(cx - 3, gy - 10, sparkle); c.Set(cx - 4, gy - 9, waterL); c.Set(cx - 2, gy - 9, waterL);
+            c.Set(cx + 4, gy - 13, sparkle); c.Set(cx + 4, gy - 12, waterL);
+            c.Set(cx, gy - 16, waterL);
+        }
+
         static void Feldlager(PixelCanvas c, int cx, int gy)
         {
             // Palisadenring (hinten), Zelte, Fahne, Waffenständer
@@ -1246,6 +1308,9 @@ namespace PixelKingdom
             Add("u_ship2", 48, Ship2);
             Add("u_ship3", 56, Ship3);
             Add("b_Feldlager", 48, Feldlager);
+            Add("p_tablet", 40, Steintafel);
+            Add("p_hoard", 56, Drachenhort);
+            Add("p_spring", 40, HeiligeQuelle);
             Add("b_Werft", 48, Werft);
             Add("u_banner", 24, (c, x, y) =>
             {

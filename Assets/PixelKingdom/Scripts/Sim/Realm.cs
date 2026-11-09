@@ -11,7 +11,7 @@ namespace PixelKingdom
         public IReadOnlyList<PoiData> Pois => S.pois;
         public PoiData Poi(int id) { foreach (var p in S.pois) if (p.id == id) return p; return null; }
 
-        public static string PoiName(PoiData p) => p.type == 0 ? (p.done ? Loc.T("Erkundete Ruine") : Loc.T("Alte Ruine")) : p.type == 1 ? Loc.T("Räuberlager") : Loc.T("Fahrendes Volk");
+        public static string PoiName(PoiData p) => p.type >= 3 ? PoiDisplayName(p) : p.type == 0 ? (p.done ? Loc.T("Erkundete Ruine") : Loc.T("Alte Ruine")) : p.type == 1 ? Loc.T("Räuberlager") : Loc.T("Fahrendes Volk");
 
         public PoiData PoiNear(float x, float y, float r)
         {
@@ -65,6 +65,7 @@ namespace PixelKingdom
                 S.pois.Add(p);
                 Map.trees[WorldMap.Idx(x, y)] = 0; Map.baseTrees[WorldMap.Idx(x, y)] = 0;
             }
+            PlaceMythPois(r);
             PoisVersion++;
         }
 
@@ -76,6 +77,7 @@ namespace PixelKingdom
             var f = F(a.faction);
             a.mission = (int)ArmyMission.Idle;
             if (p.type == 2) { VisitNomads(a, p); return; }
+            if (VisitMyth(a, p)) return;
             if (p.type == 0)
             {
                 if (p.done) { if (f.isPlayer) Notify(Loc.T("Die Ruine wurde bereits durchsucht."), 0); return; }
@@ -99,7 +101,8 @@ namespace PixelKingdom
             }
             // Räuberlager
             if (p.done) return;
-            var rep = new BattleReport { Title = Loc.T("Angriff auf ein Räuberlager"), Place = Loc.T("Räuberlager"), Attacker = f.name, Defender = Loc.T("Räuber"), PlayerAttacker = f.isPlayer };
+            bool hoard = p.type == PoiHoard;
+            var rep = new BattleReport { Title = hoard ? Loc.T("Sturm auf den Drachenhort") : Loc.T("Angriff auf ein Räuberlager"), Place = PoiName(p), Attacker = f.name, Defender = hoard ? Loc.T("Steinerne Wächter") : Loc.T("Räuber"), PlayerAttacker = f.isPlayer };
             Array.Copy(a.units, rep.AttStart, Units.Count);
             Array.Copy(p.guards, rep.DefStart, Units.Count);
             var att = ToF(a.units); var def = ToF(p.guards);
@@ -110,6 +113,14 @@ namespace PixelKingdom
             if (won)
             {
                 p.done = true; PoisVersion++;
+                if (hoard)
+                {
+                    rep.Outcome = Loc.T("Die Wächter zerfallen zu Staub! Der Drachenhort gehört euch: 1500 Gold, 40 Waffen, 2 Relikte und die Krone des Drachenkönigs.");
+                    if (f.isPlayer) { S.battlesWon++; HoardLooted(f); }
+                    if (a.units.Sum() > 0) SendHome(a); else RemoveArmy(a);
+                    if (f.isPlayer) { if (!Offline) Reports.Enqueue(rep); Notify(rep.Outcome, 1); }
+                    return;
+                }
                 int loot = 100 + new Random(p.seed).Next(160);
                 f.res[(int)Res.Gold] += loot; f.res[(int)Res.Weapons] += 10; f.prestige += 15;
                 rep.Outcome = Loc.F("Das Lager ist ausgehoben! Beute: {0} Gold und 10 Waffen.", (loot));
@@ -118,7 +129,7 @@ namespace PixelKingdom
             }
             else
             {
-                rep.Outcome = Loc.T("Die Räuber haben den Angriff abgewehrt.");
+                rep.Outcome = hoard ? Loc.T("Die steinernen Wächter schlagen den Angriff zurück. Ein größeres Heer muss her.") : Loc.T("Die Räuber haben den Angriff abgewehrt.");
                 if (f.isPlayer) S.battlesLost++;
             }
             if (a.units.Sum() > 0) SendHome(a); else RemoveArmy(a);

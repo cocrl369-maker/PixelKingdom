@@ -1,0 +1,5 @@
+<!-- Verhindert, dass beim Android-Build (IL2CPP) Teile des Input Systems entfernt werden,
+     die Pixel Kingdom per Reflection benutzt. Fehlt das Paket, wird der Eintrag ignoriert. -->
+<linker>
+  <assembly fullname="Unity.InputSystem" preserve="all" ignoreIfMissing="1" />
+</linker>

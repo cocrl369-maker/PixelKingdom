@@ -15,7 +15,7 @@ namespace PixelKingdom
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Boot()
         {
-            if (I != null || FindObjectOfType<GameManager>() != null) return;
+            if (I != null || FindAnyObjectByType<GameManager>() != null) return;
             var go = new GameObject(Loc.T("PixelKingdom"));
             go.AddComponent<GameManager>();
         }
@@ -117,7 +117,7 @@ namespace PixelKingdom
                 cgo.tag = Loc.T("MainCamera");
                 cam = cgo.AddComponent<Camera>();
             }
-            foreach (var l in FindObjectsOfType<Light>()) l.enabled = false; // 2D-Pixelkunst braucht kein Licht
+            foreach (var l in FindObjectsByType<Light>(FindObjectsSortMode.None)) l.enabled = false; // 2D-Pixelkunst braucht kein Licht
             RenderSettings.fog = false;
             CamCtrl = cam.GetComponent<CameraController>();
             if (CamCtrl == null) CamCtrl = cam.gameObject.AddComponent<CameraController>();
@@ -556,6 +556,7 @@ namespace PixelKingdom
         public void SendToPoi(ArmyData a, PoiData p)
         {
             if (!Game.OrderMove(a, p.x, p.y, ArmyMission.Poi, p.id, out string why)) UI.Toast(why, 2);
+            else if (p.type >= 3) UI.Toast(Loc.F("{0}: {1}", a.name, Game.PoiActionLabel(p)), p.type == Game.PoiHoard ? 3 : 0);
             else UI.Toast(p.type == 0 ? Loc.F("{0} zieht zur Ruine.", (a.name)) : p.type == 2 ? Loc.F("{0} besucht das fahrende Volk.", (a.name)) : Loc.F("{0} greift das Räuberlager an.", (a.name)), p.type == 1 ? 3 : 0);
         }
 

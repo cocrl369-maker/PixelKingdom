@@ -30,7 +30,7 @@ namespace PixelKingdom
         void Awake()
         {
             I = this;
-            if (FindObjectOfType<AudioListener>() == null)
+            if (FindAnyObjectByType<AudioListener>() == null)
             {
                 var cam = Camera.main;
                 (cam != null ? cam.gameObject : gameObject).AddComponent<AudioListener>();

@@ -23,8 +23,13 @@ namespace PixelKingdom
 
             // --- Kontinent-Formen --------------------------------------------------
             var blobs = new List<Blob>();
-            void B(float x, float y, float rx, float ry, byte c, float w = 1f) =>
+            // Die alten Kontinente rücken in die Mitte, damit die beiden großen Inseln sie umschließen können
+            const float OX = 70, OY = 38;
+            void B(float x, float y, float rx, float ry, byte c, float w = 1f)
+            {
+                if (c < 4) { x += OX; y += OY; }
                 blobs.Add(new Blob { x = x + Jit(rnd, 6), y = y + Jit(rnd, 6), rx = rx, ry = ry, cont = c, w = w });
+            }
 
             // Mittland (Heimat) – groß, mit Halbinseln
             B(100, 112, 78, 62, 0); B(62, 150, 46, 42, 0); B(145, 78, 50, 44, 0); B(130, 150, 42, 36, 0);
@@ -33,11 +38,21 @@ namespace PixelKingdom
             B(266, 182, 46, 30, 1); B(238, 196, 28, 20, 1); B(292, 160, 22, 24, 1, 0.9f);
             // Südreich (warm, unten rechts)
             B(264, 52, 48, 34, 2); B(292, 82, 24, 26, 2); B(236, 34, 26, 18, 2, 0.9f);
-            // Zwei große Inseln im fernen Osten – nur mit Schiffen erreichbar
-            // Eisenfels (Nordosten): rau, gebirgig, reich an Erz
-            B(364, 168, 30, 28, 4); B(378, 142, 18, 18, 4, 0.95f); B(348, 190, 20, 14, 4, 0.95f); B(380, 186, 14, 14, 4, 0.9f);
-            // Smaragdinsel (Südosten): warm, feucht, fruchtbar
-            B(362, 60, 31, 28, 5); B(378, 86, 17, 16, 5, 0.95f); B(346, 36, 20, 15, 5, 0.95f); B(380, 40, 14, 14, 5, 0.9f);
+            // Zwei große, bogenförmige Inseln umschließen Mittland – nur mit Schiffen erreichbar.
+            // Eisenfels (Norden bis Westen): rau, gebirgig, reich an Erz. Smaragdinsel (Südwesten bis Süden): warm, fruchtbar.
+            const float CX = 168, CY = 150, ERX = 142, ERY = 124;
+            for (float ang = 78; ang <= 188; ang += 8.5f)
+            {
+                double a = ang * Math.PI / 180;
+                float wob = 1f + Jit(rnd, 0.12f);
+                B(CX + (ERX + 4) * (float)Math.Cos(a), CY + (ERY + 4) * (float)Math.Sin(a), 22 * wob, 21 * wob, 4, 0.95f);
+            }
+            for (float ang = 216; ang <= 304; ang += 8f)
+            {
+                double a = ang * Math.PI / 180;
+                float wob = 1f + Jit(rnd, 0.12f);
+                B(CX + ERX * (float)Math.Cos(a), CY + ERY * (float)Math.Sin(a), 19 * wob, 18 * wob, 5, 0.95f);
+            }
             // Inselbund (Archipel in der Mitte)
             for (int i = 0; i < 12; i++)
                 B(208 + Jit(rnd, 16), 82 + (float)rnd.NextDouble() * 70, 4 + (float)rnd.NextDouble() * 7, 4 + (float)rnd.NextDouble() * 6, 3, 0.95f);
@@ -55,14 +70,19 @@ namespace PixelKingdom
                     float wy = fy + (n2.Fbm(fx * 0.02f, fy * 0.02f + oy, 3) - 0.5f) * 34f;
 
                     float mask = -1f; byte bestCont = 0;
-                    float islandMask = 0f;
+                    float islandMask = 0f, mainBest = -9f, isl4 = -9f, isl5 = -9f;
                     foreach (var b in blobs)
                     {
                         float dx = (wx - b.x) / b.rx, dy = (wy - b.y) / b.ry;
                         float v = (1f - (float)Math.Sqrt(dx * dx + dy * dy)) * b.w;
                         if (v > mask) { mask = v; bestCont = b.cont; }
                         if (b.cont == 4 && v > islandMask) islandMask = v;
+                        if (b.cont == 4) isl4 = Math.Max(isl4, v); else if (b.cont == 5) isl5 = Math.Max(isl5, v); else mainBest = Math.Max(mainBest, v);
                     }
+                    // Zwischen den Inseln und dem Festland bleibt immer ein Meeresarm
+                    const float near = -0.32f;
+                    int close = (mainBest > near ? 1 : 0) + (isl4 > near ? 1 : 0) + (isl5 > near ? 1 : 0);
+                    if (close >= 2) mask = Math.Min(mask, -0.25f);
                     // Kartenrand ist immer Meer
                     float edge = Math.Min(Math.Min(x, W - 1 - x), Math.Min(y, H - 1 - y)) / 10f;
                     if (edge < 1f) mask -= (1f - edge) * 0.8f;
@@ -74,7 +94,7 @@ namespace PixelKingdom
                     float ridge = n3.Ridged(fx * 0.021f + ox * 0.5f, fy * 0.021f, 4);
                     float inland = Clamp01(mask * 2.2f);
                     e += (float)Math.Pow(ridge, 3.6) * 0.66f * inland;
-                    e += Clamp01(islandMask * 2f) * (0.05f + (float)Math.Pow(ridge, 2.5) * 0.25f);   // Eisenfels: Hochland und Gipfel
+                    e += Clamp01(islandMask * 2f) * (0.02f + (float)Math.Pow(ridge, 2.5) * 0.16f);   // Eisenfels: Hochland und Gipfel
 
                     map.h[i] = e;
                     map.cont[i] = bestCont;
@@ -92,7 +112,7 @@ namespace PixelKingdom
                     t -= Math.Max(0, map.h[i] - WorldMap.Sea) * 0.7f;
                     if (map.cont[i] == 2) t += 0.14f;      // Südreich: heiß & trocken
                     else if (map.cont[i] == 1) t -= 0.12f; // Nordlande: rau
-                    else if (map.cont[i] == 4) t -= 0.06f; // Eisenfels: kühl
+                    else if (map.cont[i] == 4) t += 0.1f;  // Eisenfels: liegt schon im kalten Norden
                     else if (map.cont[i] == 5) t += 0.06f; // Smaragdinsel: warm
                     temp[i] = t;
                     moist[i] = n4.Fbm(x * 0.025f + 300, y * 0.025f + 300, 4) - (map.cont[i] == 2 ? 0.08f : 0f) + (map.cont[i] == 5 ? 0.12f : 0f);

@@ -10,14 +10,19 @@ Die Karte ist 2D in Schrägansicht wie in alten Spielen. Räumlich wirkt sie dur
 
 ## Starten
 
-1. **Unity 6** (empfohlen, z. B. 6000.6.5f1) oder **Unity 2022.3 LTS** installieren.
-2. Im Unity Hub: *Add → Add project from disk* und diesen Ordner wählen. Falls der Hub nach der Version fragt, eine installierte 2022.3- oder 6000.x-Version auswählen.
-3. Eine beliebige Szene öffnen (z.B. die leere Standardszene) und **Play** drücken.
+Der Ordner `Assets/PixelKingdom` ist **in sich geschlossen**: Er lässt sich in jedes neue Unity-Projekt ziehen, braucht keine Pakete und keine besonderen Einstellungen.
+
+1. **Unity 6** installieren (mit dem Modul **Android Build Support**).
+2. Im Unity Hub ein **neues Projekt** anlegen, Vorlage **„Universal 2D“** oder **„2D (Built-In Render Pipeline)“**.
+3. Den Ordner **`PixelKingdom`** (aus `Assets/` im Download) in Unitys **Project-Fenster** auf den Ordner **Assets** ziehen.
+4. Warten, bis Unity fertig kompiliert hat, dann **Play** drücken.
+
+Update einspielen: Unity kurz schließen (oder im Project-Fenster) den alten Ordner `Assets/PixelKingdom` löschen und den neuen hineinziehen.
 
 Mehr braucht es nicht. Das Spiel startet sich selbst (`RuntimeInitializeOnLoadMethod`) und erzeugt Kamera, Welt und Oberfläche komplett aus Code. Es gibt keine Prefabs, keine Texturen und keine Szenen-Einrichtung.
 
 - Läuft in der **Built-in Render Pipeline** und in **URP**. Die Shader haben keinen LightMode-Tag und werden deshalb überall gezeichnet.
-- Funktioniert mit dem **alten Input Manager** und mit dem **neuen Input System** (Unity-6-Standard).
+- Funktioniert mit **jeder** Einstellung bei *Active Input Handling* – das Eingabesystem wird zur Laufzeit erkannt, es gibt keine feste Abhängigkeit vom Paket „Input System“. Falls nichts reagiert: Klicks laufen notfalls über Unitys GUI-Ereignisse weiter.
 - Für einen Build: *File → Build Settings → Add Open Scenes → Build*.
 
 ## Android (Tablet & Handy)
@@ -29,8 +34,7 @@ Das Spiel ist für Android ausgelegt und bleibt am PC mit Tastatur und Maus spie
 2. Projekt öffnen, oben im Menü **Pixel Kingdom → 1. Android einrichten** wählen. Das übernimmt alle Einstellungen:
    - Paketname `com.pixelkingdom.game`
    - Querformat
-   - Android 7 oder neuer
-   - 64 Bit mit IL2CPP (Pflicht für Google Play)
+   - 64 Bit (ARM64) mit IL2CPP (Pflicht für Google Play)
    - App-Icon aus der Pixelkunst
    - Startszene
    - Umschalten auf die Android-Plattform
@@ -100,9 +104,9 @@ Das Spiel ist für Android ausgelegt und bleibt am PC mit Tastatur und Maus spie
 - Die Kamera endet am Kartenrand – kein leerer Raum dahinter.
 
 ### Welt
-- **Prozedural und groß**: 600 × 336 Felder, aus einem Seed erzeugt. Dazu gehören:
+- **Prozedural und groß**: 720 × 450 Felder, aus einem Seed erzeugt. Dazu gehören:
   - der Heimatkontinent **Mittland**, die kalten **Nordlande**, das heiße **Südreich** und der Archipel **Inselbund**,
-  - zwei große Inseln weit im Osten, nur mit Schiffen erreichbar: das raue, erzreiche **Eisenfels** und die grüne, fruchtbare **Smaragdinsel** – jeweils mit eigenen Herrschern und freien Dörfern,
+  - zwei große, bogenförmige Inseln, die Mittland umschließen und nur mit Schiffen erreichbar sind: das raue, erzreiche **Eisenfels** im Norden und Westen und die grüne, fruchtbare **Smaragdinsel** im Süden – jeweils mit fünf Herrschern und drei freien Dörfern,
   - lange, natürlich geformte **Gebirgsketten** mit Hauptgrat, Seitengraten, Schluchten, Almflecken und Schneegipfeln. Sie werden pixelgenau in den Boden gemalt, ragen in Schrägansicht auf und füllen genau das Gebirgsgebiet. Gebirge ist **unpassierbar**, auch für Späher – nur Pässe und Täler führen hindurch,
   - **Flüsse**, die bergab ins Meer fließen, sowie **Seen**, **Inseln**, Strände und Flachwasser,
   - **Klimazonen** mit Laub- und Nadelwald, Steppe, Wüste und fruchtbarem Schwemmland an Flüssen.
@@ -139,6 +143,16 @@ Das Spiel ist für Android ausgelegt und bleibt am PC mit Tastatur und Maus spie
 - **Jahreszeiten**: Im Winter wachsen kaum Feldfrüchte, deshalb lohnt sich Vorratshaltung.
 - **Markt** mit schwankenden Preisen, dazu Lagerkapazität und Handelsabkommen.
 - **Unruhen und Aufstände**: Unzufriedene Städte können sich lossagen.
+
+### Mythen & Geheimnisse
+- **Alte Steintafeln** mit leuchtenden Runen: Darauf steht ein Rätsel mit drei möglichen Antworten. Richtig gelöst gibt es Gold, Relikte, Karten oder Ruhm; falsch, schweigen die Runen einen Monat.
+- Wer **drei Rätsel** löst, erfährt, wo **Vargrimm, der letzte Drache**, seinen Hort verbarg. Steinerne Wächter bewachen ihn – wer sie besiegt, gewinnt einen riesigen Schatz und die **Krone des Drachenkönigs** (+Zufriedenheit in allen Orten).
+- **Heilige Quellen** im Wald: Heere gewinnen volle Moral, der nächste Ort ein gutes Omen.
+- Seltsame Ereignisse: **Irrlichter** über dem Moor, ein **Komet** am Himmel.
+
+### Problem-Symbole
+- Läuft etwas nicht gut, erscheint über dem Gebäude eine kleine Sprechblase mit Symbol: keine Arbeiter, kaum noch Bäume, Rohstoff fehlt, Hunger, Unzufriedenheit, kein Wohnraum, Lager voll, kein Brunnen, Räuber in der Nähe, in fremdem Gebiet. Antippen bzw. mit der Maus darüberfahren erklärt das Problem und was hilft.
+- Im Menü unter „Problem-Symbole“ abschaltbar.
 
 ### Seefahrt
 - **Hafen und Wissen „Schiffbau“** (ab Grafschaft) schalten die Seefahrt frei – vor oder nach dem Sturz des Kaisers.

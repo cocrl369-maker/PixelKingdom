@@ -190,6 +190,8 @@ namespace PixelKingdom
             FrontierDay();
             NavyDay();
             CampsDay();
+            MythDay();
+            ComputeProblems();
             StoryDay();
             MarketDrift();
             CheckEliminations();

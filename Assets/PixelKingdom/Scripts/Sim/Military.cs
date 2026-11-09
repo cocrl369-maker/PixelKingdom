@@ -167,7 +167,7 @@ namespace PixelKingdom
                 return CanFoundAt(a.faction, tx, ty, out string why) ? Loc.T("Hier eine Siedlung gründen") : Loc.T("Gründen nicht möglich: ") + why;
             var poi = PoiNear(tx + 0.5f, ty + 0.5f, 0.9f);
             if (poi != null && target == null && G_IsDisc(poi.x, poi.y))
-                return poi.type == 0 ? (poi.done ? Loc.T("Ruine (bereits durchsucht)") : Loc.T("Ruine erkunden")) : poi.type == 1 ? Loc.T("Räuberlager angreifen") : Loc.T("Fahrendes Volk besuchen");
+                return poi.type >= 3 ? PoiActionLabel(poi) : poi.type == 0 ? (poi.done ? Loc.T("Ruine (bereits durchsucht)") : Loc.T("Ruine erkunden")) : poi.type == 1 ? Loc.T("Räuberlager angreifen") : Loc.T("Fahrendes Volk besuchen");
             if (target != null)
             {
                 if (target.faction == a.faction) return Loc.T("In ") + target.name + Loc.T(" einrücken (Garnison)");

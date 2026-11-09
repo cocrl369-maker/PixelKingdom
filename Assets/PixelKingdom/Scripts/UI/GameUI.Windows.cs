@@ -430,7 +430,7 @@ namespace PixelKingdom
         // ==================================================================
         void DrawMenu()
         {
-            var c = WindowFrame(Loc.T("Menü"), 230, 254, true);
+            var c = WindowFrame(Loc.T("Menü"), 230, 276, true);
             float y = c.y, bh = 16, gap = 4;
             if (Button(new Rect(c.x, y, c.width, bh), Loc.T("Weiterspielen"), true, null, "play")) Open = Window.None; y += bh + gap;
             if (Button(new Rect(c.x, y, c.width, bh), Loc.T("Speichern (F5)"), true, null, "save")) gm.SaveNow(); y += bh + gap + 4;
@@ -438,6 +438,9 @@ namespace PixelKingdom
             if (Button(new Rect(c.x, y, c.width, bh), Loc.T("Klänge: ") + (AudioManager.SoundOn ? Loc.T("An") : Loc.T("Aus")), true, null, "check", AudioManager.SoundOn)) AudioManager.SoundOn = !AudioManager.SoundOn; y += bh + gap;
             if (Button(new Rect(c.x, y, c.width, bh), Loc.T("Tipps von Aldo: ") + (Game.HintsEnabled ? Loc.T("An") : Loc.T("Aus")), true, Loc.T("Meister Aldo erklärt Neues, sobald es zum ersten Mal vorkommt."), "book", Game.HintsEnabled))
             { Game.HintsEnabled = !Game.HintsEnabled; PlayerPrefs.SetInt("pk_hints", Game.HintsEnabled ? 1 : 0); }
+            y += bh + gap;
+            if (Button(new Rect(c.x, y, c.width, bh), Loc.T("Problem-Symbole: ") + (ProblemsOn ? Loc.T("An") : Loc.T("Aus")), true, Loc.T("Zeichen über Gebäuden, wenn etwas nicht gut läuft (keine Arbeiter, Hunger, kein Holz ...)."), "fire", ProblemsOn))
+                ProblemsOn = !ProblemsOn;
             y += bh + gap;
             if (Button(new Rect(c.x, y, c.width, bh), "Sprache / Language: " + (Loc.English ? "English" : "Deutsch"), true, null, "scroll"))
                 SetLanguage(Loc.English ? Loc.Lang.De : Loc.Lang.En);

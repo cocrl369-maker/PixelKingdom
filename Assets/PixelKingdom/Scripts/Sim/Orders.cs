@@ -76,9 +76,9 @@ namespace PixelKingdom
             }
             if (poi != null)
             {
-                string l = poi.type == 0 ? (poi.done ? Loc.T("Zur Ruine ziehen") : Loc.T("Ruine erkunden")) : poi.type == 1 ? Loc.T("Räuberlager angreifen") : Loc.T("Fahrendes Volk besuchen");
-                string tip = poi.type == 1 ? Loc.F("Kampf gegen etwa {0} Räuber. Beute: Gold und Waffen.", (Math.Max(1, (int)Math.Round(poi.guards.Sum() / 5f) * 5))) : poi.type == 0 ? Loc.T("Gold, Waffen, Relikte oder Karten – manchmal eine Falle.") : Loc.T("Handeln oder sie einladen, zu bleiben.");
-                list.Add(new OrderOption { Kind = 4, Label = l, Icon = poi.type == 1 ? "sword" : "eye", Mission = ArmyMission.Poi, Target = poi.id, X = poi.x, Y = poi.y, Tip = tip });
+                string l = poi.type >= 3 ? PoiActionLabel(poi) : poi.type == 0 ? (poi.done ? Loc.T("Zur Ruine ziehen") : Loc.T("Ruine erkunden")) : poi.type == 1 ? Loc.T("Räuberlager angreifen") : Loc.T("Fahrendes Volk besuchen");
+                string tip = poi.type >= 3 ? PoiActionTip(poi) : poi.type == 1 ? Loc.F("Kampf gegen etwa {0} Räuber. Beute: Gold und Waffen.", (Math.Max(1, (int)Math.Round(poi.guards.Sum() / 5f) * 5))) : poi.type == 0 ? Loc.T("Gold, Waffen, Relikte oder Karten – manchmal eine Falle.") : Loc.T("Handeln oder sie einladen, zu bleiben.");
+                list.Add(new OrderOption { Kind = 4, Label = l, Icon = poi.type == 1 || poi.type == PoiHoard ? "sword" : "eye", Mission = ArmyMission.Poi, Target = poi.id, X = poi.x, Y = poi.y, Tip = tip });
                 list.Add(new OrderOption { Kind = 0, Label = Loc.T("Nur hinziehen"), Icon = "arrow", Mission = ArmyMission.Move, X = tx, Y = ty });
                 return list;
             }

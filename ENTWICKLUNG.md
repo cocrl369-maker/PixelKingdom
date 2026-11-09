@@ -18,6 +18,7 @@ Eine neue Sitzung sollte **zuerst diese Datei und die README lesen**, dann weite
 
 ## Regeln für neuen Code
 
+- **Der Ordner `Assets/PixelKingdom` muss in jedes neue Unity-Projekt passen**: keine Abhängigkeit von Paketen, keine Projekteinstellungen ändern. Das neue Input System wird nur per Reflection angesprochen (`Core/PKInput.cs`), `link.xml` schützt es beim Android-Build. Im Editor-Skript nur stabile APIs (`NamedBuildTarget`), nichts Versionsabhängiges.
 - **Texte immer übersetzbar schreiben**: `Loc.T("Deutscher Text")` für feste Texte, `Loc.F("Text mit {0} und {1}", a, b)` für Texte mit Werten (keine `$"..."`-Strings für sichtbare Texte). Die englische Übersetzung kommt in `Scripts/Loc/Loc.En.cs` (Schlüssel = deutscher Text). Fehlt sie, erscheint der deutsche Text.
 - Feste Daten (Gebäude, Einheiten, Ränge, Kapitel) übersetzen sich selbst über ihre Eigenschaften (`Name`, `Desc` …); feste Listen nutzen `LArr`.
 - **Eingabe der Oberfläche**: Nur `Clicked(rect)`, `Hover(rect)`, `Scroll(...)` aus `UI/GameUI.Input.cs` benutzen – nie `Event.current` für Maus/Finger (auf Android kommen Unitys Mausereignisse mit falscher Position an). Gruppen mit `BeginGroup`/`EndGroup` (nicht `GUI.BeginGroup`).
@@ -69,6 +70,10 @@ Die Unity-Teile kompilieren gegen das NuGet-Paket `UnityEngine.Modules` (Ziel `n
 
 ## Stand (zuletzt erledigt)
 
+- Welt 720 × 450: Eisenfels und Smaragdinsel umschließen Mittland als Bögen (Meeresarm wird erzwungen). Spielstand-Version 6.
+- Problem-Symbole über Gebäuden (`Sim/Problems.cs`, Anzeige in `GameUI.DrawProblemIcons`, abschaltbar).
+- Mythen (`Sim/Myth.cs`): Steintafeln mit Rätseln, Drachenhort nach 3 Rätseln, Heilige Quellen, Irrlichter, Komet.
+- Eingabe ohne Paketabhängigkeit (Reflection), Editor-Skript für Unity 6 bereinigt.
 - Seefahrt (`Sim/Navy.cs`): Handels- und Kriegsschiffe, Klassen Kogge/Holk/Karavelle (Wissen × Werft), Seehandel, Transportplätze, Piraten, Beschuss von Küstenstädten.
 - Garnisonsplätze je Kaserne (`GarrisonCap`), Feldlager für Heere (Erholung, +30 % Verteidigung, Sicht).
 - Welt 600 × 336 mit zwei großen Inseln im Osten (Kontinente 4 „Eisenfels“, 5 „Smaragdinsel“). Spielstand-Version 5.

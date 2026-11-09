@@ -244,6 +244,7 @@ namespace PixelKingdom
         {
             if (gm.InMenu) { DrawMainMenu(); return; }
             DrawWorldLabels();
+            DrawProblemIcons();
             DrawTopBar();
             DrawSideButtons();
             DrawMinimap();
@@ -901,6 +902,37 @@ namespace PixelKingdom
             if (pr.yMax > VH - 4) pr.y = hv.y - pr.height - 8;
             Fill(pr, new Color(Palette.UIPanelDark.r, Palette.UIPanelDark.g, Palette.UIPanelDark.b, 0.9f));
             for (int i = 0; i < lines.Count; i++) Text(pr.x + 4, pr.y + 2 + i * 10, lines[i], i == 0 ? lc : Palette.UIText);
+        }
+
+        // ---- Problem-Symbole über Gebäuden ----
+        public static bool ProblemsOn
+        {
+            get => PlayerPrefs.GetInt("pk_problems", 1) == 1;
+            set => PlayerPrefs.SetInt("pk_problems", value ? 1 : 0);
+        }
+
+        void DrawProblemIcons()
+        {
+            if (!ProblemsOn || gm.InMenu || G.Problems.Count == 0) return;
+            float zoom = gm.CamCtrl.Zoom;
+            if (zoom < 1f) return;
+            float bob = Mathf.Round(Mathf.Sin(Time.unscaledTime * 3f) * 1.5f);
+            foreach (var p in G.Problems)
+            {
+                if (!WorldToVirtual(new Vector3(p.X, p.Y, 0), out var v)) continue;
+                var r = new Rect(Mathf.Round(v.x - 8), Mathf.Round(v.y - 16) + bob, 16, 16);
+                bool severe = p.Kind == ProblemKind.Hunger || p.Kind == ProblemKind.Unhappy || p.Kind == ProblemKind.Bandits;
+                // Sprechblase: Rand, Farbe, kleiner Zipfel nach unten, Symbol
+                Fill(new Rect(r.x + 1, r.y + 1, r.width, r.height), Palette.UIShadow);
+                Fill(r, Palette.UIPanelDark);
+                Fill(new Rect(r.x + 1, r.y + 1, r.width - 2, r.height - 2), severe ? new Color(0.78f, 0.22f, 0.18f) : new Color(0.93f, 0.62f, 0.18f));
+                Fill(new Rect(r.center.x - 2, r.yMax, 4, 1), Palette.UIPanelDark);
+                Fill(new Rect(r.center.x - 1, r.yMax + 1, 2, 1), Palette.UIPanelDark);
+                Icon(new Rect(r.x + 2, r.y + 2, 12, 12), Game.ProblemIcon(p.Kind), Color.white);
+                // Erklärung: am PC beim Überfahren, am Tablet beim Antippen (die Karte darunter reagiert trotzdem)
+                if (!IsOverVirtual(Local(ptr)) && Hover(r) && !PKInput.UsingTouch) { tooltip = Game.ProblemText(p); tipPos = ptr; }
+                if (TappedPassive(r) && !IsOverVirtual(clickPos)) PinTip(Game.ProblemText(p));
+            }
         }
 
         // ---- Befehlsmenü für Heere ----

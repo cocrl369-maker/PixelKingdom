@@ -290,6 +290,6 @@ namespace PixelKingdom
             PoisVersion++;
         }
 
-        public static string PoiSprite(PoiData p) => p.type == 0 ? "p_ruin" : p.type == 1 ? "p_camp" : "p_nomads";
+        public static string PoiSprite(PoiData p) => p.type == 0 ? "p_ruin" : p.type == 1 ? "p_camp" : p.type == 2 ? "p_nomads" : p.type == PoiTablet ? "p_tablet" : p.type == PoiHoard ? "p_hoard" : "p_spring";
     }
 }

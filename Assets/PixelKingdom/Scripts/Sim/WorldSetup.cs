@@ -131,7 +131,7 @@ namespace PixelKingdom
                 // Kultur (Namen): die beiden großen Inseln im Osten ähneln den Nordlanden bzw. dem Inselbund
                 int cul = cont == 4 ? 1 : cont == 5 ? 3 : cont;
                 bool island = cont >= 4;
-                int lords = cont == 3 ? 2 : island ? 3 : 4;
+                int lords = cont == 3 ? 2 : island ? 5 : 4;
                 for (int k = 0; k < lords; k++)
                 {
                     var c = Pick(s => s.cont == cont, cont == 3 ? 12 : island ? 18 : 24);
@@ -148,7 +148,7 @@ namespace PixelKingdom
                         NewSettlement(f, s2, 30 + r.Next(50), false);
                     }
                 }
-                for (int k = 0; k < 2; k++)
+                for (int k = 0; k < (island ? 3 : 2); k++)
                 {
                     var c = Pick(s => s.cont == cont, 14);
                     if (c == null) break;

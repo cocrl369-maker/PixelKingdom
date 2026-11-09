@@ -12,7 +12,7 @@ namespace PixelKingdom
         static int curStamp;
         static readonly List<(float f, int i)> heap = new List<(float, int)>();
 
-        public static List<int> Find(WorldMap map, int sx, int sy, int tx, int ty, bool canSail, int maxNodes = 150000)
+        public static List<int> Find(WorldMap map, int sx, int sy, int tx, int ty, bool canSail, int maxNodes = 400000)
         {
             int N = WorldMap.W * WorldMap.H;
             if (g == null) { g = new float[N]; parent = new int[N]; stamp = new int[N]; }

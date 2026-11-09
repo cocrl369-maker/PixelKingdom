@@ -61,6 +61,8 @@ namespace PixelKingdom
             if (emp != null && emp.alive && p.continent == 0) { pool.Add("refugees"); pool.Add("refugees"); }
             if (Season == Season.Sommer) pool.Add("drought");
             if (Season == Season.Winter) pool.Add("wolves");
+            if (mySet.Any(s => Terrain(s)[1] > 6)) pool.Add("wisps");      // Wald und Moor in der Nähe
+            if (S.day > 200 && Rng.NextDouble() < 0.3) pool.Add("comet");
             string id = pool[Rng.Next(pool.Count)];
             var target = mySet.Count > 0 ? mySet[Rng.Next(mySet.Count)] : null;
             if (id == "unrest") target = mySet.OrderBy(s => s.happiness).First();
@@ -81,6 +83,8 @@ namespace PixelKingdom
                 case "border": BorderView(e, v); break;
                 case "nomads": NomadsView(e, v); break;
                 case "pirates": PiratesView(e, v); break;
+                case "riddle": RiddleView(e, v); break;
+                case "wisps": case "comet": MythEventView(e, v, sn); break;
                 case "harvest":
                     v.Title = Loc.T("Reiche Ernte"); v.Icon = "food";
                     v.Text = Loc.F("Die Felder um {0} tragen in diesem Jahr außergewöhnlich gut. Die Scheunen sind voll.", (sn));
@@ -251,6 +255,8 @@ namespace PixelKingdom
                 case "border": BorderResolve(e, option); break;
                 case "nomads": NomadsResolve(e, option); break;
                 case "pirates": PiratesResolve(e, option); break;
+                case "riddle": RiddleResolve(e, option); break;
+                case "wisps": case "comet": MythEventResolve(e, option, s); break;
                 case "harvest":
                     if (option == 0) res[0] += 60; else { res[0] += 20; AllHappy(15); }
                     break;

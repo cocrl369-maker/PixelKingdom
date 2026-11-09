@@ -1,5 +1,6 @@
 using System.IO;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
@@ -22,7 +23,7 @@ namespace PixelKingdom.EditorTools
 
             PlayerSettings.companyName = "Pixel Kingdom";
             PlayerSettings.productName = "Pixel Kingdom";
-            PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, PackageId);
+            PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, PackageId);
             if (string.IsNullOrEmpty(PlayerSettings.bundleVersion) || PlayerSettings.bundleVersion == "0.1") PlayerSettings.bundleVersion = "1.0.0";
 
             // Querformat (beide Richtungen)
@@ -32,21 +33,18 @@ namespace PixelKingdom.EditorTools
             PlayerSettings.allowedAutorotateToPortrait = false;
             PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
 
-            // Android: ab Android 7, 64 Bit (Pflicht für Google Play), IL2CPP
-            PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel24;
-            PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
-            PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64 | AndroidArchitecture.ARMv7;
+            // Android: 64 Bit (Pflicht für Google Play), IL2CPP. Mindest-Android-Version bleibt Unitys Vorgabe.
+            PlayerSettings.SetScriptingBackend(NamedBuildTarget.Android, ScriptingImplementation.IL2CPP);
+            PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
             PlayerSettings.runInBackground = false;
-
-            // Eingabe: alter Input Manager muss aktiv sein (am besten "Both")
-            SetInputHandling();
+            // Die Eingabe-Einstellung ("Active Input Handling") wird NICHT verändert: Das Spiel kommt mit jeder klar.
 
             // Szene in die Build-Liste
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
 
             if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android)
             {
-                if (!EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Android, BuildTarget.Android))
+                if (!EditorUserBuildSettings.SwitchActiveBuildTarget(NamedBuildTarget.Android.ToBuildTargetGroup(), BuildTarget.Android))
                     Debug.LogWarning("Pixel Kingdom: Konnte nicht auf Android umschalten. Ist 'Android Build Support' im Unity Hub installiert?");
             }
             AssetDatabase.SaveAssets();
@@ -96,21 +94,6 @@ namespace PixelKingdom.EditorTools
             var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
             EditorSceneManager.SaveScene(scene, ScenePath);
             AssetDatabase.Refresh();
-        }
-
-        static void SetInputHandling()
-        {
-            var assets = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/ProjectSettings.asset");
-            if (assets == null || assets.Length == 0) return;
-            var so = new SerializedObject(assets[0]);
-            var prop = so.FindProperty("activeInputHandler");
-            if (prop == null) return;
-            if (prop.intValue == 1) // nur neues Input System -> "Both"
-            {
-                prop.intValue = 2;
-                so.ApplyModifiedProperties();
-                Debug.LogWarning("Pixel Kingdom: 'Active Input Handling' wurde auf 'Both' gestellt. Bitte Unity einmal neu starten.");
-            }
         }
 
         /// <summary>App-Icon aus der Pixelkunst: die Burg auf blauem Grund.</summary>
@@ -164,7 +147,7 @@ namespace PixelKingdom.EditorTools
         static void ApplyIcon()
         {
             var icon = AssetDatabase.LoadAssetAtPath<Texture2D>(IconPath);
-            if (icon != null) PlayerSettings.SetIconsForTargetGroup(BuildTargetGroup.Unknown, new[] { icon });
+            if (icon != null) PlayerSettings.SetIcons(NamedBuildTarget.Unknown, new[] { icon }, IconKind.Any);
         }
     }
 }

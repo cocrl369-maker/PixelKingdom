@@ -77,6 +77,7 @@ namespace PixelKingdom
             R(Loc.T("Gebäude"), build);
             R(Loc.T("Steuern"), -s.taxRate * 140f + 7f);
             if (HasTech(f, Techs.Kraeuterkunde)) R(Loc.T("Kräuterkunde"), 4);
+            if (f.isPlayer && S.story.Has("dragon_crown")) R(Loc.T("Krone des Drachenkönigs"), 5);
             R(Loc.T("Rationen"), (s.rations - 1) * 9f);
             int housing = Housing(s);
             if (s.pop > housing) R(Loc.T("Überfüllung"), -Math.Min(20, (s.pop - housing) * 1.5f));
@@ -138,6 +139,7 @@ namespace PixelKingdom
                 for (int r = 0; r < ResInfo.Count; r++)
                     if (d.Use[r] > 0) useFactor = Math.Min(useFactor, res[r] / (d.Use[r] * n * staff + 0.001f));
                 useFactor = Clamp(useFactor, 0, 1);
+                if (f.isPlayer) RecordStaff(s.id, b, staff, useFactor);
                 float eff = n * staff * terr * happyMod * (1f + rankBonus) * useFactor;
                 if (d.Type == BType.Bauernhof) eff *= 1f + 0.2f * Math.Min(2, s.buildings[(int)BType.Windmuehle]);
                 eff *= TechProd(f, d.Type);

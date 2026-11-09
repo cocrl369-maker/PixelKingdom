@@ -1,8 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-#if ENABLE_INPUT_SYSTEM
-using UnityEngine.InputSystem;
-#endif
 
 namespace PixelKingdom
 {
@@ -53,28 +50,19 @@ namespace PixelKingdom
             if (touches.Count > 0) lastTouchTime = Time.unscaledTime;
         }
 
-#if !ENABLE_INPUT_SYSTEM
         static void ReadRealTouches()
         {
-            for (int i = 0; i < Input.touchCount; i++)
+            if (UseNewSystem) { NewSys.ReadTouches(touches); return; }
+            try
             {
-                var t = Input.GetTouch(i);
-                int ph = t.phase == TouchPhase.Began ? 0 : (t.phase == TouchPhase.Ended || t.phase == TouchPhase.Canceled) ? 2 : 1;
-                touches.Add(new PKTouch { Id = t.fingerId, Pos = t.position, Phase = ph });
+                for (int i = 0; i < Input.touchCount; i++)
+                {
+                    var t = Input.GetTouch(i);
+                    int ph = t.phase == TouchPhase.Began ? 0 : (t.phase == TouchPhase.Ended || t.phase == TouchPhase.Canceled) ? 2 : 1;
+                    touches.Add(new PKTouch { Id = t.fingerId, Pos = t.position, Phase = ph });
+                }
             }
+            catch (System.InvalidOperationException) { LegacyFailed(); }
         }
-#else
-        static void ReadRealTouches()
-        {
-            var ts = Touchscreen.current;
-            if (ts == null) return;
-            foreach (var tc in ts.touches)
-            {
-                bool pressed = tc.press.isPressed, began = tc.press.wasPressedThisFrame, ended = tc.press.wasReleasedThisFrame;
-                if (!pressed && !ended) continue;
-                touches.Add(new PKTouch { Id = tc.touchId.ReadValue(), Pos = tc.position.ReadValue(), Phase = began ? 0 : ended ? 2 : 1 });
-            }
-        }
-#endif
     }
 }
