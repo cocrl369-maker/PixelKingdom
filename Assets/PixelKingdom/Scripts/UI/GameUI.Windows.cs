@@ -719,10 +719,6 @@ namespace PixelKingdom
             var fr = new Rect(4, VH - 16, PixelFont.Width(foot) + 10, 13);
             Fill(fr, new Color(Palette.UIPanelDark.r, Palette.UIPanelDark.g, Palette.UIPanelDark.b, 0.85f));
             Text(fr.x + 5, fr.y + 3, foot, Palette.UITextDim);
-            // Welche Eingabequelle ist aktiv? (hilft bei Problemen mit "Active Input Handling")
-            string inp = "Input: " + PKInput.Backend + "  D" + DbgDowns + " U" + DbgUps + " K" + DbgClicks + " T" + DbgHits
-                         + "  " + Mathf.RoundToInt(DbgLast.x) + "," + Mathf.RoundToInt(DbgLast.y) + " / " + Mathf.RoundToInt(VW) + "x" + Mathf.RoundToInt(VH);
-            Text(VW - PixelFont.Width(inp) - 6, VH - 13, inp, Palette.UITextDim);
         }
     }
 }
