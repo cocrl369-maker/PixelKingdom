@@ -1167,6 +1167,88 @@ namespace PixelKingdom
             c.Set(cx - 8, gy - 12, runeL); c.Set(cx + 8, gy - 17, runeGlow); c.Set(cx + 9, gy - 9, runeL);
         }
 
+        /// <summary>
+        /// Prächtige Hauptstadt (7x4 Felder): 0 = Valdoran (Kaiserpalast, Gold), 1 = Eisernes Reich (Felsenzitadelle),
+        /// 2 = Smaragdkrone (weißer Kuppelpalast mit Gärten). Im Saelaner-Stil werden Dächer zu Kuppeln.
+        /// </summary>
+        static void GrandCity(PixelCanvas c, int cx, int gy, int v)
+        {
+            var ws = v == 1 ? WallStyle.Dark : WallStyle.Stone;
+            Px bat = Style == 1 ? (v == 1 ? LimeD : LimeL) : StoneL, batD = Style == 1 ? LimeDD : StoneD;
+            Roof main = v == 0 ? RoofGold : v == 1 ? RoofSlate : RoofRed;
+            Roof towers = v == 0 ? RoofSlate : v == 1 ? RoofSlate : RoofBlue;
+            // Felsen bzw. Gärten unter allem
+            if (v == 1)
+            {
+                c.Ellipse(cx, gy - 3, 52, 9, H("#3E3834")); c.Ellipse(cx - 20, gy - 6, 18, 7, H("#56504A")); c.Ellipse(cx + 24, gy - 5, 16, 6, H("#4A4440"));
+            }
+            // Hauptturm (hinten)
+            Wall(c, cx - 7, gy - 66, 14, 44, ws);
+            Battlements(c, cx - 7, gy - 66, 14, bat, batD);
+            Spire(c, cx - 9, gy - 67, cx, gy - 84, cx + 9, gy - 67, main);
+            Window(c, cx - 1, gy - 58, 2, 3, true); Window(c, cx - 1, gy - 48, 2, 3, true);
+            Flag(c, cx, gy - 84 - (Style == 1 ? 2 : 0), 7);
+            // Palasthalle mit Seitentürmen (Mitte)
+            Wall(c, cx - 28, gy - 40, 56, 20, ws);
+            RoofArea(c, cx - 29, gy - 49, 58, 9, main, 0);
+            for (int x = cx - 24; x <= cx + 20; x += 8) Window(c, x, gy - 34, 2, 3, true);
+            foreach (int tx in new[] { cx - 38, cx + 28 })
+            {
+                Wall(c, tx, gy - 50, 10, 30, ws);
+                Battlements(c, tx, gy - 50, 10, bat, batD);
+                Spire(c, tx - 2, gy - 51, tx + 5, gy - 64, tx + 12, gy - 51, towers);
+                Window(c, tx + 4, gy - 42, 2, 2, true);
+            }
+            // vordere Ringmauer mit Tor und Ecktürmen
+            Wall(c, cx - 48, gy - 17, 96, 18, ws);
+            Battlements(c, cx - 48, gy - 17, 96, bat, batD);
+            c.Rect(cx - 6, gy - 12, 12, 13, K); c.Rect(cx - 5, gy - 13, 10, 1, K);
+            if (v == 0) c.Rect(cx - 4, gy - 10, 8, 11, H("#8E2A26"));                       // roter Teppich
+            else if (v == 1) { c.Rect(cx - 5, gy - 11, 10, 12, H("#2A1E1A")); for (int x = cx - 5; x <= cx + 4; x += 2) c.VLine(x, gy - 11, gy - 6, IronD); } // Fallgitter
+            else c.Rect(cx - 4, gy - 10, 8, 11, H("#3E6E54"));
+            foreach (int tx in new[] { cx - 54, cx + 42 })
+            {
+                Wall(c, tx, gy - 30, 12, 31, ws);
+                Battlements(c, tx, gy - 30, 12, bat, batD);
+                Spire(c, tx - 2, gy - 31, tx + 6, gy - 45, tx + 14, gy - 31, towers);
+                Flag(c, tx + 6, gy - 45 - (Style == 1 ? 2 : 0), 5);
+            }
+            // Schmuck je Reich
+            if (v == 0)
+            {
+                for (int x = cx - 40; x <= cx + 36; x += 19) { c.VLine(x, gy - 15, gy - 7, Px.Tint); c.VLine(x + 1, gy - 15, gy - 8, Px.TintDark); c.Set(x, gy - 16, Gold); }
+            }
+            else if (v == 1)
+            {
+                for (int x = cx - 44; x <= cx + 44; x += 11) { c.Set(x, gy - 19, Fire); c.Set(x, gy - 20, FireL); }
+                c.Ellipse(cx - 46, gy + 1, 8, 3, H("#3E3834")); c.Ellipse(cx + 46, gy + 1, 8, 3, H("#3E3834"));
+            }
+            else
+            {
+                // Gärten und Brunnen vor dem Tor
+                var leaf = H("#4E9A55"); var leafL = H("#6DBA6A");
+                foreach (int gx in new[] { cx - 32, cx - 20, cx + 18, cx + 30 })
+                {
+                    c.Ellipse(gx, gy - 3, 5, 3, leaf); c.Ellipse(gx - 1, gy - 4, 3, 2, leafL);
+                    c.Set(gx + 1, gy - 5, H("#F2E26A")); c.Set(gx - 2, gy - 3, H("#E86A8A"));
+                }
+                c.Ellipse(cx, gy + 2, 6, 2, LimeD); c.Ellipse(cx, gy + 1.5f, 4.5f, 1.4f, H("#58A8D8")); c.Set(cx, gy - 1, H("#B8E6F8"));
+            }
+            if (v == 1)
+            {
+                // Das Eiserne Reich: schwarzer Stein, eisengraue Kuppeln, rotes Licht
+                var iron = H("#4A5058");
+                c.Recolor(0, 0, c.W, c.H, p =>
+                {
+                    if (p.a == 0 || p.Equals(Px.Tint) || p.Equals(Px.TintDark) || p.Equals(Fire) || p.Equals(FireL) || p.Equals(Lit) || p.Equals(LitL)) return p;
+                    if (p.g > p.r + 15 && p.b > p.r) return p.Lerp(iron, 0.7f);                    // Kupfer -> Eisen
+                    if (p.r > 120 && p.g > 110 && p.b > 90) return p.Mul(0.55f).Lerp(new Px(60, 52, 58), 0.25f);  // Kalkstein -> dunkler Stein
+                    return p;
+                });
+                for (int x = cx - 24; x <= cx + 20; x += 8) c.Set(x, gy - 34, H("#E8442F"));   // rote Fenster
+            }
+        }
+
         static void Sternenschrein(PixelCanvas c, int cx, int gy)
         {
             var crystal = H("#9FD8F0"); var crystalL = H("#E8FAFF"); var crystalD = H("#5E9CC0"); var glow = H("#FFF6B0");
@@ -1479,6 +1561,10 @@ namespace PixelKingdom
             Add("p_hoard", 56, Drachenhort);
             Add("p_spring", 40, HeiligeQuelle);
             Add("p_shrine", 48, Sternenschrein);
+            // Prächtige Hauptstädte
+            Style = 0; Add("c_imperial", 120, (c, x, y) => GrandCity(c, x, y, 0));
+            Style = 1; Add("ic_citadel", 120, (c, x, y) => GrandCity(c, x, y, 1)); Add("ic_emerald", 120, (c, x, y) => GrandCity(c, x, y, 2));
+            Style = 0;
             Add("b_Werft", 48, Werft);
             Add("u_banner", 24, (c, x, y) =>
             {

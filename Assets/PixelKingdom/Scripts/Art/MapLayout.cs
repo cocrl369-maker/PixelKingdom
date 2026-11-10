@@ -97,7 +97,7 @@ namespace PixelKingdom
             var used = new HashSet<int>();
             int cx = s.x, cy = s.y;
             int walls = s.buildings[(int)BType.Mauer];
-            const int WR = 3;
+            int WR = s.grand > 0 ? 5 : 3;   // prächtige Hauptstädte haben einen weiteren Mauerring
 
             void Use(int x, int y) { if (WorldMap.In(x, y)) { int i = WorldMap.Idx(x, y); used.Add(i); occupied?.Add(i); } }
             // Kleine Dörfer: Gebäude mit Abstand (lockerer Dorfcharakter); Städte bleiben dicht bebaut
@@ -137,12 +137,14 @@ namespace PixelKingdom
             tiles.Sort((a, b) => a.d.CompareTo(b.d));
 
             // Zentrum (3x2 Kacheln)
-            for (int dy = 0; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++) Use(cx + dx, cy + dy);
+            if (s.grand > 0) { for (int dy = -1; dy <= 2; dy++) for (int dx = -3; dx <= 3; dx++) Use(cx + dx, cy + dy); }
+            else for (int dy = 0; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++) Use(cx + dx, cy + dy);
             if (WorldMap.In(cx, cy)) bld.Add(WorldMap.Idx(cx, cy));
             int lvl = CenterLevel(g, s);
             // Orte auf den großen Inseln (Eisenfels, Smaragdinsel) baut das Volk der Saelaner – eigener Baustil ("i"-Sprites)
             string pre = map.cont[WorldMap.Idx(cx, cy)] >= 4 ? "i" : "";
-            string center = s.buildings[(int)BType.Burg] > 0 && !s.isCapitalOfEmperor ? "b_Burg"
+            string center = s.grand == 1 ? "c_imperial" : s.grand == 2 ? "c_citadel" : s.grand == 3 ? "c_emerald"
+                : s.buildings[(int)BType.Burg] > 0 && !s.isCapitalOfEmperor ? "b_Burg"
                 : lvl >= 4 ? "c_palace" : lvl >= 2 ? "c_keep" : lvl == 1 ? "c_rathaus" : "c_dorf";
             res.Add(new Placed(pre + center, cx + 0.5f, cy + 0.25f, false, true));
 

@@ -43,9 +43,11 @@ namespace PixelKingdom
             foreach (var s in S.settlements)
             {
                 void Mark(int x, int y) { if (WorldMap.In(x, y)) tileBuilding[WorldMap.Idx(x, y)] = s.id; }
-                for (int dy = 0; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++) Mark(s.x + dx, s.y + dy);
+                if (s.grand > 0) { for (int dy = -1; dy <= 2; dy++) for (int dx = -3; dx <= 3; dx++) Mark(s.x + dx, s.y + dy); }
+                else for (int dy = 0; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++) Mark(s.x + dx, s.y + dy);
+                int wr = s.grand > 0 ? 5 : 3;
                 if (s.buildings[(int)BType.Mauer] > 0)
-                    for (int k = -3; k <= 3; k++) { Mark(s.x + k, s.y - 3); Mark(s.x + k, s.y + 3); Mark(s.x - 3, s.y + k); Mark(s.x + 3, s.y + k); }
+                    for (int k = -wr; k <= wr; k++) { Mark(s.x + k, s.y - wr); Mark(s.x + k, s.y + wr); Mark(s.x - wr, s.y + k); Mark(s.x + wr, s.y + k); }
                 foreach (var b in s.placed) Mark(b.x, b.y);
                 foreach (var q in s.queue) if (q.kind == 0 && q.x >= 0) Mark(q.x, q.y);
             }
