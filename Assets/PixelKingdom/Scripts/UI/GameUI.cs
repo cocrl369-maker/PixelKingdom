@@ -213,8 +213,9 @@ namespace PixelKingdom
 
             // Einmal pro Bild: Treffer-Durchlauf. Die oberste Ebene (Fenster, Dialoge, Ereignisse) bekommt den
             // Klick zuerst; nur wenn dort nichts liegt, erreicht er die Leisten und Panels darunter.
-            if (et == EventType.Layout && hitFrame != Time.frameCount)
+            if (et == EventType.Layout && hitSeq != pointerSeq)
             {
+                hitSeq = pointerSeq;
                 hitFrame = Time.frameCount;
                 hitPass = true;
                 groupOffset = Vector2.zero; groupStack.Clear();

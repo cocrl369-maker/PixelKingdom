@@ -21,6 +21,7 @@ namespace PixelKingdom
         float lastDeviceInput = -100f;        // wann zuletzt Maus/Finger direkt gelesen wurden
         bool clickFromGui; float clickTime;   // Ersatz-Klick aus Unitys GUI-Ereignissen
         int hitFrame = -1;
+        int pointerSeq, hitSeq = -1;          // Treffer-Durchlauf genau einmal nach jeder Zeiger-Aktualisierung
         // Am PC: Maus direkt aus Unitys GUI-Ereignissen (gleiche Koordinaten wie die gezeichneten Knöpfe)
         Vector2 gPtr, gPressPos, gReleasePos;
         bool gDown, gPendPress, gPendRelease, gSeen, gDragged;
@@ -66,8 +67,11 @@ namespace PixelKingdom
 
         void UpdatePointer()
         {
-            // Ein Ersatz-Klick aus den GUI-Ereignissen bleibt kurz erhalten, bis der Treffer-Durchlauf ihn verarbeitet
-            bool keepGuiClick = clickPending && clickFromGui && Time.unscaledTime - clickTime < 0.3f;
+            // Ein Klick, den der Treffer-Durchlauf noch nicht gesehen hat, bleibt erhalten – unabhängig davon,
+            // in welcher Reihenfolge Unity Update und OnGUI aufruft.
+            bool unseen = clickPending && hitSeq != pointerSeq && Time.unscaledTime - clickTime < 0.5f;
+            pointerSeq++;
+            bool keepGuiClick = unseen || (clickPending && clickFromGui && Time.unscaledTime - clickTime < 0.3f);
             if (!keepGuiClick) { clickPending = false; clickFromGui = false; }
             clickUsed = false; dragDelta = Vector2.zero;
             wheel = PKInput.UsingTouch ? 0f : PKInput.Scroll;
@@ -81,7 +85,6 @@ namespace PixelKingdom
                 gWheel = 0f;
                 multiTouch = false;
                 lastDeviceInput = Time.unscaledTime;
-                if (keepGuiClick) { clickPending = false; clickFromGui = false; }
                 ptrPrev = ptr;
                 if (pressed)
                 {
@@ -93,7 +96,7 @@ namespace PixelKingdom
                 if (ptrDown && dragging) dragDelta = ptr - ptrPrev;
                 if (released)
                 {
-                    if (!gDragged) { clickPending = true; clickPos = gReleasePos; DbgClicks++; }
+                    if (!gDragged) { clickPending = true; clickPos = gReleasePos; clickTime = Time.unscaledTime; DbgClicks++; }
                     ptrDown = false;
                 }
                 if (!down && !released) ptrDown = false;
@@ -130,7 +133,7 @@ namespace PixelKingdom
             if (ptrDown && dragging) dragDelta = ptr - ptrPrev;
             if (released)
             {
-                if (ptrDown && !dragging && !multiTouch) { clickPending = true; clickPos = ptr; }
+                if (ptrDown && !dragging && !multiTouch) { clickPending = true; clickPos = ptr; clickTime = Time.unscaledTime; }
                 ptrDown = false;
             }
             if (!down && !released) ptrDown = false;
