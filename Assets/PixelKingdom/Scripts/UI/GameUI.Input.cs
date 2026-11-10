@@ -23,7 +23,8 @@ namespace PixelKingdom
         int hitFrame = -1;
         // Am PC: Maus direkt aus Unitys GUI-Ereignissen (gleiche Koordinaten wie die gezeichneten Knöpfe)
         Vector2 gPtr, gPressPos, gReleasePos;
-        bool gDown, gPendPress, gPendRelease, gSeen;
+        bool gDown, gPendPress, gPendRelease, gSeen, gDragged;
+        public int DbgDowns, DbgUps, DbgClicks, DbgHits; public Vector2 DbgLast;
         float gWheel;
 
         /// <summary>Am PC mit Maus: Oberfläche nutzt die GUI-Ereignisse (sobald welche angekommen sind).</summary>
@@ -36,14 +37,24 @@ namespace PixelKingdom
             {
                 case EventType.MouseDown:
                     gSeen = true;
-                    if (e.button == 0) { gPendPress = true; gPressPos = e.mousePosition; gDown = true; }
+                    if (e.button == 0) { gPendPress = true; gPressPos = e.mousePosition; gDown = true; gDragged = false; DbgDowns++; }
                     gPtr = e.mousePosition; break;
                 case EventType.MouseUp:
                     gSeen = true;
-                    if (e.button == 0) { if (gDown || gPendPress) { gPendRelease = true; gReleasePos = e.mousePosition; } gDown = false; }
+                    if (e.button == 0)
+                    {
+                        // Klick = Loslassen nahe der Druckstelle. Bewertet nur mit den beiden Klick-Ereignissen selbst.
+                        if ((e.mousePosition - gPressPos).magnitude > DragThresholdVirtual * 2f) gDragged = true;
+                        gPendRelease = true; gReleasePos = e.mousePosition; gDown = false; DbgUps++; DbgLast = e.mousePosition;
+                    }
                     gPtr = e.mousePosition; break;
-                case EventType.MouseDrag: case EventType.MouseMove: case EventType.Repaint: case EventType.Layout:
-                    gPtr = e.mousePosition; break;
+                case EventType.MouseDrag:
+                    gPtr = e.mousePosition;
+                    if (gDown && (gPtr - gPressPos).magnitude > DragThresholdVirtual) gDragged = true;
+                    break;
+                case EventType.MouseMove: case EventType.Repaint:
+                    if (!gDown) gPtr = e.mousePosition;   // nur fürs Hervorheben; während gedrückt zählen nur echte Mausereignisse
+                    break;
                 case EventType.ScrollWheel:
                     gSeen = true; gWheel += -e.delta.y / 3f; gPtr = e.mousePosition; break;
             }
@@ -78,11 +89,11 @@ namespace PixelKingdom
                     if (IsOverVirtual(ptr) || IsBlocking) LastUIPress = Time.unscaledTime;
                 }
                 ptr = released ? gReleasePos : gPtr;
-                if (ptrDown && !dragging && (ptr - pressStart).magnitude > DragThresholdVirtual) dragging = true;
+                dragging = gDragged;
                 if (ptrDown && dragging) dragDelta = ptr - ptrPrev;
                 if (released)
                 {
-                    if (ptrDown && !dragging) { clickPending = true; clickPos = ptr; }
+                    if (!gDragged) { clickPending = true; clickPos = gReleasePos; DbgClicks++; }
                     ptrDown = false;
                 }
                 if (!down && !released) ptrDown = false;
@@ -168,6 +179,7 @@ namespace PixelKingdom
             if (!hitPass || !clickPending || clickUsed || button != 0) return false;
             if (!r.Contains(Local(clickPos))) return false;
             clickUsed = true;
+            DbgHits++;
             LastUIPress = Time.unscaledTime;
             AudioManager.Click();
             return true;
