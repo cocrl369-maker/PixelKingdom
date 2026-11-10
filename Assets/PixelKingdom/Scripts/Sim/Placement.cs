@@ -270,3 +270,69 @@ namespace PixelKingdom
         }
     }
 }
+
+namespace PixelKingdom
+{
+    /// <summary>Gebäude abreißen und verlegen.</summary>
+    public partial class Game
+    {
+        /// <summary>Welche eigene Siedlung besitzt ein Gebäude auf diesem Feld?</summary>
+        public SettlementData OwnBuildingAt(int x, int y, out BuildingPos pos)
+        {
+            pos = null;
+            foreach (var s in SettlementsOf(PlayerId))
+                foreach (var b in s.placed)
+                    if (b.x == x && b.y == y) { pos = b; return s; }
+            return null;
+        }
+
+        /// <summary>Rückerstattung beim Abriss: 30 % der Grundkosten.</summary>
+        public float[] DemolishRefund(BType t)
+        {
+            var c = (float[])Buildings.Get(t).Cost.Clone();
+            for (int r = 0; r < c.Length; r++) c[r] = (float)Math.Floor(c[r] * 0.3f);
+            return c;
+        }
+
+        /// <summary>Kosten fürs Verlegen: 25 % der Grundkosten.</summary>
+        public float[] RelocateCost(BType t)
+        {
+            var c = (float[])Buildings.Get(t).Cost.Clone();
+            for (int r = 0; r < c.Length; r++) c[r] = (float)Math.Ceiling(c[r] * 0.25f);
+            return c;
+        }
+
+        public void Demolish(SettlementData s, int x, int y)
+        {
+            var b = s.placed.Find(q => q.x == x && q.y == y);
+            if (b == null) return;
+            var refund = DemolishRefund((BType)b.type);
+            var f = F(s.faction);
+            for (int r = 0; r < ResInfo.Count; r++) f.res[r] += refund[r];
+            RemoveBuildingAt(s, x, y);
+            if (f.isPlayer) Notify(Loc.F("{0} in {1} abgerissen.", Buildings.Get(b.type).Name, s.name), 0);
+        }
+
+        /// <summary>Darf das Gebäude an einen neuen Platz? (Der alte Platz zählt dabei als frei.)</summary>
+        public bool CanRelocate(SettlementData s, BuildingPos b, int nx, int ny, out string why)
+        {
+            if (!CanAfford(F(s.faction), RelocateCost((BType)b.type))) { why = Loc.T("Nicht genug Ressourcen"); return false; }
+            int old = tileBuilding != null && WorldMap.In(b.x, b.y) ? tileBuilding[WorldMap.Idx(b.x, b.y)] : -1;
+            if (tileBuilding != null) tileBuilding[WorldMap.Idx(b.x, b.y)] = -1;
+            bool ok = CanPlace(s, (BType)b.type, nx, ny, out why);
+            if (tileBuilding != null) tileBuilding[WorldMap.Idx(b.x, b.y)] = old;
+            return ok;
+        }
+
+        public bool Relocate(SettlementData s, BuildingPos b, int nx, int ny)
+        {
+            if (!CanRelocate(s, b, nx, ny, out _)) return false;
+            Pay(F(s.faction), RelocateCost((BType)b.type));
+            b.x = nx; b.y = ny;
+            SettlementsDirty = true;
+            terrainCounts.Remove(s.id);
+            RebuildOccupancy();
+            return true;
+        }
+    }
+}

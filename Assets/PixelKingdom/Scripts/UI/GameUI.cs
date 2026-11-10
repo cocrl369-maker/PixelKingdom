@@ -10,7 +10,7 @@ namespace PixelKingdom
     /// </summary>
     public partial class GameUI : MonoBehaviour
     {
-        public enum Window { None, Menu, Diplomacy, Realm, Log, Help, ConfirmWar, Armies }
+        public enum Window { None, Menu, Diplomacy, Realm, Log, Help, ConfirmWar, Armies, Saves, Attention }
 
         GameManager gm;
         Game G => gm.Game;
@@ -261,6 +261,7 @@ namespace PixelKingdom
             if (gm.InMenu)
             {
                 if (Open == Window.Help) DrawHelp();
+                if (Open == Window.Saves) DrawSaves();
                 DrawPinnedTip();
                 return;
             }
@@ -802,7 +803,7 @@ namespace PixelKingdom
                     Text(lr.x + 3, lr.y + 1, t, poi.type == 1 ? Palette.UIGood : Palette.UIText);
                 }
             }
-            if (gm.CurrentMode == GameManager.Mode.PlaceBuilding) DrawPlacement(zoom);
+            if (gm.CurrentMode == GameManager.Mode.PlaceBuilding || gm.CurrentMode == GameManager.Mode.MoveBuilding) DrawPlacement(zoom);
             if (gm.OrderPath != null) DrawOrderPath(zoom);
             // Mauszeiger-Kachel
             if (gm.HoverValid && (PKInput.UsingTouch || !MouseOverUI))
@@ -1014,6 +1015,11 @@ namespace PixelKingdom
                 hint = (PKInput.UsingTouch ? Loc.T("Tippt zweimal auf ein Feld für: ") : Loc.T("Linksklick auf ein Feld für: ")) + d.Name
                      + (PKInput.UsingTouch ? Loc.T("  (Zurück: abbrechen)") : Loc.T("  (Esc/Rechtsklick: abbrechen, Shift: mehrere)"))
                      + Loc.T("\nGrün = mehr Ertrag als üblich, Gelb = weniger. Die Angabe vergleicht mit einem normalen ") + d.Name + ".";
+            }
+            else if (gm.CurrentMode == GameManager.Mode.MoveBuilding)
+            {
+                hint = (PKInput.UsingTouch ? Loc.T("Tippt zweimal auf den neuen Platz für: ") : Loc.T("Linksklick auf den neuen Platz für: ")) + Buildings.Get(gm.PlaceType).Name
+                     + (PKInput.UsingTouch ? Loc.T("  (Zurück: abbrechen)") : Loc.T("  (Esc/Rechtsklick: abbrechen)"));
             }
             else if (gm.CurrentMode == GameManager.Mode.PlaceSettlers)
             {

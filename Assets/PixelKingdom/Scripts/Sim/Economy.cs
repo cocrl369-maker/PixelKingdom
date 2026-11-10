@@ -442,6 +442,45 @@ namespace PixelKingdom
             return true;
         }
 
+        // ------------------------------------------------------------------
+        //  Gold ausgeben: Bau beschleunigen, Söldner anheuern
+        // ------------------------------------------------------------------
+        public int SpeedUpCost(SettlementData s) => s.queue.Count == 0 ? 0 : (int)Math.Ceiling(s.queue[0].daysLeft * 10f) + 10;
+
+        public bool SpeedUp(SettlementData s)
+        {
+            if (s.queue.Count == 0) return false;
+            var f = F(s.faction);
+            int cost = SpeedUpCost(s);
+            if (f.res[(int)Res.Gold] < cost) return false;
+            f.res[(int)Res.Gold] -= cost;
+            s.queue[0].daysLeft = 0.001f;   // wird am nächsten Morgen fertig
+            return true;
+        }
+
+        public const int MercCount = 10;
+        public int MercCost => 110 + 15 * Math.Min(20, S.mercsHired);
+
+        public bool CanHireMercs(SettlementData s, out string why)
+        {
+            why = null;
+            var f = F(s.faction);
+            if (f.rank < 1) { why = Loc.T("Erst ab Städtegemeinde"); return false; }
+            if (GarrisonFree(s) < MercCount) { why = Loc.F("Garnison voll ({0}/{1}) – baut eine Kaserne oder stellt ein Heer auf", GarrisonCount(s) + GarrisonQueued(s), GarrisonCap(s)); return false; }
+            if (f.res[(int)Res.Gold] < MercCost) { why = Loc.T("Nicht genug Ressourcen"); return false; }
+            return true;
+        }
+
+        /// <summary>Söldner kosten nur Gold (keine Bewohner) und stehen sofort bereit – werden aber jedes Mal teurer.</summary>
+        public void HireMercs(SettlementData s)
+        {
+            if (!CanHireMercs(s, out _)) return;
+            F(s.faction).res[(int)Res.Gold] -= MercCost;
+            s.garrison[(int)UType.Speer] += MercCount;
+            S.mercsHired++;
+            Notify(Loc.F("{0} Söldner (Speerträger) stehen in {1} bereit.", MercCount, s.name), 1);
+        }
+
         public bool CanTrain(SettlementData s, UType u, int count, out string why)
         {
             var f = F(s.faction); var d = Units.Get(u);

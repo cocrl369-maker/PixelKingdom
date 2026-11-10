@@ -35,7 +35,9 @@ namespace PixelKingdom
         public const float SecondsPerDay = 5f;
 
         public int SelSettlement = -1, SelArmy = -1, SelPoi = -1;
-        public enum Mode { None, PlaceSettlers, TargetArmy, PlaceBuilding }
+        public enum Mode { None, PlaceSettlers, TargetArmy, PlaceBuilding, MoveBuilding }
+        /// <summary>Ausgewähltes Gebäude (Siedlung + Feld), -1 = keins.</summary>
+        public int SelBuildingSet = -1, SelBuildingX, SelBuildingY;
         public Mode CurrentMode;
         public int ModeSource = -1;
         public BType PlaceType;
@@ -90,12 +92,25 @@ namespace PixelKingdom
         float hoverTimer;
         public bool RaidMode;   // Touch: Angriffe als Überfall
 
+        /// <summary>Energiesparen: weniger Bilder pro Sekunde (schont den Akku auf Tablet und Handy).</summary>
+        public static bool EnergySave
+        {
+            get => PlayerPrefs.GetInt("pk_energy", Application.isMobilePlatform ? 1 : 0) == 1;
+            set { PlayerPrefs.SetInt("pk_energy", value ? 1 : 0); ApplyEnergySave(); }
+        }
+
+        public static void ApplyEnergySave()
+        {
+            QualitySettings.vSyncCount = 0;
+            Application.targetFrameRate = EnergySave ? 30 : 60;
+        }
+
         void Awake()
         {
             if (I != null && I != this) { Destroy(gameObject); return; }
             I = this;
             DontDestroyOnLoad(gameObject);
-            Application.targetFrameRate = 60;
+            ApplyEnergySave();
             touch = new TouchControls(this);
             if (Application.isMobilePlatform)
             {
@@ -188,6 +203,19 @@ namespace PixelKingdom
         // ------------------------------------------------------------------
         //  Menüaktionen
         // ------------------------------------------------------------------
+        public void NewGame(int slot)
+        {
+            SaveSystem.Slot = slot;
+            SaveSystem.DeleteSlot(slot);
+            NewGame();
+        }
+
+        public void ContinueGame(int slot)
+        {
+            SaveSystem.Slot = slot;
+            ContinueGame();
+        }
+
         public void NewGame()
         {
             // Die Welt aus dem Menü-Hintergrund wird zur eigenen Welt
@@ -310,7 +338,7 @@ namespace PixelKingdom
                 else if (OrderMenu != null) CloseOrderMenu();
                 else if (CurrentMode == Mode.PlaceBuilding) EndPlace();
                 else if (CurrentMode != Mode.None) CurrentMode = Mode.None;
-                else if (SelArmy >= 0 || SelSettlement >= 0) { SelArmy = -1; SelSettlement = -1; }
+                else if (SelArmy >= 0 || SelSettlement >= 0 || SelBuildingSet >= 0) { SelArmy = -1; SelSettlement = -1; SelBuildingSet = -1; }
                 else UI.OpenWindow(GameUI.Window.Menu);
             }
             if (PKInput.KeyDown(PKKey.G)) UI.ToggleWindow(GameUI.Window.Diplomacy);
@@ -338,6 +366,7 @@ namespace PixelKingdom
 
         public void SelectSettlement(SettlementData s, bool focus = true)
         {
+            SelBuildingSet = -1;
             SelSettlement = s.id; SelArmy = -1; SelPoi = -1;
             if (focus) CamCtrl.FocusOn(new Vector2(s.x + 0.5f, s.y + 0.5f));
         }
@@ -345,6 +374,7 @@ namespace PixelKingdom
         public void SelectArmy(ArmyData a, bool focus = false)
         {
             CloseOrderMenu();
+            SelBuildingSet = -1;
             SelArmy = a.id; SelSettlement = -1; SelPoi = -1;
             if (focus) CamCtrl.FocusOn(new Vector2(a.x, a.y));
         }
@@ -402,6 +432,7 @@ namespace PixelKingdom
             var sel = Game.A(SelArmy);
             if (CurrentMode == Mode.TargetArmy) { CurrentMode = Mode.None; if (sel != null) RightClick(); return; }
             if (CurrentMode == Mode.PlaceBuilding) { TryPlace(); return; }
+            if (CurrentMode == Mode.MoveBuilding) { TryMove(); return; }
             if (CurrentMode == Mode.None && sel != null && sel.faction == Game.PlayerId)
             {
                 // Tippen auf ein anderes eigenes Heer wählt dieses; Tippen auf das gewählte Heer wählt ab
@@ -442,6 +473,7 @@ namespace PixelKingdom
                 return;
             }
             if (CurrentMode == Mode.PlaceBuilding) { TryPlace(); return; }
+            if (CurrentMode == Mode.MoveBuilding) { TryMove(); return; }
             if (CurrentMode == Mode.PlaceSettlers)
             {
                 var src = g.St(ModeSource);
@@ -465,9 +497,45 @@ namespace PixelKingdom
             var poi = g.PoiNear(HoverPoint.x, HoverPoint.y, 0.9f);
             if (poi != null && g.IsDiscovered(poi.x, poi.y) && SettlementNear(HoverPoint.x, HoverPoint.y, 1.2f) == null)
             { SelPoi = poi.id; SelArmy = -1; SelSettlement = -1; return; }
+            // Eigenes Gebäude angeklickt? (nicht das Ortszentrum)
+            var bs = g.OwnBuildingAt(HoverX, HoverY, out var bpos);
+            if (bs != null && !(Mathf.Abs(HoverX - bs.x) <= 1 && HoverY >= bs.y && HoverY <= bs.y + 1))
+            {
+                SelBuildingSet = bs.id; SelBuildingX = bpos.x; SelBuildingY = bpos.y;
+                SelArmy = -1; SelSettlement = -1; SelPoi = -1;
+                return;
+            }
             var s = SettlementNear(HoverPoint.x, HoverPoint.y, 1.4f);
             if (s != null && g.IsDiscovered(s.x, s.y)) { SelectSettlement(s, false); return; }
-            SelArmy = -1; SelSettlement = -1; SelPoi = -1;
+            SelArmy = -1; SelSettlement = -1; SelPoi = -1; SelBuildingSet = -1;
+        }
+
+        /// <summary>Gebäude verlegen: neuen Platz wählen.</summary>
+        public void BeginMove()
+        {
+            var s = Game.St(SelBuildingSet);
+            if (s == null) return;
+            CurrentMode = Mode.MoveBuilding; ModeSource = s.id;
+            var b = s.placed.Find(q => q.x == SelBuildingX && q.y == SelBuildingY);
+            if (b != null) PlaceType = (BType)b.type;
+            placeTapX = -1;
+        }
+
+        void TryMove()
+        {
+            var g = Game;
+            var s = g.St(ModeSource);
+            var b = s?.placed.Find(q => q.x == SelBuildingX && q.y == SelBuildingY);
+            if (b == null) { CurrentMode = Mode.None; return; }
+            if (PKInput.UsingTouch && (placeTapX != HoverX || placeTapY != HoverY)) { placeTapX = HoverX; placeTapY = HoverY; return; }
+            placeTapX = -1;
+            if (!g.CanRelocate(s, b, HoverX, HoverY, out string why)) { UI.Toast(Loc.T("Hier nicht: ") + why, 2); return; }
+            if (g.Relocate(s, b, HoverX, HoverY))
+            {
+                UI.Toast(Loc.F("{0} wurde verlegt.", Buildings.Get(b.type).Name), 1);
+                SelBuildingX = b.x; SelBuildingY = b.y;
+            }
+            CurrentMode = Mode.None;
         }
 
         public SettlementData SettlementNear(float x, float z, float r)
@@ -543,6 +611,7 @@ namespace PixelKingdom
         void RightClick()
         {
             if (CurrentMode == Mode.PlaceBuilding) { EndPlace(); return; }
+            if (CurrentMode == Mode.MoveBuilding) { CurrentMode = Mode.None; return; }
             var g = Game;
             var a = g.A(SelArmy);
             if (a == null || a.faction != g.PlayerId) return;

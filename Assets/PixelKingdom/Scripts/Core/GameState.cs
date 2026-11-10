@@ -41,6 +41,7 @@ namespace PixelKingdom
         public float researchLeft;
         public int relics;
         public int runesSolved, hoardX = -1, hoardY = -1;   // Steintafeln & Drachenhort
+        public int mercsHired;
         public int nextBorderDay = 120, nextNomadDay = 60;
         public int merchantShips, warShips;      // Flotte des Spielers
         public int nextPirateDay = 200;

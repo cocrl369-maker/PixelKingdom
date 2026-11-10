@@ -340,6 +340,48 @@ namespace PixelKingdom
             }
         }
 
+        // ==================================================================
+        //  Spielstände (3 Plätze)
+        // ==================================================================
+        int confirmSlot = -1; string confirmWhat;
+
+        void DrawSaves()
+        {
+            var c = WindowFrame(Loc.T("Spielstände"), 380, 214, true);
+            float y = c.y;
+            for (int n = 1; n <= SaveSystem.SlotCount; n++)
+            {
+                var row = new Rect(c.x, y, c.width, 54);
+                Fill(row, n == SaveSystem.Slot ? Palette.UIPanelLight : Palette.UIPanelDark);
+                Text(row.x + 6, row.y + 5, Loc.F("__Platz {0}__", n) + (n == SaveSystem.Slot ? Loc.T("  (zuletzt gespielt)") : ""), Palette.UISand);
+                string info = SaveSystem.SlotInfo(n);
+                if (info == null) Text(row.x + 6, row.y + 17, Loc.T("leer"), Palette.UITextDim);
+                else
+                {
+                    var lines = info.Split('\n');
+                    Text(row.x + 6, row.y + 17, lines[0].Length > 52 ? lines[0].Substring(0, 51) + "." : lines[0], Palette.UIText);
+                    if (lines.Length > 1) Text(row.x + 6, row.y + 28, lines[1], Palette.UITextDim);
+                }
+                float bx = row.xMax - 3 * 62 - 4, by = row.yMax - 18;
+                bool has = info != null;
+                if (Button(new Rect(bx, by, 60, 14), Loc.T("Laden"), has, null, "play")) { Open = Window.None; gm.ContinueGame(n); return; }
+                bool cNew = confirmSlot == n && confirmWhat == "new";
+                if (Button(new Rect(bx + 62, by, 60, 14), cNew ? Loc.T("Sicher?") : Loc.T("Neu"), true, has ? Loc.T("Ein neues Spiel auf diesem Platz – der alte Stand wird überschrieben.") : Loc.T("Ein neues Spiel auf diesem Platz."), "flag", cNew))
+                {
+                    if (has && !cNew) { confirmSlot = n; confirmWhat = "new"; }
+                    else { confirmSlot = -1; Open = Window.None; gm.NewGame(n); return; }
+                }
+                bool cDel = confirmSlot == n && confirmWhat == "del";
+                if (Button(new Rect(bx + 124, by, 60, 14), cDel ? Loc.T("Sicher?") : Loc.T("Löschen"), has, null, "close", cDel))
+                {
+                    if (!cDel) { confirmSlot = n; confirmWhat = "del"; }
+                    else { confirmSlot = -1; SaveSystem.DeleteSlot(n); }
+                }
+                y += 58;
+            }
+            Text(c.x, c.yMax - 10, Loc.T("Ältere Spielstände aus früheren Versionen werden als Sicherung beiseitegelegt."), Palette.UITextDim);
+        }
+
         void DrawEdicts(Rect c)
         {
             float x = c.x, y = c.y;
@@ -430,7 +472,7 @@ namespace PixelKingdom
         // ==================================================================
         void DrawMenu()
         {
-            var c = WindowFrame(Loc.T("Menü"), 230, 276, true);
+            var c = WindowFrame(Loc.T("Menü"), 230, 298, true);
             float y = c.y, bh = 16, gap = 4;
             if (Button(new Rect(c.x, y, c.width, bh), Loc.T("Weiterspielen"), true, null, "play")) Open = Window.None; y += bh + gap;
             if (Button(new Rect(c.x, y, c.width, bh), Loc.T("Speichern (F5)"), true, null, "save")) gm.SaveNow(); y += bh + gap + 4;
@@ -441,6 +483,9 @@ namespace PixelKingdom
             y += bh + gap;
             if (Button(new Rect(c.x, y, c.width, bh), Loc.T("Problem-Symbole: ") + (ProblemsOn ? Loc.T("An") : Loc.T("Aus")), true, Loc.T("Zeichen über Gebäuden, wenn etwas nicht gut läuft (keine Arbeiter, Hunger, kein Holz ...)."), "fire", ProblemsOn))
                 ProblemsOn = !ProblemsOn;
+            y += bh + gap;
+            if (Button(new Rect(c.x, y, c.width, bh), Loc.T("Energiesparen: ") + (GameManager.EnergySave ? Loc.T("An") : Loc.T("Aus")), true, Loc.T("30 statt 60 Bilder pro Sekunde – schont den Akku."), "sun", GameManager.EnergySave))
+                GameManager.EnergySave = !GameManager.EnergySave;
             y += bh + gap;
             if (Button(new Rect(c.x, y, c.width, bh), "Sprache / Language: " + (Loc.English ? "English" : "Deutsch"), true, null, "scroll"))
                 SetLanguage(Loc.English ? Loc.Lang.De : Loc.Lang.En);
@@ -566,11 +611,8 @@ namespace PixelKingdom
                 if (Button(new Rect(bx, by, bw, bh), Loc.T("Fortsetzen"), true, Loc.T("Weiterspielen. Die Zeit seit dem letzten Spiel wird nachgeholt."), "play", false, bs)) gm.ContinueGame();
                 by += bh + gap;
             }
-            if (Button(new Rect(bx, by, bw, bh), confirmNew ? Loc.T("Wirklich neu?") : Loc.T("Neues Spiel"), true, confirmNew ? Loc.T("Der alte Spielstand wird überschrieben.") : null, "flag", confirmNew, bs))
-            {
-                if (hasSave && !confirmNew) confirmNew = true;
-                else { confirmNew = false; gm.NewGame(); }
-            }
+            if (Button(new Rect(bx, by, bw, bh), Loc.T("Spielstände"), true, Loc.T("Drei Speicherplätze: laden, neu beginnen oder löschen."), "save", Open == Window.Saves, bs))
+                Open = Open == Window.Saves ? Window.None : Window.Saves;
             by += bh + gap;
 
             if (Button(new Rect(bx, by, bw, bh), Loc.T("Hilfe"), true, null, "scroll", false, bs)) { Open = Open == Window.Help ? Window.None : Window.Help; }

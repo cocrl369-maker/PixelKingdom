@@ -20,7 +20,50 @@ namespace PixelKingdom
             var a = G.A(gm.SelArmy);
             if (a != null) { DrawArmy(a); return; }
             var poi = G.Poi(gm.SelPoi);
-            if (poi != null) DrawPoi(poi);
+            if (poi != null) { DrawPoi(poi); return; }
+            var bs = G.St(gm.SelBuildingSet);
+            if (bs != null && bs.faction == G.PlayerId) DrawBuilding(bs);
+        }
+
+        // ------------------------------------------------------------------
+        //  Ein einzelnes Gebäude: Ertrag, Probleme, Abreißen, Verlegen
+        // ------------------------------------------------------------------
+        bool confirmDemolish;
+
+        void DrawBuilding(SettlementData s)
+        {
+            var b = s.placed.Find(q => q.x == gm.SelBuildingX && q.y == gm.SelBuildingY);
+            if (b == null) { gm.SelBuildingSet = -1; return; }
+            var t = (BType)b.type; var d = Buildings.Get(t);
+            var r = BottomPanel(400, 84);
+            Panel(r);
+            if (CloseButton(r)) { gm.SelBuildingSet = -1; confirmDemolish = false; }
+            string spr = t == BType.Wohnhaus ? "b_Wohnhaus0" : "b_" + t;
+            SpriteLib.DrawUI(new Rect(r.x + 6, r.y + 6, 44, 40), spr);
+            float x = r.x + 56, y = r.y + 7;
+            Text(x, y, "__" + d.Name + "__", Palette.UIText);
+            Text(x + PixelFont.Width(d.Name) + 8, y, "- " + s.name, Palette.UITextDim);
+            y += 12;
+            float site = G.SiteBonus(t, b.x, b.y), way = G.DistanceFactor(s, b.x, b.y);
+            string fn = Game.SiteFactorName(t);
+            if (fn != null || way < 0.999f) Text(x, y, Loc.F("Ertrag hier: {0} ({1})", Game.Rating(site * way), Game.Diff(site * way)), Palette.UIGood);
+            else Text(x, y, d.Desc.Length > 60 ? d.Desc.Substring(0, 58) + "." : d.Desc, Palette.UITextDim);
+            y += 11;
+            foreach (var p in G.Problems)
+                if (Mathf.Abs(p.X - (b.x + 0.5f)) < 0.1f && Mathf.Abs(p.Y - (b.y + 1.5f)) < 0.1f)
+                {
+                    Text(x, y, Game.ProblemText(p).Split('\n')[0].Replace("__", ""), Palette.UIBad);
+                    y += 11; break;
+                }
+            float bx = r.xMax - 8 - 2 * 104, by = r.yMax - 19;
+            var refund = G.DemolishRefund(t); var moveCost = G.RelocateCost(t);
+            if (Button(new Rect(bx, by, 100, 14), Loc.T("Verlegen"), G.CanAfford(G.Player, moveCost), Loc.T("__Verlegen__\nAn einen neuen Platz versetzen.\n__Kosten__: ") + CostLong(moveCost, 1), "arrow"))
+            { confirmDemolish = false; gm.BeginMove(); }
+            if (Button(new Rect(bx + 104, by, 100, 14), confirmDemolish ? Loc.T("Sicher?") : Loc.T("Abreißen"), true, Loc.T("__Abreißen__\nDas Gebäude verschwindet.\n__Zurück__: ") + CostLong(refund, 1), "close", confirmDemolish))
+            {
+                if (!confirmDemolish) confirmDemolish = true;
+                else { confirmDemolish = false; G.Demolish(s, b.x, b.y); gm.SelBuildingSet = -1; }
+            }
         }
 
         void DrawPoi(PoiData p)
@@ -146,11 +189,16 @@ namespace PixelKingdom
             for (int i = 0; i < s.queue.Count && i < 6; i++)
             {
                 var q = s.queue[i];
-                string name = q.kind == 0 ? Buildings.Get(q.type).Name : q.count + " " + Units.Get(q.type).Plural;
-                string icon = q.kind == 0 ? Buildings.Get(q.type).Icon : Units.Get(q.type).Icon;
+                string name = q.kind == 0 ? Buildings.Get(q.type).Name : q.kind == 2 ? (q.type == 1 ? Loc.T("Kriegsschiff") : Loc.T("Handelsschiff")) : q.count + " " + Units.Get(q.type).Plural;
+                string icon = q.kind == 0 ? Buildings.Get(q.type).Icon : q.kind == 2 ? "anchor" : Units.Get(q.type).Icon;
                 Icon(new Rect(qx, qy, 12, 12), icon, Palette.UIText);
                 Text(qx + 15, qy + 1, name);
-                if (i == 0) Bar(new Rect(qx + 15, qy + 10, 110, 2), 1f - q.daysLeft / Mathf.Max(0.01f, q.total), Palette.UIGood);
+                if (i == 0)
+                {
+                    Bar(new Rect(qx + 15, qy + 10, 108, 2), 1f - q.daysLeft / Mathf.Max(0.01f, q.total), Palette.UIGood);
+                    int sc = G.SpeedUpCost(s);
+                    if (Button(new Rect(qx + 126, qy, 12, 11), "", G.Player.res[(int)Res.Gold] >= sc, Loc.F("__Beschleunigen__\nMehr Arbeiter und Fuhrwerke: morgen fertig.\n__Kosten__: {0} Gold", sc), "fast", false, 1, true)) G.SpeedUp(s);
+                }
                 else Text(qx + 130, qy + 1, "...", Palette.UITextDim);
                 if (Button(new Rect(qx + 140, qy, 12, 11), "", true, Loc.T("Abbrechen (80% zurück)"), "close")) { G.CancelQueue(s, i); break; }
                 qy += 15;
@@ -365,6 +413,13 @@ namespace PixelKingdom
             }
             if (hidden.Count > 0 && y < c.yMax - 20) { Text(x, y + 3, Loc.T("Weitere Truppen mit: ") + string.Join(", ", hidden), Palette.UITextDim); y += 11; }
             if (y < c.yMax - 10) Text(x, y + 3, Loc.F("Platz in der Garnison: {0} von {1} frei", G.GarrisonFree(s), G.GarrisonCap(s)), G.GarrisonFree(s) == 0 ? Palette.UIGood : Palette.UITextDim);
+            if (G.Player.rank >= 1 && y < c.yMax - 10)
+            {
+                bool mok = G.CanHireMercs(s, out string mwhy);
+                if (Button(new Rect(x + 190, y, 96, 13), Loc.F("Söldner ({0} G)", G.MercCost), mok,
+                    Loc.F("__Söldner anheuern__\n{0} Speerträger, sofort bereit. Sie kosten nur Gold, keine Bewohner – werden aber jedes Mal teurer.", Game.MercCount) + (mok ? "" : Loc.T("\n__Gesperrt__: ") + mwhy), "sword", false, 1, true))
+                    G.HireMercs(s);
+            }
 
             // Heer aufstellen
             float ax = c.x + 300, ay = c.y + 1;
