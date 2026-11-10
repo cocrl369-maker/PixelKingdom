@@ -128,6 +128,27 @@ namespace PixelKingdom
             // ---------------- Übersee ---------------------------------------------------------
             for (int cont = 1; cont < WorldMap.ContinentCount; cont++)
             {
+                if (cont >= 4)
+                {
+                    // Jede der großen Inseln ist EIN Königreich der Saelaner: Eisenfels feindlich, Smaragdinsel friedlich
+                    var c0 = Pick(s => s.cont == cont, 20);
+                    if (c0 == null) continue;
+                    var kf = NewFaction("", NameGen.Leader(r, 4), cont, 4);
+                    kf.loyalty = 0;
+                    if (cont == 4) { kf.xenophobic = true; kf.aggression = 0.95f; kf.honor = 0.05f; kf.greed = 0.7f; kf.ambition = 0.8f; }
+                    else { kf.peaceful = true; kf.aggression = 0.05f; kf.honor = 0.95f; kf.greed = 0.35f; kf.ambition = 0.2f; }
+                    var kc = NewSettlement(kf, c0, 340 + r.Next(60), true);
+                    kc.grand = cont == 4 ? 2 : 3;
+                    kf.name = cont == 4 ? Loc.T("Eisernes Reich von ") + kc.name : Loc.T("Smaragdkrone von ") + kc.name;
+                    kf.res = new float[] { 900, 700, 500, 200, 1500, 200 };
+                    for (int k = 0; k < 9; k++)
+                    {
+                        var s2 = Pick(s => s.cont == cont, 15);
+                        if (s2 == null) break;
+                        NewSettlement(kf, s2, 70 + r.Next(110), false);
+                    }
+                    continue;
+                }
                 // Kultur (Namen): die beiden großen Inseln im Osten ähneln den Nordlanden bzw. dem Inselbund
                 int cul = cont >= 4 ? 4 : cont;   // die großen Inseln: das Volk der Saelaner
                 bool island = cont >= 4;
@@ -176,9 +197,26 @@ namespace PixelKingdom
                 f.rank = pop > 300 ? 3 : pop > 140 ? 2 : pop > 45 ? 1 : 0;
                 f.prestige = Ranks.Get(f.rank).Prestige;
             }
-            // Kaiserliche Garde in Valdoran
-            cap.garrison[(int)UType.Speer] = 50; cap.garrison[(int)UType.Bogen] = 30; cap.garrison[(int)UType.Ritter] = 20;
-            cap.garrison[(int)UType.Miliz] = 30; cap.buildings[(int)BType.Mauer] = 2; cap.buildings[(int)BType.Burg] = 1;
+            // Kaiserliche Garde in Valdoran: ein sehr großes Heer
+            cap.grand = 1;
+            cap.garrison[(int)UType.Speer] = 160; cap.garrison[(int)UType.Bogen] = 110; cap.garrison[(int)UType.Ritter] = 90;
+            cap.garrison[(int)UType.Miliz] = 120; cap.garrison[(int)UType.Ramme] = 6; cap.buildings[(int)BType.Mauer] = 2; cap.buildings[(int)BType.Burg] = 1;
+            // Die Königreiche der großen Inseln: noch größere Heere (Spätspiel nach dem Sturz des Kaisers)
+            foreach (var f in g.S.factions)
+            {
+                if (f.culture != 4 || f.isFree) continue;
+                f.rank = 4; f.prestige = Ranks.Get(4).Prestige;
+                bool hostile = f.xenophobic;
+                foreach (var s in g.SettlementsOf(f.id))
+                {
+                    bool capital = s.grand > 0;
+                    s.buildings[(int)BType.Mauer] = capital ? 2 : 1; s.buildings[(int)BType.Kaserne] = Math.Max(1, s.buildings[(int)BType.Kaserne]);
+                    if (capital) s.buildings[(int)BType.Burg] = 1;
+                    float k = (capital ? 1f : 0.2f) * (hostile ? 1.25f : 1f);
+                    s.garrison[(int)UType.Speer] = (int)(220 * k); s.garrison[(int)UType.Bogen] = (int)(160 * k);
+                    s.garrison[(int)UType.Ritter] = (int)(130 * k); s.garrison[(int)UType.Miliz] = (int)(170 * k);
+                }
+            }
             cap.buildings[(int)BType.Kathedrale] = 1;
 
             g.InitRelations();

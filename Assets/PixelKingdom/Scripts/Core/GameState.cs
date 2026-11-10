@@ -43,6 +43,7 @@ namespace PixelKingdom
         public int runesSolved, hoardX = -1, hoardY = -1;   // Steintafeln & Drachenhort
         public int starRunes, shrineX = -1, shrineY = -1;     // Sternentafeln der Smaragdinsel & Sternenschrein
         public int mercsHired;
+        public int scoutsLost;
         public List<int> roadPaths = new List<int>();   // Straßenfelder, Strecken durch -1 getrennt
         public List<int> roadLinks = new List<int>();   // per Straße verbundene Ortspaare
         public List<string> achievements = new List<string>();
@@ -66,7 +67,9 @@ namespace PixelKingdom
         public bool isRebel;
         public bool alive = true;
         public int continent;
-        public int culture;       // 0 = Heimat, 1 = Nordlande, 2 = Südreich, 3 = Inselbund
+        public int culture;       // 0 = Heimat, 1 = Nordlande, 2 = Südreich, 3 = Inselbund, 4 = Saelaner
+        public bool xenophobic;   // Eisenfels: verhandelt nie, tötet Fremde – kann nur erobert werden
+        public bool peaceful;     // Smaragdinsel: erklärt nie Krieg, offen für Bündnisse
         public int rank;
         public float prestige;
         public float[] res = new float[ResInfo.Count];
@@ -110,6 +113,7 @@ namespace PixelKingdom
         public int lastBattleDay = -999;
         public int originalFaction = -1;
         public bool isCapitalOfEmperor;
+        public int grand;         // prächtige Hauptstadt: 1 Valdoran, 2 Eisenfels, 3 Smaragdinsel
     }
 
     [Serializable]

@@ -205,6 +205,7 @@ namespace PixelKingdom
         {
             int cap = 15 + 40 * s.buildings[(int)BType.Kaserne] + 20 * s.buildings[(int)BType.Archerie] + 15 * s.buildings[(int)BType.Stall] + 30 * s.buildings[(int)BType.Burg];
             if (s.isCapitalOfEmperor) cap += 400;
+            if (s.grand > 0) cap += 900;
             var f = F(s.faction);
             if (f != null && !f.isPlayer) cap += (int)(s.pop * 0.5f);   // KI-Städte: großzügiger (Bürgerwehr)
             return cap;

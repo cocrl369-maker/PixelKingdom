@@ -355,6 +355,11 @@ namespace PixelKingdom
             f.knownToPlayer = 1;
             Notify(Loc.F("Neue Bekanntschaft: {0} ({1}).", (f.name), (f.leader)), 0);
             OnFactionMet(f);
+            if (f.xenophobic && !AtWar(PlayerId, f.id))
+            {
+                SetStatus(PlayerId, f.id, DipStatus.War);
+                Say(Aldo, "advisor", Loc.F("{0}. Von den Saelanern der Smaragdinsel hören wir nur Gutes – doch über die Eisernen erzählen Fischer schreckliche Dinge: Wer an ihrer Küste landet, kehrt nicht zurück. Sie verhandeln nicht. Wenn wir diese Insel je beherrschen wollen, dann nur mit Gewalt.", f.name));
+            }
         }
 
         void CheckEliminations()

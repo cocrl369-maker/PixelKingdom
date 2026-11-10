@@ -33,7 +33,7 @@ namespace PixelKingdom
                 if (a.mission == (int)ArmyMission.Idle) SendHome(a);
 
             // Angebote an den Spieler
-            if (f.knownToPlayer != 0 && (S.day + f.id * 3) % 25 == 0) ProposeToPlayer(f);
+            if (f.knownToPlayer != 0 && !f.xenophobic && (S.day + f.id * 3) % 25 == 0) ProposeToPlayer(f);
         }
 
         /// <summary>Ein junges Reich mit nur einer Siedlung kann nicht ausgelöscht werden.</summary>
@@ -140,6 +140,7 @@ namespace PixelKingdom
             }
             if (target == null) return;
             if (Rng.NextDouble() > 0.25 + f.aggression * 0.45) return;
+            if (f.peaceful) return;   // die Smaragdkrone beginnt keine Kriege
             DeclareWar(f.id, target.id);
         }
 
@@ -147,6 +148,7 @@ namespace PixelKingdom
         {
             foreach (var e in EnemiesOf(f.id).ToList())
             {
+                if (f.xenophobic && e.isPlayer) continue;   // Eisenfels schließt mit Fremden keinen Frieden
                 if (f.isEmperor && e.isPlayer && S.story.Has("emperor_war")) continue;
                 if (e.isEmperor && f.isPlayer) continue;
                 var rel = Rel(f.id, e.id);
@@ -191,6 +193,8 @@ namespace PixelKingdom
                 bool overSea = Map.cont[WorldMap.Idx(o.x, o.y)] != Map.cont[WorldMap.Idx(src.x, src.y)];
                 // Seefahrer überfallen auch Küstenstädte jenseits des Meeres
                 if (overSea && !(IsSeafarer(f) && IsCoastal(o) && IsCoastal(src))) continue;
+                // Überfälle über das Meer erst im späteren Spiel (Grafschaft+ bzw. nach dem Sturz des Kaisers)
+                if (overSea && F(o.faction).isPlayer && !(S.story.emperorDefeated || Player.rank >= 3)) continue;
                 if (d > (overSea ? 170 : 80)) continue;
                 float def = DefenseStrength(o);
                 if (def > avail * 0.9f && !(f.aggression > 0.7f && def < avail * 1.6f)) continue;
@@ -200,6 +204,11 @@ namespace PixelKingdom
             if (target == null) return;
             var units = new int[Units.Count];
             for (int u = 0; u < Units.Count; u++) units[u] = (int)(src.garrison[u] * 0.6f);
+            if (Map.cont[WorldMap.Idx(target.x, target.y)] != Map.cont[WorldMap.Idx(src.x, src.y)])
+            {
+                // Seeüberfälle: begrenzte Flottenstärke
+                float tot = units.Sum(); if (tot > 160) for (int u = 0; u < Units.Count; u++) units[u] = (int)(units[u] * 160f / tot);
+            }
             units[(int)UType.Spaeher] = 0;
             var a = FormArmy(src, units);
             if (a == null) return;

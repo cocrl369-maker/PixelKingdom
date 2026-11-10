@@ -23,6 +23,27 @@ namespace PixelKingdom
         /// <summary>Die Saelaner der großen Inseln sind ein Seefahrervolk: Ihre Heere können segeln.</summary>
         public bool IsSeafarer(FactionData f) => f != null && !f.isPlayer && f.culture == 4;
 
+        /// <summary>
+        /// Späher, die an der Küste des Eisernen Reiches landen, kehren nie zurück. Der Spieler erfährt es
+        /// über ein Ereignisfenster und einen Bericht von Meister Aldo.
+        /// </summary>
+        bool ScoutsLostAt(ArmyData a, int tile)
+        {
+            if (a.faction != S.playerFaction || Map.cont[tile] != 4) return false;
+            bool onlyScouts = a.settlers == 0 && a.units[(int)UType.Spaeher] > 0;
+            for (int u = 0; u < Units.Count; u++) if (u != (int)UType.Spaeher && a.units[u] > 0) onlyScouts = false;
+            if (!onlyScouts) return false;
+            FactionData hostile = null;
+            foreach (var f in S.factions) if (f.alive && f.xenophobic) { hostile = f; break; }
+            if (hostile == null) return false;
+            int n = a.units[(int)UType.Spaeher];
+            MeetFaction(hostile.id);
+            RemoveArmy(a);
+            S.scoutsLost += n;
+            QueueEvent(new PendingEvent { id = "scouts_lost", a = hostile.id, v = n });
+            return true;
+        }
+
         public bool IsCoastal(SettlementData s)
         {
             for (int dy = -3; dy <= 3; dy++)
@@ -274,6 +295,7 @@ namespace PixelKingdom
                 if (a.units.Sum() + a.settlers <= 0) { RemoveArmy(a); continue; }
                 if (a.path == null || a.pathIndex >= a.path.Count) continue;
                 float budget = ArmySpeed(a) * dt;
+                bool lost = false;
                 while (budget > 0 && a.pathIndex < a.path.Count)
                 {
                     int next = a.path[a.pathIndex];
@@ -288,6 +310,7 @@ namespace PixelKingdom
                     {
                         a.x = tx; a.y = ty; budget -= dist * cost; a.pathIndex++;
                         a.atSea = Map.IsSea(next);
+                        if (!a.atSea && ScoutsLostAt(a, next)) { lost = true; break; }
                         if (a.faction == S.playerFaction) Reveal(WorldMap.X(next), WorldMap.Y(next), ArmyVision(a));
                     }
                     else
@@ -295,6 +318,7 @@ namespace PixelKingdom
                         a.x += dx / dist * can; a.y += dy / dist * can; budget = 0;
                     }
                 }
+                if (lost) continue;
                 if (a.pathIndex >= a.path.Count) Arrive(a);
             }
             // Feldschlachten

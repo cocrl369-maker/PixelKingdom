@@ -187,6 +187,12 @@ namespace PixelKingdom
             float ratio = myStr / theirStr;
 
             void R(string text, float v) { e.Score += v; if (Math.Abs(v) >= 1) e.Reasons.Add((v > 0 ? "+" : "") + (int)Math.Round(v) + " " + text); }
+            if (f.xenophobic && act != DipAction.War)
+            {
+                e.Possible = false;
+                e.Blocker = Loc.T("Das Eiserne Reich empfängt keine Gesandten – es tötet sie. Diese Insel lässt sich nur erobern.");
+                return e;
+            }
             R(Loc.T("Beziehung"), rel.value * 0.6f);
 
             switch (act)

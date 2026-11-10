@@ -84,6 +84,14 @@ namespace PixelKingdom
                 case "border": BorderView(e, v); break;
                 case "nomads": NomadsView(e, v); break;
                 case "pirates": PiratesView(e, v); break;
+                case "scouts_lost":
+                    v.Title = Loc.T("Verschollen"); v.Icon = "skull";
+                    v.Text = S.scoutsLost <= e.v
+                        ? Loc.F("Tage vergehen, doch von den {0} Spähern, die nach Eisenfels gesegelt sind, kommt keine Nachricht. Schließlich bringen Fischer ihr Boot zurück: leer, die Planken voller schwarzer Pfeile. Am Mast hängt ein Wimpel des Eisernen Reiches – eine Warnung.", (int)e.v)
+                        : Loc.F("Wieder sind {0} Späher an der Küste von Eisenfels verschwunden. Das Eiserne Reich duldet keine Fremden. Nur ein starkes Heer wird dort etwas ausrichten.", (int)e.v);
+                    v.Opt(Loc.T("Wir werden sie rächen"));
+                    v.Opt(Loc.T("Keine Späher mehr dorthin schicken"));
+                    break;
                 case "riddle": RiddleView(e, v); break;
                 case "wisps": case "comet": case "ghostship": MythEventView(e, v, sn); break;
                 case "harvest":
@@ -256,6 +264,9 @@ namespace PixelKingdom
                 case "border": BorderResolve(e, option); break;
                 case "nomads": NomadsResolve(e, option); break;
                 case "pirates": PiratesResolve(e, option); break;
+                case "scouts_lost":
+                    if (S.scoutsLost <= e.v) Say(Aldo, "advisor", Loc.T("Ich habe die Namen der Späher in die Chronik geschrieben. Das Eiserne Reich ist kein Ort für Kundschafter – wer dort landet, braucht Schilde, Speere und viele Schiffe."));
+                    break;
                 case "riddle": RiddleResolve(e, option); break;
                 case "wisps": case "comet": case "ghostship": MythEventResolve(e, option, s); break;
                 case "harvest":
