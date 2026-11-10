@@ -1244,6 +1244,33 @@ namespace PixelKingdom
             Crate(c, cx + 15, gy);
         }
 
+        /// <summary>Feldweg für ein Kartenfeld (16x16). Die Kachel liegt bei x = cx-8..cx+7, y = gy-15..gy.</summary>
+        static void Road(PixelCanvas c, int cx, int gy, int mask)
+        {
+            var dirt = H("#B89A68"); var dirtD = H("#9A7E52"); var dirtL = H("#D2B888"); var stone = H("#A8A090");
+            int x0 = cx - 8, y0 = gy - 15;
+            void Seg(int ax, int ay, int bx, int by)
+            {
+                for (int y = Math.Min(ay, by); y <= Math.Max(ay, by); y++)
+                    for (int x = Math.Min(ax, bx); x <= Math.Max(ax, bx); x++)
+                    {
+                        float n = PixelCanvas.Rnd(x, y, 17);
+                        c.Set(x, y, n < 0.12f ? dirtD : n > 0.9f ? dirtL : n > 0.86f ? stone : dirt);
+                    }
+            }
+            int mx = x0 + 6, my = y0 + 6;   // Mitte (4x4)
+            Seg(mx, my, mx + 3, my + 3);
+            if ((mask & 1) != 0) Seg(mx + 4, my, x0 + 15, my + 3);   // rechts
+            if ((mask & 2) != 0) Seg(x0, my, mx - 1, my + 3);         // links
+            if ((mask & 4) != 0) Seg(mx, y0, mx + 3, my - 1);         // oben (Norden)
+            if ((mask & 8) != 0) Seg(mx, my + 4, mx + 3, y0 + 15);    // unten (Süden)
+            // Wegrand etwas dunkler
+            for (int y = y0; y <= y0 + 15; y++)
+                for (int x = x0; x <= x0 + 15; x++)
+                    if (c.Opaque(x, y) && (!c.Opaque(x - 1, y) || !c.Opaque(x + 1, y) || !c.Opaque(x, y - 1) || !c.Opaque(x, y + 1)) && PixelCanvas.Rnd(x, y, 5) < 0.6f)
+                        c.Set(x, y, dirtD);
+        }
+
         static void Ship(PixelCanvas c, int cx, int gy)
         {
             c.Rect(cx - 9, gy - 4, 18, 4, Plank);
@@ -1382,6 +1409,12 @@ namespace PixelKingdom
             Style = 0; RegisterTown("");
             Style = 1; RegisterTown("i");
             Style = 0;
+            // Straßen (flach): 16 Varianten je nach Verbindung (rechts, links, oben, unten)
+            for (int m = 0; m < 16; m++)
+            {
+                int mm = m;
+                Add("rd_" + m, 32, (c, cx, gy) => Road(c, cx, gy, mm), true, false);
+            }
             // Felder (flach)
             Add("f_wheat", 24, (c, x, y) => FieldSprite(c, x, y, Hay, HayD, Soil), true, false);
             Add("f_green", 24, (c, x, y) => FieldSprite(c, x, y, H("#7FBF4A"), H("#4E8A34"), Soil), true, false);

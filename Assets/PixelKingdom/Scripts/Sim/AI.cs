@@ -188,8 +188,10 @@ namespace PixelKingdom
                 if (o.faction == PlayerId && InPeace) continue; // Friedenszeit
                 if (S.day - o.lastBattleDay < 25) continue; // Atempause nach einem Kampf
                 float d = Dist(src.x, src.y, o.x, o.y);
-                if (d > 80) continue;
-                if (Map.cont[WorldMap.Idx(o.x, o.y)] != Map.cont[WorldMap.Idx(src.x, src.y)]) continue;
+                bool overSea = Map.cont[WorldMap.Idx(o.x, o.y)] != Map.cont[WorldMap.Idx(src.x, src.y)];
+                // Seefahrer überfallen auch Küstenstädte jenseits des Meeres
+                if (overSea && !(IsSeafarer(f) && IsCoastal(o) && IsCoastal(src))) continue;
+                if (d > (overSea ? 170 : 80)) continue;
                 float def = DefenseStrength(o);
                 if (def > avail * 0.9f && !(f.aggression > 0.7f && def < avail * 1.6f)) continue;
                 float score = -d - def * 0.05f + (o.id == f.claim ? 25 : 0) + (F(o.faction).isPlayer ? 5 : 0);
@@ -202,7 +204,8 @@ namespace PixelKingdom
             var a = FormArmy(src, units);
             if (a == null) return;
             a.name = (f.isEmperor ? Loc.T("Kaiserliches Heer") : Loc.T("Heer von ") + f.name);
-            bool raid = DefenseStrength(target) > Strength(a.units) * 0.8f;
+            bool raid = DefenseStrength(target) > Strength(a.units) * 0.8f
+                        || Map.cont[WorldMap.Idx(target.x, target.y)] != Map.cont[WorldMap.Idx(src.x, src.y)];   // über See: nur Überfälle
             // Anfängerschutz: die letzte Siedlung eines kleinen Spielerreichs wird nur geplündert
             if (F(target.faction).isPlayer && PlayerProtected) raid = true;
             if (!OrderMove(a, target.x, target.y, raid ? ArmyMission.Raid : ArmyMission.Attack, target.id, out _))

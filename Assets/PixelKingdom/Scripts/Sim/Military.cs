@@ -18,7 +18,21 @@ namespace PixelKingdom
     {
         public readonly Queue<BattleReport> Reports = new Queue<BattleReport>();
 
-        public bool CanSail(int fid) => fid == S.playerFaction && S.seafaring && SettlementsOf(fid).Any(s => s.buildings[(int)BType.Hafen] > 0);
+        public bool CanSail(int fid) => fid == S.playerFaction ? S.seafaring && SettlementsOf(fid).Any(s => s.buildings[(int)BType.Hafen] > 0) : IsSeafarer(F(fid));
+
+        /// <summary>Die Saelaner der großen Inseln sind ein Seefahrervolk: Ihre Heere können segeln.</summary>
+        public bool IsSeafarer(FactionData f) => f != null && !f.isPlayer && f.culture == 4;
+
+        public bool IsCoastal(SettlementData s)
+        {
+            for (int dy = -3; dy <= 3; dy++)
+                for (int dx = -3; dx <= 3; dx++)
+                    if (WorldMap.In(s.x + dx, s.y + dy) && Map.IsSea(WorldMap.Idx(s.x + dx, s.y + dy))) return true;
+            return false;
+        }
+
+        /// <summary>Eure Kriegsschiffe stellen Angreifer, die übers Meer kommen.</summary>
+        public float PlayerNavalDefense => Math.Min(0.5f, NavalPower * 0.012f);
 
         public static float Strength(int[] u)
         {
@@ -486,6 +500,8 @@ namespace PixelKingdom
             float siege = 0;
             for (int u = 0; u < Units.Count; u++) siege += a.units[u] * Units.Get(u).Siege;
             float bonus = Math.Max(0, DefenseBonus(st) - siege - NavalSiegeBonus(a, st));
+            // Angriff von See (Seefahrer-Völker) auf eine Stadt des Spielers: dessen Kriegsschiffe helfen bei der Abwehr
+            if (IsSeafarer(af) && F(st.faction).isPlayer) bonus += PlayerNavalDefense;
             if (raid) bonus *= 0.5f; // Überfälle zielen auf das Umland
             rep.DefBonus = bonus;
 

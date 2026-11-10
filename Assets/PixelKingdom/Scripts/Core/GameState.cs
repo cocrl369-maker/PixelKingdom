@@ -42,6 +42,8 @@ namespace PixelKingdom
         public int relics;
         public int runesSolved, hoardX = -1, hoardY = -1;   // Steintafeln & Drachenhort
         public int mercsHired;
+        public List<int> roadPaths = new List<int>();   // Straßenfelder, Strecken durch -1 getrennt
+        public List<int> roadLinks = new List<int>();   // per Straße verbundene Ortspaare
         public List<string> achievements = new List<string>();
         public List<int> statDay = new List<int>(), statPop = new List<int>(), statGold = new List<int>(), statSoldiers = new List<int>(), statPrestige = new List<int>();
         public int nextBorderDay = 120, nextNomadDay = 60;

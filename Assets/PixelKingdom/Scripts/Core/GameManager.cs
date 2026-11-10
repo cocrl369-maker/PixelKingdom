@@ -24,6 +24,7 @@ namespace PixelKingdom
         public GroundRenderer Ground;
         public ObjectRenderer Objects;
         public EntityRenderer Entities;
+        public TrafficRenderer Traffic;
         public CameraController CamCtrl;
         public GameUI UI;
         public Material GroundMat, SpriteMat, ShadowMat;
@@ -143,6 +144,8 @@ namespace PixelKingdom
             Objects = new GameObject(Loc.T("Natur")).AddComponent<ObjectRenderer>();
             Objects.transform.SetParent(transform, false);
             Entities = new GameObject(Loc.T("Siedlungen & Heere")).AddComponent<EntityRenderer>();
+            Traffic = new GameObject("Verkehr").AddComponent<TrafficRenderer>();
+            Traffic.transform.SetParent(transform, false);
             Entities.transform.SetParent(transform, false);
             UI = gameObject.AddComponent<GameUI>();
             gameObject.AddComponent<AudioManager>();
@@ -187,6 +190,7 @@ namespace PixelKingdom
             Ground.Init(g, GroundMat);
             Objects.Init(g, SpriteMat, ShadowMat);
             Entities.Init(g, SpriteMat, ShadowMat, Objects);
+            Traffic.Init(g, SpriteMat, ShadowMat);
             Objects.BuildAll();
             SelSettlement = SelArmy = -1;
             CurrentMode = Mode.None;

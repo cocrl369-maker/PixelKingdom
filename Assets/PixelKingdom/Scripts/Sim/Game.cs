@@ -82,6 +82,7 @@ namespace PixelKingdom
             g.Map.TreesFromString(state.trees);
             g.ApplyExtraDeposits();
             g.Reindex();
+            g.ApplyRoads();
             g.RecomputeTerritory();
             return g;
         }
@@ -193,6 +194,7 @@ namespace PixelKingdom
             MythDay();
             ComputeProblems();
             ProgressDay();
+            RoadsDay();
             StoryDay();
             MarketDrift();
             CheckEliminations();

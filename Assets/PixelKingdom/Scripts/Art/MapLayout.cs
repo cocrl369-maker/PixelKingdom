@@ -29,6 +29,18 @@ namespace PixelKingdom
             var b = map.biome[i];
             float cx = x + 0.5f, cy = y + 0.5f;
 
+            // Straße (flach, mit Verbindungen zu den Nachbarfeldern)
+            if (map.road[i])
+            {
+                int mask = 0;
+                for (int k = 0; k < 4; k++)
+                {
+                    int nx = x + WorldMap.DX4[k], ny = y + WorldMap.DY4[k];
+                    if (WorldMap.In(nx, ny) && map.road[WorldMap.Idx(nx, ny)]) mask |= 1 << k;
+                }
+                outList.Add(new Placed("rd_" + mask, x + 0.5f, y, true));
+            }
+
             byte dep = map.deposit[i];
             if (dep != 0)
             {

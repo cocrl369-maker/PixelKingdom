@@ -26,6 +26,7 @@ namespace PixelKingdom
         public readonly int[] owner = new int[W * H];      // Fraktions-Id oder -1
         public readonly int[] ownerSettlement = new int[W * H];
         public readonly bool[] disc = new bool[W * H];
+        public readonly bool[] road = new bool[W * H];      // Straßen (zur Laufzeit aus dem Spielstand)
 
         public static readonly int[] DX4 = { 1, -1, 0, 0 };
         public static readonly int[] DY4 = { 0, 0, 1, -1 };
@@ -69,6 +70,7 @@ namespace PixelKingdom
                 case Biome.Desert: c = 1.5f; break;
                 default: c = 1f; break;
             }
+            if (road[i]) return 0.55f;   // Straße (über Flüsse mit Brücke)
             if (river[i]) c += 1.0f; // Furt
             return c;
         }

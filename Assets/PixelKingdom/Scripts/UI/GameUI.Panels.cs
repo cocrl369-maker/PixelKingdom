@@ -143,6 +143,8 @@ namespace PixelKingdom
             }
         }
 
+        int roadPlanKey = -1, roadPlanTiles;
+
         void TabOverview(SettlementData s, Rect c)
         {
             float x = c.x + 2, y = c.y + 2;
@@ -178,8 +180,16 @@ namespace PixelKingdom
             for (int i = 0; i < 3; i++)
                 if (Button(new Rect(x + 50 + i * 38, y, 36, 13), rn[i], true, i == 0 ? Loc.T("-25% Verbrauch, unzufriedener") : i == 2 ? Loc.T("+30% Verbrauch, zufriedener, mehr Wachstum") : null, null, s.rations == i)) s.rations = i;
             y += 16;
-            if (Button(new Rect(x, y, 164, 13), s.auto ? Loc.T("Verwalter: AN") : Loc.T("Verwalter: AUS"), true,
+            if (Button(new Rect(x, y, 100, 13), s.auto ? Loc.T("Verwalter: AN") : Loc.T("Verwalter: AUS"), true,
                 Loc.T("Ein Verwalter baut automatisch, was die Siedlung braucht. Ideal, wenn ihr nur ab und zu spielt."), null, s.auto)) s.auto = !s.auto;
+            // Straßen zu Außenposten und Nachbarorten (Plan wird zwischengespeichert, Wegsuche ist teuer)
+            int key = s.id * 7919 + G.S.day * 31 + G.RoadsVersion * 7 + s.placed.Count;
+            if (key != roadPlanKey) { roadPlanKey = key; G.PlanRoads(s, out roadPlanTiles); }
+            var rc = G.RoadCost(roadPlanTiles);
+            bool rok = roadPlanTiles > 0 && G.CanAfford(G.Player, rc);
+            string rtip = roadPlanTiles == 0 ? Loc.T("__Straßen__\nAlle Außenposten und Nachbarorte sind schon verbunden.")
+                : Loc.F("__Straßen bauen__\nVerbindet Höfe, Minen und Lager draußen sowie eigene Nachbarorte mit dieser Stadt ({0} Felder).\n__Wirkung__: halber Ertragsverlust durch lange Wege, schnellere Heere, Handel zwischen verbundenen Orten.\n__Kosten__: {1}", roadPlanTiles, CostLong(rc, 1));
+            if (Button(new Rect(x + 103, y, 61, 13), Loc.T("Straßen"), rok, rtip, null, false, 1, true)) { G.BuildRoads(s); roadPlanKey = -1; }
 
             // Bauschlange
             float qx = c.x + 178, qy = c.y + 2;

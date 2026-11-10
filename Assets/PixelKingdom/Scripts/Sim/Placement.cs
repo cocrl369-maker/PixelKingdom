@@ -56,6 +56,7 @@ namespace PixelKingdom
         {
             float d = Dist(s.x, s.y, x, y), r = TownRadius(s);
             if (d <= r) return 1f;
+            if (RoadConnected(s, x, y)) return Math.Max(0.75f, 1f - (d - r) * 0.025f);   // Straße: halber Wegverlust
             return Math.Max(0.45f, 1f - (d - r) * 0.05f);
         }
 

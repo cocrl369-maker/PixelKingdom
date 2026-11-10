@@ -85,7 +85,7 @@ namespace PixelKingdom
                     {
                         var s = SpriteLib.Get(o.Name);
                         if (s == null) continue;
-                        qb.Add(s, o.X, o.Y, QuadBatch.DepthOf(o.Y), white, o.Flip);
+                        qb.Add(s, o.X, o.Y, o.Flat ? 19.5f : QuadBatch.DepthOf(o.Y), white, o.Flip);
                         if (s.Shadow != null) sb.Add(s.Shadow, o.X, o.Y, ShadowZ, white);
                     }
                 }
