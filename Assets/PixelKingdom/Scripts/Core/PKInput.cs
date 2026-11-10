@@ -16,26 +16,40 @@ namespace PixelKingdom
     /// </summary>
     public static partial class PKInput
     {
-        static int backend = -1;          // -1 unbekannt, 0 alter Input Manager, 1 neues Input System
-        static bool legacyBroken;
+        // ------------------------------------------------------------------
+        //  Drei Quellen, in dieser Reihenfolge – bei JEDER Abfrage neu entschieden, nichts wird dauerhaft gemerkt:
+        //  1. neues Input System (falls Paket vorhanden und ein Gerät da ist)
+        //  2. alter Input Manager (falls in "Active Input Handling" erlaubt)
+        //  3. Unitys GUI-Ereignisse (funktionieren immer, egal welche Projekteinstellung)
+        //  So kann ein frisches Unity-Projekt nie "taub" sein.
+        // ------------------------------------------------------------------
+        static int legacyState = -1;      // -1 ungeprüft, 0 abgeschaltet, 1 nutzbar
+        static bool warned;
 
-        /// <summary>Wird das neue Input System benutzt?</summary>
-        public static bool UseNewSystem
+        static bool LegacyOk
         {
             get
             {
-                if (backend < 0) backend = NewSys.Available ? 1 : 0;
-                return backend == 1;
+                if (legacyState < 0)
+                {
+                    try { Input.GetKey(KeyCode.Space); var _ = Input.mousePosition; legacyState = 1; }
+                    catch (InvalidOperationException) { legacyState = 0; }
+                    catch (Exception) { legacyState = 0; }
+                }
+                return legacyState == 1;
             }
         }
 
         static void LegacyFailed()
         {
-            if (legacyBroken) return;
-            legacyBroken = true;
-            if (NewSys.Available) backend = 1;
-            Debug.LogWarning("Pixel Kingdom: Der alte Input Manager ist abgeschaltet. Bitte unter Project Settings > Player > Active Input Handling 'Input System Package (New)' oder 'Both' wählen und das Paket 'Input System' installieren.");
+            legacyState = 0;
+            if (warned) return;
+            warned = true;
+            Debug.Log("Pixel Kingdom: Alter Input Manager ist abgeschaltet – es wird das neue Input System bzw. Unitys GUI-Ereignisse benutzt.");
         }
+
+        /// <summary>Welche Quelle gerade für Maus/Tastatur benutzt wird (nur zur Anzeige/Fehlersuche).</summary>
+        public static string Backend => NewSys.HasMouse ? "InputSystem" : LegacyOk ? "InputManager" : "GUI";
 
         static KeyCode Map(PKKey k)
         {
@@ -96,51 +110,127 @@ namespace PixelKingdom
 
         static bool Legacy(Func<bool> f)
         {
-            if (legacyBroken) return false;
+            if (!LegacyOk) return false;
             try { return f(); } catch (InvalidOperationException) { LegacyFailed(); return false; }
         }
 
         public static bool Key(PKKey k)
         {
-            if (UseNewSystem) return NewSys.Key(NewKeyName(k), 0) || (k == PKKey.Shift && NewSys.Key("RightShift", 0));
-            return Legacy(() => Input.GetKey(Map(k)) || (k == PKKey.Shift && Input.GetKey(KeyCode.RightShift)));
+            if (NewSys.HasKeyboard) return NewSys.Key(NewKeyName(k), 0) || (k == PKKey.Shift && NewSys.Key("RightShift", 0));
+            if (LegacyOk) return Legacy(() => Input.GetKey(Map(k)) || (k == PKKey.Shift && Input.GetKey(KeyCode.RightShift)));
+            return Gui.KeyHeld(Map(k)) || (k == PKKey.Shift && Gui.KeyHeld(KeyCode.RightShift));
         }
 
         public static bool KeyDown(PKKey k)
         {
-            if (UseNewSystem) return NewSys.Key(NewKeyName(k), 1);
-            return Legacy(() => Input.GetKeyDown(Map(k)));
+            if (NewSys.HasKeyboard) return NewSys.Key(NewKeyName(k), 1);
+            if (LegacyOk) return Legacy(() => Input.GetKeyDown(Map(k)));
+            return Gui.KeyPressed(Map(k));
         }
 
         public static Vector2 MousePos
         {
             get
             {
-                if (UseNewSystem) return NewSys.MousePos();
-                if (legacyBroken) return Vector2.zero;
-                try { return Input.mousePosition; } catch (InvalidOperationException) { LegacyFailed(); return Vector2.zero; }
+                if (NewSys.HasMouse && NewSys.MousePos(out var p)) return p;
+                if (LegacyOk) { try { return Input.mousePosition; } catch (InvalidOperationException) { LegacyFailed(); } }
+                return Gui.Pos;
             }
         }
 
-        public static bool MouseDown(int b) => UseNewSystem ? NewSys.MouseButton(b, 1) : Legacy(() => Input.GetMouseButtonDown(b));
-        public static bool MouseUp(int b) => UseNewSystem ? NewSys.MouseButton(b, 2) : Legacy(() => Input.GetMouseButtonUp(b));
-        public static bool Mouse(int b) => UseNewSystem ? NewSys.MouseButton(b, 0) : Legacy(() => Input.GetMouseButton(b));
+        /// <summary>mode: 0 gehalten, 1 gerade gedrückt, 2 gerade losgelassen</summary>
+        static bool MouseQuery(int b, int mode)
+        {
+            if (NewSys.HasMouse) return NewSys.MouseButton(b, mode);
+            if (LegacyOk) return Legacy(() => mode == 0 ? Input.GetMouseButton(b) : mode == 1 ? Input.GetMouseButtonDown(b) : Input.GetMouseButtonUp(b));
+            return Gui.Button(b, mode);
+        }
+
+        public static bool MouseDown(int b) => MouseQuery(b, 1);
+        public static bool MouseUp(int b) => MouseQuery(b, 2);
+        public static bool Mouse(int b) => MouseQuery(b, 0);
 
         public static float Scroll
         {
             get
             {
-                if (UseNewSystem) return NewSys.ScrollY() / 120f;
-                if (legacyBroken) return 0f;
-                try { return Input.mouseScrollDelta.y; } catch (InvalidOperationException) { LegacyFailed(); return 0f; }
+                if (NewSys.HasMouse) return NewSys.ScrollY() / 120f;
+                if (LegacyOk) { try { return Input.mouseScrollDelta.y; } catch (InvalidOperationException) { LegacyFailed(); } }
+                return Gui.ScrollY;
             }
+        }
+
+        /// <summary>
+        /// Muss am Anfang von OnGUI aufgerufen werden (vor dem Setzen von GUI.matrix).
+        /// Sammelt Unitys GUI-Ereignisse als letzte Eingabequelle.
+        /// </summary>
+        public static void FeedGuiEvent(Event e) => Gui.Feed(e);
+
+        // ------------------------------------------------------------------
+        /// <summary>
+        /// Eingabe aus Unitys GUI-Ereignissen. Ereignisse aus OnGUI von Bild N gelten in Bild N+1
+        /// (Update läuft vor OnGUI) – so sehen alle Abfragen eines Bildes denselben Zustand.
+        /// </summary>
+        static class Gui
+        {
+            static readonly bool[] held = new bool[3];
+            static readonly bool[] pendDown = new bool[3], pendUp = new bool[3];
+            static readonly bool[] down = new bool[3], up = new bool[3];
+            static readonly HashSet<KeyCode> keysHeld = new HashSet<KeyCode>();
+            static readonly HashSet<KeyCode> pendKeys = new HashSet<KeyCode>(), keysPressed = new HashSet<KeyCode>();
+            static float pendScroll, scroll;
+            static Vector2 pos;
+            static int latched = -1;
+
+            static void Latch()
+            {
+                if (latched == Time.frameCount) return;
+                latched = Time.frameCount;
+                for (int i = 0; i < 3; i++) { down[i] = pendDown[i]; up[i] = pendUp[i]; pendDown[i] = pendUp[i] = false; }
+                keysPressed.Clear(); foreach (var k in pendKeys) keysPressed.Add(k); pendKeys.Clear();
+                scroll = pendScroll; pendScroll = 0f;
+            }
+
+            public static Vector2 Pos => pos;
+            public static float ScrollY { get { Latch(); return scroll; } }
+            public static bool KeyHeld(KeyCode k) => k != KeyCode.None && keysHeld.Contains(k);
+            public static bool KeyPressed(KeyCode k) { Latch(); return k != KeyCode.None && keysPressed.Contains(k); }
+
+            public static bool Button(int b, int mode)
+            {
+                if (b < 0 || b > 2) return false;
+                Latch();
+                return mode == 0 ? held[b] || down[b] : mode == 1 ? down[b] : up[b];
+            }
+
+            public static void Feed(Event e)
+            {
+                if (e == null) return;
+                // Ohne gesetzte GUI.matrix ist mousePosition in Bildschirmpunkten (oben links = 0,0)
+                var mp = e.mousePosition;
+                if (e.isMouse || e.type == EventType.ScrollWheel || e.type == EventType.Repaint)
+                    pos = new Vector2(mp.x, Screen.height - mp.y);
+                int b = Mathf.Clamp(e.button, 0, 2);
+                switch (e.type)
+                {
+                    case EventType.MouseDown: if (!held[b]) pendDown[b] = true; held[b] = true; break;
+                    case EventType.MouseUp: if (held[b]) pendUp[b] = true; held[b] = false; break;
+                    case EventType.ScrollWheel: pendScroll += -e.delta.y / 3f; break;
+                    case EventType.KeyDown:
+                        if (e.keyCode != KeyCode.None) { if (!keysHeld.Contains(e.keyCode)) pendKeys.Add(e.keyCode); keysHeld.Add(e.keyCode); }
+                        break;
+                    case EventType.KeyUp: keysHeld.Remove(e.keyCode); break;
+                }
+                if (e.type == EventType.MouseDown || e.type == EventType.MouseUp || e.type == EventType.ScrollWheel) lastGuiInput = Time.unscaledTime;
+            }
+
+            public static float lastGuiInput = -100f;
         }
 
         // ------------------------------------------------------------------
         /// <summary>Zugriff auf das neue Input System per Reflection (kein Kompilier-Bezug zum Paket nötig).</summary>
         static class NewSys
         {
-            static bool? available;
             static Type tKeyboard, tMouse, tTouchscreen, tKey;
             static readonly Dictionary<string, PropertyInfo> props = new Dictionary<string, PropertyInfo>();
             static readonly Dictionary<Type, MethodInfo> readValue = new Dictionary<Type, MethodInfo>();
@@ -159,31 +249,53 @@ namespace PixelKingdom
                 return null;
             }
 
-            public static bool Available
+            static float nextTypeSearch;
+            static bool typesOk;
+
+            /// <summary>Sind die Typen des Pakets vorhanden? Wird bei Misserfolg alle paar Sekunden neu gesucht.</summary>
+            static bool Types
             {
                 get
                 {
-                    if (available.HasValue) return available.Value;
+                    if (typesOk) return true;
+                    if (Time.unscaledTime < nextTypeSearch) return false;
+                    nextTypeSearch = Time.unscaledTime + 3f;
                     try
                     {
                         tKeyboard = Find("UnityEngine.InputSystem.Keyboard");
                         tMouse = Find("UnityEngine.InputSystem.Mouse");
                         tTouchscreen = Find("UnityEngine.InputSystem.Touchscreen");
                         tKey = Find("UnityEngine.InputSystem.Key");
-                        bool ok = tKeyboard != null && tMouse != null && tTouchscreen != null && tKey != null;
-                        // Ist das neue System auch wirklich aktiv? (Bei "Input Manager (Old)" gibt es keine Geräte.)
-                        if (ok) ok = Current(tMouse) != null || Current(tTouchscreen) != null || Current(tKeyboard) != null;
-                        if (ok) keyboardIndexer = tKeyboard.GetProperty("Item", new[] { tKey });
-                        available = ok;
+                        typesOk = tKeyboard != null && tMouse != null && tTouchscreen != null && tKey != null;
+                        if (typesOk) keyboardIndexer = tKeyboard.GetProperty("Item", new[] { tKey });
                     }
                     catch (Exception e)
                     {
                         Debug.LogWarning("Pixel Kingdom: Neues Input System nicht nutzbar: " + e.Message);
-                        available = false;
+                        typesOk = false;
                     }
-                    return available.Value;
+                    return typesOk;
                 }
             }
+
+            static bool failed;   // Reflection hat versagt (z.B. geänderte API) → dieses Backend nicht mehr benutzen
+            static void Fail(Exception e)
+            {
+                if (failed) return;
+                failed = true;
+                Debug.LogWarning("Pixel Kingdom: Neues Input System per Reflection nicht lesbar, nutze Ersatz: " + e.Message);
+            }
+
+            static object SafeCurrent(Type t)
+            {
+                if (failed || !Types || t == null) return null;
+                try { return Current(t); } catch (Exception e) { Fail(e); return null; }
+            }
+
+            /// <summary>Gibt es (gerade) eine Maus im neuen Input System?</summary>
+            public static bool HasMouse => SafeCurrent(tMouse) != null;
+            public static bool HasKeyboard => SafeCurrent(tKeyboard) != null && keyboardIndexer != null;
+            public static bool HasTouchscreen => SafeCurrent(tTouchscreen) != null;
 
             static object Current(Type t)
             {
@@ -241,15 +353,17 @@ namespace PixelKingdom
                 catch { return false; }
             }
 
-            public static Vector2 MousePos()
+            public static bool MousePos(out Vector2 p)
             {
+                p = Vector2.zero;
                 try
                 {
-                    var m = Current(tMouse);
-                    var v = Read(P(m, "position"));
-                    return v is Vector2 p ? p : Vector2.zero;
+                    var v = Read(P(Current(tMouse), "position"));
+                    if (v is Vector2 q) { p = q; return true; }
+                    Fail(new Exception("Mouse.position.ReadValue lieferte nichts"));
+                    return false;
                 }
-                catch { return Vector2.zero; }
+                catch (Exception e) { Fail(e); return false; }
             }
 
             /// <summary>mode: 0 gehalten, 1 gedrückt, 2 losgelassen</summary>
@@ -273,6 +387,8 @@ namespace PixelKingdom
                 catch { return 0f; }
             }
 
+            public static bool Failed => failed;
+
             public static void ReadTouches(List<PKTouch> list)
             {
                 try
@@ -294,7 +410,7 @@ namespace PixelKingdom
                         });
                     }
                 }
-                catch { }
+                catch (Exception e) { Fail(e); }
             }
         }
     }

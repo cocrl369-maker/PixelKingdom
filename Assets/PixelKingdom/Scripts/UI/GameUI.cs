@@ -190,6 +190,7 @@ namespace PixelKingdom
         // ------------------------------------------------------------------
         void OnGUI()
         {
+            PKInput.FeedGuiEvent(Event.current);   // letzte Eingabequelle – funktioniert in jedem Unity-Projekt
             if (gm == null || G == null) return;
             int extra = PlayerPrefs.GetInt("pk_uiscale", 0);
             safe = Screen.safeArea;

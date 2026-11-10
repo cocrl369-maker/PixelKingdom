@@ -22,7 +22,7 @@ Update einspielen: Unity kurz schließen (oder im Project-Fenster) den alten Ord
 Mehr braucht es nicht. Das Spiel startet sich selbst (`RuntimeInitializeOnLoadMethod`) und erzeugt Kamera, Welt und Oberfläche komplett aus Code. Es gibt keine Prefabs, keine Texturen und keine Szenen-Einrichtung.
 
 - Läuft in der **Built-in Render Pipeline** und in **URP**. Die Shader haben keinen LightMode-Tag und werden deshalb überall gezeichnet.
-- Funktioniert mit **jeder** Einstellung bei *Active Input Handling* – das Eingabesystem wird zur Laufzeit erkannt, es gibt keine feste Abhängigkeit vom Paket „Input System“. Falls nichts reagiert: Klicks laufen notfalls über Unitys GUI-Ereignisse weiter.
+- Funktioniert mit **jeder** Einstellung bei *Active Input Handling* – das Eingabesystem wird zur Laufzeit erkannt, es gibt keine feste Abhängigkeit vom Paket „Input System“. Bei jeder Abfrage wird die erste funktionierende Quelle genommen: neues Input System → alter Input Manager → Unitys GUI-Ereignisse (Maus, Mausrad, Tastatur, ein Finger). Unten rechts im Hauptmenü steht, welche Quelle gerade aktiv ist („Input: …“).
 - Für einen Build: *File → Build Settings → Add Open Scenes → Build*.
 
 ## Android (Tablet & Handy)

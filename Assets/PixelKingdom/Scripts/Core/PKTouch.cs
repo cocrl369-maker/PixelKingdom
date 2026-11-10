@@ -50,19 +50,34 @@ namespace PixelKingdom
             if (touches.Count > 0) lastTouchTime = Time.unscaledTime;
         }
 
+        static bool guiTouchDown;
+
         static void ReadRealTouches()
         {
-            if (UseNewSystem) { NewSys.ReadTouches(touches); return; }
-            try
+            if (NewSys.HasTouchscreen) { NewSys.ReadTouches(touches); if (!NewSys.Failed) return; touches.Clear(); }
+            if (LegacyOk)
             {
-                for (int i = 0; i < Input.touchCount; i++)
+                try
                 {
-                    var t = Input.GetTouch(i);
-                    int ph = t.phase == TouchPhase.Began ? 0 : (t.phase == TouchPhase.Ended || t.phase == TouchPhase.Canceled) ? 2 : 1;
-                    touches.Add(new PKTouch { Id = t.fingerId, Pos = t.position, Phase = ph });
+                    for (int i = 0; i < Input.touchCount; i++)
+                    {
+                        var t = Input.GetTouch(i);
+                        int ph = t.phase == TouchPhase.Began ? 0 : (t.phase == TouchPhase.Ended || t.phase == TouchPhase.Canceled) ? 2 : 1;
+                        touches.Add(new PKTouch { Id = t.fingerId, Pos = t.position, Phase = ph });
+                    }
+                    return;
                 }
+                catch (System.InvalidOperationException) { LegacyFailed(); }
             }
-            catch (System.InvalidOperationException) { LegacyFailed(); }
+            // Letzter Ausweg auf Geräten mit Touch: Unity meldet den ersten Finger als GUI-Mausereignis.
+            if (!Application.isMobilePlatform) return;
+            bool down = Gui.Button(0, 0);
+            if (down || guiTouchDown)
+            {
+                int ph = down && !guiTouchDown ? 0 : !down ? 2 : 1;
+                touches.Add(new PKTouch { Id = 1, Pos = Gui.Pos, Phase = ph });
+            }
+            guiTouchDown = down;
         }
     }
 }
