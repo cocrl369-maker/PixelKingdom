@@ -269,6 +269,7 @@ namespace PixelKingdom
             {
                 case Window.Diplomacy: DrawDiplomacy(); break;
                 case Window.Armies: DrawArmies(); break;
+                case Window.Attention: DrawAttention(); break;
                 case Window.Realm: DrawRealm(); break;
                 case Window.Log: DrawLog(); break;
                 case Window.Help: DrawHelp(); break;
@@ -536,7 +537,20 @@ namespace PixelKingdom
                 y += 23;
             }
             if (Button(new Rect(4, y, 22, 20), "", true, Loc.T("Zur Hauptstadt (H)"), "house")) gm.FocusHome();
-            Mark("side", new Rect(4, 40, 22, y + 20 - 40));
+            y += 23;
+            // Was braucht Aufmerksamkeit? (nur wenn es Probleme gibt) – mit Zähler
+            int pc = G.Problems.Count;
+            if (pc > 0)
+            {
+                var pr = new Rect(4, y, 22, 20);
+                if (Button(pr, "", true, Loc.T("Was braucht Aufmerksamkeit?"), "fire", Open == Window.Attention)) ToggleWindow(Window.Attention);
+                string cnt = pc > 9 ? "9+" : pc.ToString();
+                var br = new Rect(pr.xMax - 7, pr.y - 3, PixelFont.Width(cnt) + 4, 9);
+                Fill(br, Palette.UIBad);
+                Text(br.x + 2, br.y + 1, cnt, Color.white);
+                y += 23;
+            }
+            Mark("side", new Rect(4, 40, 22, y - 3 - 40));
         }
 
         // ------------------------------------------------------------------

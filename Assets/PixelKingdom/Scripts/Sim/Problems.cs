@@ -13,6 +13,7 @@ namespace PixelKingdom
         public ProblemKind Kind;
         public int Settlement;
         public string Detail;
+        public int Building;   // Gebäudetyp, -1 = Ortszentrum
     }
 
     /// <summary>
@@ -76,19 +77,21 @@ namespace PixelKingdom
             var delta = Delta(p.id);
             float cap = Storage(p.id);
             var counts = new Dictionary<(int, ProblemKind), int>();
+            int curBuilding = -1;
             void Add(SettlementData s, float x, float y, ProblemKind k, string detail = null, int max = 4)
             {
                 var key = (s.id, k);
                 counts.TryGetValue(key, out int n);
                 if (n >= max) return;
                 counts[key] = n + 1;
-                Problems.Add(new Problem { X = x, Y = y, Kind = k, Settlement = s.id, Detail = detail });
+                Problems.Add(new Problem { X = x, Y = y, Kind = k, Settlement = s.id, Detail = detail, Building = curBuilding });
             }
             var cap0 = Capital(p);
             foreach (var s in SettlementsOf(p.id))
             {
                 float cx = s.x + 0.5f, cy = s.y + 2.2f;   // über dem Ortszentrum
                 float off = 0;
+                curBuilding = -1;
                 void Center(ProblemKind k, string d = null) { Add(s, cx + off, cy, k, d, 1); off += 0.9f; }
                 if (p.res[(int)Res.Food] <= 1f && delta[(int)Res.Food] < 0) Center(ProblemKind.Hunger);
                 if (s.happiness < 30) Center(ProblemKind.Unhappy);
@@ -102,6 +105,7 @@ namespace PixelKingdom
                 staffInfo.TryGetValue(s.id, out var info);
                 foreach (var b in s.placed)
                 {
+                    curBuilding = b.type;
                     var d = Buildings.Get(b.type);
                     float bx = b.x + 0.5f, by = b.y + 1.5f;
                     if (info != null && d.Jobs > 0 && info[b.type * 2] < 0.6f) { Add(s, bx, by, ProblemKind.NoWorkers); continue; }
@@ -116,6 +120,7 @@ namespace PixelKingdom
                     if (own >= 0 && own != p.id && IsRemote((BType)b.type)) Add(s, bx, by, ProblemKind.ForeignLand);
                 }
             }
+            curBuilding = -1;
             ProblemsVersion++;
         }
     }

@@ -192,6 +192,7 @@ namespace PixelKingdom
             CampsDay();
             MythDay();
             ComputeProblems();
+            ProgressDay();
             StoryDay();
             MarketDrift();
             CheckEliminations();

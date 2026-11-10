@@ -186,14 +186,15 @@ namespace PixelKingdom
         {
             var p = G.Player;
             var c = WindowFrame(Loc.T("Euer Reich: ") + p.name, 520, 330, false);
-            string[] tabs = { Loc.T("Rang"), Loc.T("Erlasse & Feste"), Loc.T("Siedlungen"), Loc.T("Wissen") };
+            string[] tabs = { Loc.T("Rang"), Loc.T("Erlasse & Feste"), Loc.T("Siedlungen"), Loc.T("Wissen"), Loc.T("Statistik"), Loc.T("Erfolge") };
             bool edictsOpen = p.rank >= 1;
             if (!edictsOpen && realmTab == 1) realmTab = 0;
-            int shownTab = 0;
+            int shownTab = 0, tabCount = edictsOpen ? tabs.Length : tabs.Length - 1;
+            float tw = Mathf.Floor((c.width + 4) / tabCount);
             for (int t = 0; t < tabs.Length; t++)
             {
                 if (t == 1 && !edictsOpen) continue;
-                if (Button(new Rect(c.x + shownTab * 104, c.y, 100, 15), tabs[t], true, null, null, realmTab == t))
+                if (Button(new Rect(c.x + shownTab * tw, c.y, tw - 4, 15), tabs[t], true, null, null, realmTab == t))
                 {
                     realmTab = t;
                     if (t == 3) G.Hint("tab_tech", Loc.T("Das Wissen: Eure Gelehrten erforschen Verbesserungen – bessere Äxte, schwerere Pflüge, Kettenhemden. Immer nur eines zugleich; Klöster und Kapellen beschleunigen die Arbeit. Was erforscht ist, gilt für immer."));
@@ -203,6 +204,8 @@ namespace PixelKingdom
             c = new Rect(c.x, c.y + 21, c.width, c.height - 21);
             if (realmTab == 1) { DrawEdicts(c); return; }
             if (realmTab == 3) { DrawTechs(c); return; }
+            if (realmTab == 4) { DrawStats(c); return; }
+            if (realmTab == 5) { DrawAchievements(c); return; }
             if (realmTab == 2) { DrawRealmSettlements(c); return; }
             // Rangleiter
             float x = c.x, y = c.y;
@@ -290,6 +293,96 @@ namespace PixelKingdom
             }
             EndGroup();
             rects.Add(list);
+        }
+
+        // ---- Was braucht Aufmerksamkeit? ----
+        float scrollAttention;
+
+        void DrawAttention()
+        {
+            var c = WindowFrame(Loc.T("Was braucht Aufmerksamkeit?"), 380, 260, false);
+            var list = G.Problems;
+            if (list.Count == 0) { Text(c.x, c.y, Loc.T("Alles in Ordnung – nichts braucht gerade eure Hilfe."), Palette.UIGood); return; }
+            Text(c.x, c.y, Loc.T("Antippen springt zum Ort."), Palette.UITextDim);
+            var area = new Rect(c.x, c.y + 12, c.width, c.height - 12);
+            float rowH = 15;
+            scrollAttention = Scroll(area, scrollAttention, list.Count * rowH - area.height);
+            BeginGroup(area);
+            for (int i = 0; i < list.Count; i++)
+            {
+                var p = list[i];
+                float y = i * rowH - scrollAttention;
+                if (y + rowH < 0 || y > area.height) continue;
+                var row = new Rect(0, y, area.width, rowH - 1);
+                bool severe = p.Kind == ProblemKind.Hunger || p.Kind == ProblemKind.Unhappy || p.Kind == ProblemKind.Bandits;
+                Fill(row, i % 2 == 0 ? Palette.UIPanelDark : Palette.UIPanel);
+                Icon(new Rect(2, y + 1, 12, 12), Game.ProblemIcon(p.Kind), severe ? Palette.UIBad : Palette.UIGood);
+                var s = G.St(p.Settlement);
+                string what = Game.ProblemText(p).Split('\n')[0].Replace("__", "");
+                string where = (s != null ? s.name : "?") + (p.Building >= 0 ? " – " + Buildings.Get(p.Building).Name : "");
+                Text(18, y + 3, what, severe ? Palette.UIBad : Palette.UIText);
+                Text(Mathf.Max(150, 22 + PixelFont.Width(what)), y + 3, where, Palette.UITextDim);
+                if (Clicked(row))
+                {
+                    gm.CamCtrl.FocusOn(new Vector2(p.X, p.Y - 1f));
+                    if (s != null && p.Building < 0) gm.SelectSettlement(s, false);
+                    PinTip(Game.ProblemText(p));
+                }
+            }
+            EndGroup();
+        }
+
+        // ---- Statistik: Verlauf über die Zeit ----
+        void DrawStats(Rect c)
+        {
+            var S = G.S;
+            if (S.statDay.Count < 2) { Wrapped(new Rect(c.x, c.y, c.width, 30), Loc.T("Der Verlauf wird alle 10 Tage festgehalten. Schaut später wieder vorbei."), Palette.UITextDim); return; }
+            float w = (c.width - 8) / 2f, h = (c.height - 34) / 2f;
+            Graph(new Rect(c.x, c.y, w, h), Loc.T("Bevölkerung"), S.statPop, new Color(0.45f, 0.85f, 0.4f));
+            Graph(new Rect(c.x + w + 8, c.y, w, h), Loc.T("Gold"), S.statGold, Palette.UIGood);
+            Graph(new Rect(c.x, c.y + h + 8, w, h), Loc.T("Soldaten"), S.statSoldiers, new Color(0.9f, 0.4f, 0.35f));
+            Graph(new Rect(c.x + w + 8, c.y + h + 8, w, h), Loc.T("Ansehen"), S.statPrestige, new Color(0.6f, 0.7f, 1f));
+            Text(c.x, c.yMax - 10, Loc.F("Tag {0} bis {1}  -  Siege/Niederlagen: {2}/{3}  -  Erfolge: {4}/{5}", S.statDay[0] + 1, S.statDay[S.statDay.Count - 1] + 1, S.battlesWon, S.battlesLost, S.achievements.Count, Game.Achievements.Length), Palette.UITextDim);
+        }
+
+        void Graph(Rect r, string title, List<int> data, Color col)
+        {
+            Fill(r, Palette.UIPanelDark);
+            int max = 1; foreach (var v in data) max = Mathf.Max(max, v);
+            Text(r.x + 4, r.y + 3, title, Palette.UIText);
+            string mx = Num(max);
+            Text(r.xMax - PixelFont.Width(mx) - 4, r.y + 3, mx, Palette.UITextDim);
+            var area = new Rect(r.x + 4, r.y + 14, r.width - 8, r.height - 18);
+            Fill(new Rect(area.x, area.yMax, area.width, 1), Palette.UIPanelLight);
+            int n = data.Count;
+            for (int i = 0; i < area.width; i++)
+            {
+                float f = n <= 1 ? 0 : i / (area.width - 1) * (n - 1);
+                int i0 = Mathf.FloorToInt(f), i1 = Mathf.Min(n - 1, i0 + 1);
+                float v = Mathf.Lerp(data[i0], data[i1], f - i0) / max;
+                float hh = Mathf.Max(1, Mathf.Round(v * area.height));
+                Fill(new Rect(area.x + i, area.yMax - hh, 1, 1), col);
+                Fill(new Rect(area.x + i, area.yMax - hh + 1, 1, hh - 1), new Color(col.r, col.g, col.b, 0.25f));
+            }
+        }
+
+        // ---- Erfolge ----
+        void DrawAchievements(Rect c)
+        {
+            var list = Game.Achievements;
+            int cols = 2; float cw = (c.width - 6) / cols, rh = 22;
+            int perCol = Mathf.CeilToInt(list.Length / (float)cols);
+            for (int i = 0; i < list.Length; i++)
+            {
+                var a = list[i];
+                bool done = G.HasAchievement(a.Id);
+                float x = c.x + (i / perCol) * (cw + 6), y = c.y + (i % perCol) * rh;
+                if (y + rh > c.yMax) continue;
+                Fill(new Rect(x, y, cw, rh - 2), done ? Palette.UIPanelLight : Palette.UIPanelDark);
+                Icon(new Rect(x + 3, y + 4, 12, 12), a.Icon, done ? Palette.UIGood : Palette.UITextDim);
+                Text(x + 18, y + 2, Loc.T(a.Name), done ? Palette.UIGood : Palette.UIText);
+                Text(x + 18, y + 11, Loc.T(a.Desc), Palette.UITextDim);
+            }
         }
 
         void DrawTechs(Rect c)
