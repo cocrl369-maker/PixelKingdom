@@ -146,6 +146,8 @@ Das Spiel ist für Android ausgelegt und bleibt am PC mit Tastatur und Maus spie
 
 ### Das Volk der Saelaner
 - Auf Eisenfels und der Smaragdinsel lebt ein eigenes Volk mit eigenem Baustil: helle Kalksteinhäuser, grüne Kupferkuppeln, flache Terrassendächer, Rundbögen, Sonnensegel und lange Wimpel. Auch ihre Krieger sehen anders aus (heller Umhang, Federhelm) und ihre Namen klingen fremd („Hohes Haus von Lysora“, „Sternrat Aelis“).
+- **Zwei Königreiche**: Auf Eisenfels herrscht das **Eiserne Reich** – es empfängt keine Gesandten und muss erobert werden. Späher, die dort landen, kehren nie zurück (ein Ereignisfenster berichtet davon). Die **Smaragdkrone** der Smaragdinsel ist friedlich, erklärt nie Krieg und lässt sich durch Diplomatie zum Verbündeten machen.
+- **Prächtige Hauptstädte**: Valdoran (Kaiserstadt mit goldenem Palast), die dunkle Zitadelle des Eisernen Reiches und der Smaragdpalast mit Gärten stechen mit großem Mauerring heraus.
 - Die Saelaner sind Seefahrer: Ihre Flotten kreuzen sichtbar vor den Küsten, und im Krieg überfallen sie Küstenstädte jenseits des Meeres. Eigene Kriegsschiffe helfen bei der Abwehr.
 
 ### Komfort
@@ -177,6 +179,8 @@ Das Spiel ist für Android ausgelegt und bleibt am PC mit Tastatur und Maus spie
 
 ### Militär
 - **Garnisonsplätze**: Jede Kaserne bietet 40 Plätze (Archerie, Stall und Burg weitere). Wer keinen Platz hat, lagert als Heer vor der Stadt.
+- **Heere sind sichtbar**: Jeder Soldat, jede Ramme und jedes Schiff ist einzeln zu sehen. Heere marschieren in Kolonne (Ritter vorn, dann Speere, Miliz, Bogen), Rammen und Wagen folgen dahinter. Die Zahl über dem Heer entfällt.
+- **Garnison braucht Platz**: Je größer die Garnison, desto mehr Zelte, Baracken und Exerzierplätze stehen rund um die Stadt. Der Kaiser unterhält ein sehr großes Heer, die Inselkönigreiche ein noch größeres.
 - **Feldlager**: frei platzierbare Lager auch weit draußen. Heere dort erholen sich, verteidigen sich um 30 % besser (bis 60 Mann) und sehen weit ins Land.
 - **6 Einheiten**: Miliz, Speerträger, Bogenschützen, Ritter, Rammen und Späher.
 - **Konter-System**: Speer schlägt Ritter, Ritter schlagen Bogen, Bogen schlagen Speer. Bogenschützen schießen zuerst, Rammen brechen Mauern.

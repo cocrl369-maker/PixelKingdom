@@ -6,7 +6,7 @@ namespace PixelKingdom
     /// <summary>Siedlungen (aus ihren echten Gebäuden zusammengesetzt), Armeen, Grenzen und Marschrouten.</summary>
     public class EntityRenderer : MonoBehaviour
     {
-        class View { public GameObject go, shadowGo; public Mesh mesh, shadow; public int sig = int.MinValue; public bool flip; }
+        class View { public GameObject go, shadowGo; public Mesh mesh, shadow; public int sig = int.MinValue; public bool flip; public int dir; }
 
         Game game;
         Material spriteMat, shadowMat;
@@ -116,6 +116,7 @@ namespace PixelKingdom
                 int h = s.faction * 7919 + SettlementLayout.CenterLevel(game, s) * 31 + (int)game.Season * 977 + Palette.Index * 13;
                 for (int i = 0; i < s.buildings.Length; i++) h = h * 17 + s.buildings[i];
                 foreach (var b in s.placed) h = h * 31 + b.x * 1009 + b.y * 13 + b.type;
+                h = h * 13 + game.GarrisonCount(s) / 12;
                 foreach (var q in s.queue) if (q.kind == 0) h = h * 29 + q.x * 997 + q.y;
                 return h;
             }
@@ -188,13 +189,19 @@ namespace PixelKingdom
                 bool visible = game.IsDiscovered((int)a.x, (int)a.y) && (a.faction == game.PlayerId || IsSeenByPlayer(a));
                 v.go.SetActive(visible); v.shadowGo.SetActive(visible);
                 if (!visible) continue;
-                // Blickrichtung
+                // Marschrichtung (8 Richtungen) – die Formation dreht sich mit
                 if (a.path != null && a.pathIndex < a.path.Count)
                 {
-                    float nx = WorldMap.X(a.path[a.pathIndex]) + 0.5f;
-                    if (Mathf.Abs(nx - a.x) > 0.05f) v.flip = nx < a.x;
+                    float nx = WorldMap.X(a.path[a.pathIndex]) + 0.5f, ny = WorldMap.Y(a.path[a.pathIndex]) + 0.5f;
+                    float ddx = nx - a.x, ddy = ny - a.y;
+                    if (ddx * ddx + ddy * ddy > 0.0025f)
+                    {
+                        int d = Mathf.RoundToInt(Mathf.Atan2(ddy, ddx) / (Mathf.PI / 4f));
+                        v.dir = (d + 8) % 8;
+                        if (Mathf.Abs(ddx) > 0.05f) v.flip = ddx < 0;
+                    }
                 }
-                int sig = ArmySig(a) * 2 + (v.flip ? 1 : 0);
+                int sig = ArmySig(a) * 16 + v.dir * 2 + (v.flip ? 1 : 0);
                 if (sig != v.sig) { v.sig = sig; BuildArmy(a, v); }
                 var tr = v.go.transform;
                 Vector2 cur = tr.position, target = new Vector2(a.x, a.y);
@@ -221,47 +228,98 @@ namespace PixelKingdom
             unchecked
             {
                 int h = a.faction * 31 + (a.atSea ? 7 + game.ShipClass * 997 : 0) + a.settlers * 13 + Palette.Index * 101;
-                for (int u = 0; u < Units.Count; u++) h = h * 7 + Mathf.Min(a.units[u], 6);
+                for (int u = 0; u < Units.Count; u++) h = h * 1009 + a.units[u];
                 return h;
             }
         }
 
+        /// <summary>
+        /// Das Heer als Formation: jeder Soldat einzeln, in engen Reihen in Marschrichtung. Vorne die Reiterei,
+        /// dann Speere, Miliz, Bogenschützen und Späher, dahinter die Belagerungsgeräte und Wagen.
+        /// Auf See: ein Schiff je Schiffsladung.
+        /// </summary>
         void BuildArmy(ArmyData a, View v)
         {
             qb.Clear(); sb.Clear();
             var f = game.F(a.faction);
             Color32 fc = f != null ? (Color32)Palette.FactionColor(f.color) : new Color32(255, 255, 255, 255);
             var white = new Color32(255, 255, 255, 255);
-            // Lokale Koordinaten; die Tiefe kommt über die Position des Objekts
-            void Put(string name, float dx, float dy)
+            void Put(string name, float dx, float dy, bool flip)
             {
                 var s = SpriteLib.Get(name);
                 if (s == null) return;
-                float z = -0.01f - dy * 0.04f;
-                qb.Add(s, dx, dy, z, white, v.flip);
-                if (s.Overlay != null) qb.Add(s.Overlay, dx, dy, z - 0.002f, fc, v.flip);
+                float z = -0.01f + dy * 0.04f;   // weiter hinten (Norden) = weiter weg
+                qb.Add(s, dx, dy, z, white, flip);
+                if (s.Overlay != null) qb.Add(s.Overlay, dx, dy, z - 0.002f, fc, flip);
                 if (s.Shadow != null) sb.Add(s.Shadow, dx, dy, 0f, white);
             }
+            float ang = v.dir * Mathf.PI / 4f;
+            var fwd = new Vector2(Mathf.Cos(ang), Mathf.Sin(ang));
+            if (v.dir == 0 && v.flip) fwd = new Vector2(-1, 0);
+            var side = new Vector2(-fwd.y, fwd.x);
+            var pts = new List<(string name, Vector2 p)>();
+            int total = a.settlers; for (int u = 0; u < Units.Count; u++) total += a.units[u];
+
             if (a.atSea)
             {
-                int cls = a.faction == game.S.playerFaction ? game.ShipClass : 1;
-                Put(cls >= 3 ? "u_ship3" : cls == 2 ? "u_ship2" : "u_ship", 0, -0.1f);
+                // Flotte: ein Schiff je Ladung, versetzt in Reihen
+                bool mine = a.faction == game.S.playerFaction;
+                int cls = mine ? Mathf.Max(1, game.ShipClass) : 2;
+                string ship = cls >= 3 ? "u_ship3" : cls == 2 ? "u_ship2" : "u_ship";
+                int n = Mathf.Clamp(Mathf.CeilToInt(total / (float)Game.ShipCap(cls)), 1, 40);
+                int rowW = Mathf.Min(5, n);
+                for (int k = 0; k < n; k++)
+                {
+                    int row = k / rowW, col = k % rowW;
+                    float lat = (col - (Mathf.Min(rowW, n - row * rowW) - 1) / 2f) * 1.15f + (row % 2) * 0.35f;
+                    pts.Add((ship, -fwd * (row * 0.95f) + side * lat));
+                }
             }
-            else if (a.settlers > 0 && a.units[0] + a.units[1] + a.units[2] + a.units[3] == 0) { Put("u_cart", 0, -0.1f); Put("u_banner", -0.45f, 0.05f); }
             else
             {
                 var af = game.F(a.faction);
-                bool islandArmy = af != null && af.continent >= 4 && !af.isPlayer;
-                var kinds = new List<string>();
-                for (int u = 0; u < Units.Count && kinds.Count < 3; u++)
-                    if (a.units[u] > 0) kinds.Add((islandArmy ? "iu_" : "u_") + (UType)u);
-                int total = 0; for (int u = 0; u < Units.Count; u++) total += a.units[u];
-                while (kinds.Count < Mathf.Min(3, total)) kinds.Add(kinds[0]);
-                float[] ox = { 0f, -0.42f, 0.42f };
-                float[] oy = { -0.15f, 0.05f, 0.08f };
-                for (int k = kinds.Count - 1; k >= 0; k--) Put(kinds[k], ox[k], oy[k]);
-                Put("u_banner", 0.15f, 0.25f);
+                string pre = af != null && af.continent >= 4 && !af.isPlayer ? "imu_" : "mu_";
+                // Bei sehr großen Heeren steht eine Figur für mehrere Soldaten (höchstens 1200 Figuren)
+                int per = Mathf.Max(1, Mathf.CeilToInt(total / 1200f));
+                UType[] order = { UType.Ritter, UType.Speer, UType.Miliz, UType.Bogen, UType.Spaeher };
+                int inf = 0; foreach (var u in order) inf += a.units[(int)u] / per;
+                int files = Mathf.Clamp(Mathf.CeilToInt(Mathf.Sqrt(inf * 0.7f)), 3, 24);   // Marschkolonne: tiefer als breit
+                float depth = 0f;
+                foreach (var u in order)
+                {
+                    int n = Mathf.CeilToInt(a.units[(int)u] / (float)per);
+                    if (n <= 0) continue;
+                    bool cav = u == UType.Ritter || u == UType.Spaeher;
+                    float lat = cav ? 0.48f : 0.32f, dep = cav ? 0.4f : 0.26f;   // sichtbarer Abstand zwischen den Soldaten
+                    int w = cav ? Mathf.Max(2, Mathf.RoundToInt(files * 0.32f / 0.48f)) : files;
+                    for (int k = 0; k < n; k++)
+                    {
+                        int rank = k / w, file = k % w;
+                        int inRow = Mathf.Min(w, n - rank * w);
+                        float jitter = ((k * 37) % 7 - 3) * 0.008f;
+                        pts.Add((pre + u, -fwd * (depth + rank * dep + jitter) + side * ((file - (inRow - 1) / 2f) * lat)));
+                    }
+                    depth += Mathf.CeilToInt(n / (float)w) * dep + 0.2f;
+                }
+                // Belagerungsgeräte und Wagen folgen dahinter
+                int rams = Mathf.CeilToInt(a.units[(int)UType.Ramme] / (float)per);
+                int carts = a.settlers > 0 ? Mathf.Clamp(Mathf.CeilToInt(a.settlers / 12f), 1, 6) : 0;
+                if (rams + carts > 0) depth += 0.35f;
+                for (int k = 0; k < rams + carts; k++)
+                {
+                    int rank = k / 4, file = k % 4;
+                    int inRow = Mathf.Min(4, rams + carts - rank * 4);
+                    pts.Add((k < rams ? pre + UType.Ramme : "mu_cart", -fwd * (depth + rank * 0.6f) + side * ((file - (inRow - 1) / 2f) * 0.8f)));
+                }
+                // Banner an der Spitze
+                pts.Add(("u_banner", fwd * 0.25f + side * 0.1f));
             }
+            // Formation um die Heeresposition zentrieren
+            Vector2 c = Vector2.zero;
+            foreach (var p in pts) c += p.p;
+            if (pts.Count > 0) c /= pts.Count;
+            bool flipS = fwd.x < -0.1f || (Mathf.Abs(fwd.x) <= 0.1f && v.flip);
+            foreach (var p in pts) Put(p.name, p.p.x - c.x, p.p.y - c.y - 0.1f, flipS);
             qb.ToMesh(v.mesh); sb.ToMesh(v.shadow);
             v.mesh.bounds = new Bounds(Vector3.zero, new Vector3(1000, 1000, 100));
             v.shadow.bounds = new Bounds(Vector3.zero, new Vector3(1000, 1000, 100));

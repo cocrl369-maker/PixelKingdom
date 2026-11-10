@@ -1107,6 +1107,60 @@ namespace PixelKingdom
             }
         }
 
+        /// <summary>
+        /// Kleine Figur für Heeres-Formationen (etwa halb so groß wie die große Einheit): Jeder Soldat
+        /// ist einzeln zu sehen. Im Saelaner-Stil mit hellem Umhang und kupfernem Helm.
+        /// </summary>
+        static void MiniUnit(PixelCanvas c, int cx, int gy, UType t)
+        {
+            Px helm = Style == 1 ? RoofCopper.Light : IronL, cloak = Style == 1 ? Lime : Px.TintDark;
+            void Foot(Px body)
+            {
+                c.Set(cx - 1, gy, SoilD); c.Set(cx + 1, gy, SoilD);
+                c.Rect(cx - 1, gy - 3, 3, 3, body);
+                c.Set(cx - 2, gy - 2, cloak);
+                c.Set(cx, gy - 4, Skin);
+                c.HLine(cx - 1, cx + 1, gy - 5, helm);
+                if (Style == 1) c.Set(cx, gy - 6, SailStripe);
+            }
+            switch (t)
+            {
+                case UType.Miliz:
+                    Foot(H("#8A6A44")); c.Set(cx, gy - 2, Px.Tint);
+                    c.VLine(cx + 2, gy - 6, gy, BeamL); c.Set(cx + 2, gy - 7, IronL);
+                    break;
+                case UType.Speer:
+                    Foot(Px.Tint);
+                    c.VLine(cx + 2, gy - 8, gy, BeamL); c.Set(cx + 2, gy - 9, IronL);
+                    c.Rect(cx - 3, gy - 3, 2, 2, Px.TintDark);
+                    break;
+                case UType.Bogen:
+                    Foot(Px.Tint); c.HLine(cx - 1, cx + 1, gy - 5, Style == 1 ? helm : H("#4E7A3A"));
+                    c.Set(cx + 2, gy - 5, Beam); c.Set(cx + 3, gy - 4, Beam); c.Set(cx + 3, gy - 3, Beam); c.Set(cx + 2, gy - 2, Beam);
+                    break;
+                case UType.Ritter:
+                case UType.Spaeher:
+                    {
+                        Px horse = t == UType.Ritter ? H("#6E4628") : H("#C9A26A");
+                        c.Rect(cx - 3, gy - 3, 7, 2, horse); c.Set(cx + 4, gy - 4, horse); c.Set(cx + 4, gy - 5, horse);
+                        c.Set(cx - 2, gy - 1, horse.Mul(0.7f)); c.Set(cx + 2, gy - 1, horse.Mul(0.7f)); c.Set(cx - 2, gy, K); c.Set(cx + 2, gy, K);
+                        c.Rect(cx - 1, gy - 6, 2, 3, Px.Tint);
+                        c.HLine(cx - 1, cx, gy - 7, t == UType.Ritter ? helm : Skin);
+                        if (t == UType.Ritter) { c.Line(cx + 1, gy - 5, cx + 5, gy - 9, BeamL); c.Set(cx + 5, gy - 10, IronL); }
+                        break;
+                    }
+                case UType.Ramme:
+                    c.Rect(cx - 5, gy - 3, 10, 2, Log); c.HLine(cx - 5, cx + 4, gy - 3, LogL);
+                    c.Rect(cx + 4, gy - 4, 2, 3, IronD);
+                    c.Tri(cx - 5, gy - 4, cx, gy - 8, cx + 5, gy - 4, Style == 1 ? Sail : RoofThatch.Mid);
+                    c.Set(cx - 3, gy, PlankDD); c.Set(cx + 3, gy, PlankDD);
+                    break;
+                default:
+                    c.Rect(cx - 3, gy - 3, 6, 2, Plank); c.Ellipse(cx, gy - 5, 3, 2, Cloth); c.Set(cx - 2, gy, PlankDD); c.Set(cx + 2, gy, PlankDD);
+                    break;
+            }
+        }
+
         /// <summary>Holk: breiter Rumpf, zwei Masten, Kastell achtern.</summary>
         static void Ship2(PixelCanvas c, int cx, int gy)
         {
@@ -1308,6 +1362,44 @@ namespace PixelKingdom
             c.Set(cx, gy - 16, waterL);
         }
 
+        // ---- Unterkünfte der Garnison (wachsen mit der Zahl der Soldaten) ----
+        static void Lagerzelte(PixelCanvas c, int cx, int gy)
+        {
+            Px canvas = Style == 1 ? Sail : Cloth, canvasD = Style == 1 ? H("#C8A880") : ClothD;
+            foreach (var (tx, h) in new[] { (cx - 5, 9), (cx + 5, 8) })
+            {
+                c.Tri(tx - 5, gy, tx, gy - h, tx + 5, gy, canvas);
+                c.Tri(tx, gy - h, tx + 5, gy, tx + 1, gy, canvasD);
+                c.HLine(tx - 3, tx + 3, gy - 3, Px.Tint);
+                c.Tri(tx - 1, gy, tx, gy - 3, tx + 1, gy, K);
+            }
+            c.VLine(cx, gy - 14, gy - 6, Beam); c.Rect(cx + 1, gy - 14, 3, 2, Px.Tint);
+            c.Set(cx - 1, gy, FireL); c.Set(cx + 1, gy, Fire);
+        }
+
+        static void Baracke(PixelCanvas c, int cx, int gy)
+        {
+            // lange Mannschaftsbaracke mit Waffenständer
+            House(c, cx - 2, gy, 24, 7, 6, WallStyle.Wood, RoofBrown, 0, false, 3);
+            for (int k = 0; k < 3; k++) { c.VLine(cx + 13 + k * 2, gy - 8, gy, BeamL); c.Set(cx + 13 + k * 2, gy - 9, IronL); }
+            c.HLine(cx + 12, cx + 18, gy - 4, Beam);
+        }
+
+        static void Exerzierplatz(PixelCanvas c, int cx, int gy)
+        {
+            // eingezäunter Platz, auf dem Soldaten üben, dazu eine Strohpuppe
+            var sand = H("#C8B07A");
+            c.Rect(cx - 13, gy - 8, 27, 9, sand);
+            for (int x = cx - 13; x <= cx + 13; x += 3) { c.VLine(x, gy - 10, gy - 8, Beam); c.Set(x, gy, Beam); }
+            c.HLine(cx - 13, cx + 13, gy - 9, BeamL); c.HLine(cx - 13, cx + 13, gy, PlankD);
+            for (int k = 0; k < 6; k++)
+            {
+                int x = cx - 9 + (k % 3) * 6, y = gy - 4 + (k / 3) * 3;
+                c.Rect(x - 1, y - 2, 2, 2, Px.Tint); c.Set(x, y - 3, Skin); c.Set(x, y - 4, Style == 1 ? RoofCopper.Light : IronL); c.Set(x + 1, y - 4, BeamL); c.Set(x + 1, y - 3, BeamL);
+            }
+            c.VLine(cx + 11, gy - 8, gy - 2, LogD); c.Ellipse(cx + 11, gy - 7, 1.5f, 2, Hay);
+        }
+
         static void Feldlager(PixelCanvas c, int cx, int gy)
         {
             // Palisadenring (hinten), Zelte, Fahne, Waffenständer
@@ -1492,6 +1584,9 @@ namespace PixelKingdom
                 A("b_Wachturm", 48, Wachturm);
                 A("p_nomads", 56, FahrendesVolk);
                 A("b_Mauer", 32, (c, x, y) => Tower(c, x, y, true));
+                A("b_lagerzelte", 32, Lagerzelte);
+                A("b_baracke", 48, Baracke);
+                A("b_exerzierplatz", 40, Exerzierplatz);
                 // Zentren
                 A("c_dorf", 48, Dorfhaus);
                 A("c_rathaus", 64, Rathaus);
@@ -1551,6 +1646,12 @@ namespace PixelKingdom
             foreach (UType u in Enum.GetValues(typeof(UType))) { var uu = u; Add("u_" + u, 32, (c, x, y) => Unit(c, x, y, uu)); }
             Style = 1;
             foreach (UType u in Enum.GetValues(typeof(UType))) { var uu = u; Add("iu_" + u, 32, (c, x, y) => Unit(c, x, y, uu)); }
+            Style = 0;
+            // kleine Figuren für Formationen (je Soldat eine)
+            foreach (UType u in Enum.GetValues(typeof(UType))) { var uu = u; Add("mu_" + u, 24, (c, x, y) => MiniUnit(c, x, y, uu)); }
+            Add("mu_cart", 24, (c, x, y) => MiniUnit(c, x, y, (UType)99));
+            Style = 1;
+            foreach (UType u in Enum.GetValues(typeof(UType))) { var uu = u; Add("imu_" + u, 24, (c, x, y) => MiniUnit(c, x, y, uu)); }
             Style = 0;
             Add("u_cart", 32, (c, x, y) => Unit(c, x, y, (UType)99));
             Add("u_ship", 40, Ship);

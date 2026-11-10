@@ -39,6 +39,15 @@ namespace PixelKingdom
         public int ShipClass => Math.Min(ShipTech, YardLevel);
         public string ShipClassName => ShipClassNames[ShipClass];
         public int FleetSize => S.merchantShips + S.warShips;
+        public static int ShipCap(int cls) => ShipCapacity[Math.Max(1, Math.Min(3, cls))];
+
+        /// <summary>Wie weit sich ein Heer auf der Karte ausbreitet (für Anklicken und Auswahlrahmen).</summary>
+        public static float ArmyRadius(ArmyData a)
+        {
+            int n = a.settlers;
+            for (int u = 0; u < Units.Count; u++) n += a.units[u];
+            return 0.6f + 0.19f * (float)Math.Sqrt(Math.Max(1, n));   // passt zur Formation (Abstand ~0,3 Felder je Soldat)
+        }
 
         public int FleetMax
         {

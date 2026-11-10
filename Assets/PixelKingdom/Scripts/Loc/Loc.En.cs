@@ -1433,6 +1433,16 @@ namespace PixelKingdom
             d["Die Sterne"] = "The stars";
             d["Der Dieb"] = "The thief";
             d["Der Schlaf"] = "Sleep";
+            d["Das Eiserne Reich empfängt keine Gesandten – es tötet sie. Diese Insel lässt sich nur erobern."] = "The Iron Realm receives no envoys – it kills them. This island can only be conquered.";
+            d["Eisernes Reich von "] = "Iron Realm of ";
+            d["Ich habe die Namen der Späher in die Chronik geschrieben. Das Eiserne Reich ist kein Ort für Kundschafter – wer dort landet, braucht Schilde, Speere und viele Schiffe."] = "I have written the scouts' names into the chronicle. The Iron Realm is no place for scouts – whoever lands there needs shields, spears and many ships.";
+            d["Keine Späher mehr dorthin schicken"] = "Send no more scouts there";
+            d["Smaragdkrone von "] = "Emerald Crown of ";
+            d["Tage vergehen, doch von den {0} Spähern, die nach Eisenfels gesegelt sind, kommt keine Nachricht. Schließlich bringen Fischer ihr Boot zurück: leer, die Planken voller schwarzer Pfeile. Am Mast hängt ein Wimpel des Eisernen Reiches – eine Warnung."] = "Days pass, but there is no word from the {0} scouts who sailed to Ironcliff. At last fishermen bring back their boat: empty, its planks full of black arrows. A pennant of the Iron Realm hangs from the mast – a warning.";
+            d["Verschollen"] = "Lost";
+            d["Wieder sind {0} Späher an der Küste von Eisenfels verschwunden. Das Eiserne Reich duldet keine Fremden. Nur ein starkes Heer wird dort etwas ausrichten."] = "Again {0} scouts have vanished on the coast of Ironcliff. The Iron Realm tolerates no strangers. Only a strong army will achieve anything there.";
+            d["Wir werden sie rächen"] = "We will avenge them";
+            d["{0}. Von den Saelanern der Smaragdinsel hören wir nur Gutes – doch über die Eisernen erzählen Fischer schreckliche Dinge: Wer an ihrer Küste landet, kehrt nicht zurück. Sie verhandeln nicht. Wenn wir diese Insel je beherrschen wollen, dann nur mit Gewalt."] = "{0}. We hear only good things of the Saelaners of the Emerald Isle – but fishermen tell terrible tales of the Iron ones: whoever lands on their coast never returns. They do not negotiate. If we ever want to rule that island, it will only be by force.";
         }
     }
 }

@@ -788,20 +788,13 @@ namespace PixelKingdom
                 }
                 if (s.id == gm.SelSettlement) { float bs = 3.4f * 16f * zoom / S; var cpos = gm.Entities.SettlementWorldPos(s); if (WorldToVirtual(cpos, out var cv)) Brackets(new Rect(cv.x - bs / 2, cv.y - bs * 0.6f, bs, bs), 5, Palette.UIText); }
             }
+            // Heere: keine Zahl mehr – die Größe sieht man an der Formation. Nur der Auswahlrahmen.
             foreach (var a in G.Armies)
             {
-                if (!gm.Entities.ArmyVisible(a.id)) continue;
-                var wp = gm.Entities.ArmyWorldPos(a) + Vector3.up * 1.3f;
-                if (!WorldToVirtual(wp, out var v)) continue;
-                string t = (a.units.Sum() + a.settlers).ToString();
-                var f = G.F(a.faction);
-                var fc = f != null ? Palette.FactionColor(f.color) : Color.white;
-                float w = PixelFont.Width(t) + 6;
-                var r = new Rect(Mathf.Round(v.x - w / 2), Mathf.Round(v.y - 10), w, 10);
-                Fill(r, f != null && f.isPlayer ? Palette.UIPanel : (G.AtWar(G.PlayerId, a.faction) ? Palette.UIBad : Palette.UIPanelDark));
-                Fill(new Rect(r.x, r.yMax - 1, r.width, 1), fc);
-                Text(r.x + 3, r.y + 1, t, Palette.UIText);
-                if (a.id == gm.SelArmy) { float bs = 1.6f * 16f * zoom / S; Brackets(new Rect(v.x - bs / 2, v.y + 4, bs, bs), 4, Palette.UIText); }
+                if (a.id != gm.SelArmy || !gm.Entities.ArmyVisible(a.id)) continue;
+                if (!WorldToVirtual(gm.Entities.ArmyWorldPos(a), out var v)) continue;
+                float bs = Game.ArmyRadius(a) * 2f * 16f * zoom / S;
+                Brackets(new Rect(v.x - bs / 2, v.y - bs / 2, bs, bs), 4, Palette.UIText);
             }
             // Ruinen und Lager: kleine Beschriftung, Auswahl-Klammern
             foreach (var poi in G.Pois)

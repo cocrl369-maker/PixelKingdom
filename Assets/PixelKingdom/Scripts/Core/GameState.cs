@@ -8,7 +8,7 @@ namespace PixelKingdom
     [Serializable]
     public class GameState
     {
-        public const int CurrentVersion = 6;   // 4 = Gebäude mit Bauplatz, Wissen, Fahrendes Volk
+        public const int CurrentVersion = 7;   // 4 = Gebäude mit Bauplatz, Wissen, Fahrendes Volk
         public int version = CurrentVersion;
         public int seed;
         public int day;

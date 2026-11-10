@@ -205,6 +205,51 @@ namespace PixelKingdom
                     }
                 }
             }
+            // Unterkünfte der Garnison: Je mehr Soldaten, desto mehr Zelte, Baracken und Übungsplätze rund um den Ort.
+            // So sieht man die Größe des Heeres schon am belegten Platz.
+            int gc = g.GarrisonCount(s);
+            if (gc >= 10)
+            {
+                int halls = Math.Min(10, gc / 80);
+                int yards = gc >= 40 ? Math.Min(3, 1 + gc / 300) : 0;
+                int tents = Math.Min(48, Math.Max(1, gc / 14));
+                var ring = new List<(int x, int y, float d)>();
+                // Großzügiger Suchring – sortiert nach Abstand, also wird nur so weit hinaus gebaut wie nötig.
+                int rmax = g.TownRadius(s) + 6 + (int)Math.Sqrt(gc / 6f);
+                for (int y = cy - rmax; y <= cy + rmax; y++)
+                    for (int x = cx - rmax; x <= cx + rmax; x++)
+                    {
+                        float d = (float)Math.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
+                        if (d < WR + 0.5f || d > rmax) continue;
+                        uint hh = (uint)(x * 2654435761u ^ y * 40503u);
+                        ring.Add((x, y, d + (hh % 100) / 150f));
+                    }
+                ring.Sort((p1, p2) => p1.d.CompareTo(p2.d));
+                bool CampFree(int x, int y)
+                {
+                    if (!WorldMap.In(x, y)) return false;
+                    int i = WorldMap.Idx(x, y);
+                    if (used.Contains(i) || !map.Buildable(i) || map.deposit[i] != 0 || map.road[i] || g.BuildingOwnerAt(x, y) != -1) return false;
+                    int o = map.owner[i];
+                    return o == s.faction || o == -1;
+                }
+                int ri = 0;
+                void PlaceCamp(string name, int count)
+                {
+                    for (int k = 0; k < count && ri < ring.Count; )
+                    {
+                        var t = ring[ri++];
+                        if (!CampFree(t.x, t.y)) continue;
+                        Use(t.x, t.y);
+                        res.Add(new Placed(pre + name, t.x + 0.5f, t.y + 0.25f, false, true));
+                        k++;
+                    }
+                }
+                PlaceCamp("b_baracke", halls);
+                PlaceCamp("b_exerzierplatz", yards);
+                PlaceCamp("b_lagerzelte", tents);
+            }
+
             // Baustellen mit Gerüst
             foreach (var q in s.queue)
                 if (q.kind == 0 && q.x >= 0) res.Add(new Placed("b_scaffold", q.x + 0.5f, q.y + 0.28f));

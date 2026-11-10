@@ -70,6 +70,8 @@ Die Unity-Teile kompilieren gegen das NuGet-Paket `UnityEngine.Modules` (Ziel `n
 
 ## Stand (zuletzt erledigt)
 
+- Inselkönigreiche: `FactionData.xenophobic` (Eisenfels, nur Krieg, `ScoutsLostAt` + Ereignis „scouts_lost“) und `peaceful` (Smaragdinsel, nie Krieg). Große Hauptstädte über `SettlementData.grand` (1 Valdoran, 2 Zitadelle, 3 Smaragdpalast). Spielstand-Version 7.
+- Heere einzeln dargestellt (`EntityRenderer.BuildArmy`, Figuren „mu_“/„imu_“), Klick-/Auswahlradius `Game.ArmyRadius`. Garnisonslager um Städte (`SettlementLayout`, Sprites b_lagerzelte/b_baracke/b_exerzierplatz).
 - Volk der Saelaner (Kultur 4) auf den großen Inseln: zweiter Baustil in `SpriteArt` (`Style = 1`, Sprites mit Präfix „i“ bzw. „iu_“), Seefahrer-KI (`IsSeafarer`, Küstenüberfälle), Flotten-Darstellung (`Render/TrafficRenderer.cs`).
 - Komfort: 3 Spielstände (`SaveSystem.Slot`), Abreißen/Verlegen (`Sim/Placement.cs`), Problem-Übersicht, Statistik & Erfolge (`Sim/Progress.cs`), Energiesparen, Söldner, Bau beschleunigen.
 - Straßen (`Sim/Roads.cs`, `WorldMap.road`): Wegverlust halbiert, Bewegungskosten 0,55, Handel zwischen verbundenen Orten, Fuhrwerke.

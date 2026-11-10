@@ -422,7 +422,8 @@ namespace PixelKingdom
             foreach (var a in Game.Armies)
             {
                 if (!Entities.ArmyVisible(a.id)) continue;
-                float d = (a.x - p.x) * (a.x - p.x) + (a.y + 0.3f - p.y) * (a.y + 0.3f - p.y);
+                float rr = Mathf.Max(r, Game.ArmyRadius(a));
+                float d = ((a.x - p.x) * (a.x - p.x) + (a.y - p.y) * (a.y - p.y)) / (rr * rr) * r * r;
                 if (a.faction == Game.PlayerId) d *= 0.6f;
                 if (d < bd) { bd = d; best = a; }
             }
@@ -493,7 +494,8 @@ namespace PixelKingdom
             foreach (var a in g.Armies)
             {
                 if (!Entities.ArmyVisible(a.id)) continue;
-                float d = (a.x - HoverPoint.x) * (a.x - HoverPoint.x) + (a.y + 0.3f - HoverPoint.y) * (a.y + 0.3f - HoverPoint.y);
+                float rr = Mathf.Max(0.8f, Game.ArmyRadius(a));
+                float d = ((a.x - HoverPoint.x) * (a.x - HoverPoint.x) + (a.y - HoverPoint.y) * (a.y - HoverPoint.y)) / (rr * rr) * 0.64f;
                 if (a.faction == g.PlayerId) d *= 0.6f;
                 if (d < bd) { bd = d; best = a; }
             }
