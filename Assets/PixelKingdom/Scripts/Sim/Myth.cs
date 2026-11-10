@@ -11,7 +11,8 @@ namespace PixelKingdom
     /// </summary>
     public partial class Game
     {
-        public const int PoiTablet = 3, PoiHoard = 4, PoiSpring = 5;
+        public const int PoiTablet = 3, PoiHoard = 4, PoiSpring = 5, PoiShrine = 6;
+        public const int StarRunesForShrine = 2;
         public const int RunesForHoard = 3;
 
         // Rätsel: Frage, richtige Antwort, zwei falsche
@@ -24,18 +25,26 @@ namespace PixelKingdom
             new[] { "Am Morgen geht es auf vier Beinen, am Mittag auf zwei, am Abend auf drei. Was ist es?", "Der Mensch", "Das Pferd", "Der Drache" },
             new[] { "Ich bin leichter als eine Feder, doch selbst der stärkste Mann hält mich nicht lange fest. Was bin ich?", "Der Atem", "Ein Gedanke", "Der Rauch" },
             new[] { "Ich fresse alles, was man mir gibt – doch gibst du mir zu trinken, so sterbe ich. Was bin ich?", "Das Feuer", "Die Zeit", "Der Wolf" },
+            new[] { "Ich habe einen Rücken, doch keinen Bauch, Blätter, doch keine Äste. Was bin ich?", "Ein Buch", "Ein Baum", "Ein Fisch" },
+            new[] { "Je mehr von mir da ist, desto weniger siehst du. Was bin ich?", "Die Dunkelheit", "Das Licht", "Das Gold" },
+            new[] { "Ich laufe, doch habe keine Beine; ich habe ein Bett, doch schlafe nie. Was bin ich?", "Ein Fluss", "Ein Pferd", "Der Mond" },
+            new[] { "Was gehört dir, doch andere benutzen es viel öfter als du?", "Dein Name", "Dein Schwert", "Dein Haus" },
+            new[] { "Ich komme nachts ohne Ruf und gehe am Tag, ohne gestohlen zu werden. Was bin ich?", "Die Sterne", "Der Dieb", "Der Schlaf" },
         };
 
         public static string PoiActionLabel(PoiData p) =>
+            p.type == PoiShrine ? (p.done ? Loc.T("Zum Sternenschrein ziehen") : Loc.T("Den Sternenschrein betreten")) :
             p.type == PoiTablet ? (p.done ? Loc.T("Zur Steintafel ziehen") : Loc.T("Die Steintafel lesen")) : p.type == PoiHoard ? (p.done ? Loc.T("Zum Drachenhort ziehen") : Loc.T("Den Drachenhort stürmen")) : Loc.T("Aus der Heiligen Quelle trinken");
 
         public static string PoiActionTip(PoiData p) =>
+            p.type == PoiShrine ? Loc.T("Ein Ort voller Sternenlicht. Wer ihn betritt, empfängt einen dauerhaften Segen.") :
             p.type == PoiTablet ? Loc.T("Auf der Tafel steht ein Rätsel. Wer drei löst, erfährt, wo der Drachenhort liegt.")
             : p.type == PoiHoard ? Loc.F("Steinerne Wächter, etwa {0} Mann stark. Ein riesiger Schatz wartet.", Math.Max(1, (int)Math.Round(p.guards.Sum() / 5f) * 5))
             : Loc.T("Volle Moral für das Heer und Freude im nächsten Ort.");
 
         public static string PoiDescription(PoiData p) =>
-            p.type == PoiTablet ? (p.done ? Loc.T("Das Rätsel dieser Tafel ist gelöst. Ihre Runen sind erloschen.") : Loc.T("Ein mannshoher Stein mit glimmenden Runen. Ein Heer oder Späher kann das Rätsel lesen und lösen."))
+            p.type == PoiShrine ? (p.done ? Loc.T("Das Sternenlicht ist in euer Reich übergegangen.") : Loc.T("Ein Kreis aus Kristallsäulen auf einer Lichtung. Nachts leuchten sie wie Sterne. Die Saelaner sagen, hier hätten die ersten Seefahrer ihren Weg gefunden."))
+            : p.type == PoiTablet ? (p.done ? Loc.T("Das Rätsel dieser Tafel ist gelöst. Ihre Runen sind erloschen.") : Loc.T("Ein mannshoher Stein mit glimmenden Runen. Ein Heer oder Späher kann das Rätsel lesen und lösen."))
             : p.type == PoiHoard ? (p.done ? Loc.T("Der Hort ist geplündert. Nur Drachenknochen bleiben.") : Loc.F("Der Hort von Vargrimm, dem letzten Drachen. Steinerne Wächter halten Wacht. __Wächter__: ~{0}", Math.Max(1, (int)Math.Round(p.guards.Sum() / 5f) * 5)))
             : Loc.T("Klares Wasser zwischen moosigen Steinen. Ein Heer, das hier trinkt, gewinnt volle Moral. Danach ruht die Quelle einige Wochen.");
 
@@ -46,6 +55,7 @@ namespace PixelKingdom
                 case PoiTablet: return p.done ? Loc.T("Verstummte Steintafel") : Loc.T("Alte Steintafel");
                 case PoiHoard: return p.done ? Loc.T("Geplünderter Drachenhort") : Loc.T("Drachenhort");
                 case PoiSpring: return Loc.T("Heilige Quelle");
+                case PoiShrine: return p.done ? Loc.T("Erloschener Sternenschrein") : Loc.T("Sternenschrein");
             }
             return null;
         }
@@ -81,6 +91,13 @@ namespace PixelKingdom
                 }
                 else continue;
                 Map.trees[WorldMap.Idx(x, y)] = 0; Map.baseTrees[WorldMap.Idx(x, y)] = 0;
+            }
+            // Sternenschrein: auf einer Lichtung der Smaragdinsel
+            for (int k = 0; k < 20000 && S.shrineX < 0; k++)
+            {
+                int x = r.Next(6, WorldMap.W - 6), y = r.Next(6, WorldMap.H - 6);
+                if (Map.cont[WorldMap.Idx(x, y)] != 5 || !Ok(x, y, 10)) continue;
+                S.shrineX = x; S.shrineY = y;
             }
             // Drachenhort: an einem Berghang auf Eisenfels (sonst irgendwo am Gebirge)
             for (int pass = 0; pass < 2 && S.hoardX < 0; pass++)
@@ -130,6 +147,15 @@ namespace PixelKingdom
                     return true;
                 case PoiHoard:
                     return false;   // Kampf wie bei einem Räuberlager (in VisitPoi)
+                case PoiShrine:
+                    a.mission = (int)ArmyMission.Idle;
+                    if (p.done) { Notify(Loc.T("Der Schrein ruht. Sein Licht ist schon in eurem Reich."), 0); return true; }
+                    p.done = true; PoisVersion++;
+                    S.story.Set("star_blessing");
+                    f.prestige += 40;
+                    Notify(Loc.T("Segen der Sterne: Alle eure Betriebe arbeiten dauerhaft 10 % besser."), 1);
+                    Say(Aldo, "advisor", Loc.T("Als eure Leute den Kreis betraten, flammten die Kristallsäulen auf. Die Saelaner erzählen, wer das Sternenlicht trägt, dem gelingt, was er anfasst. Ich glaube es fast – ich habe noch nie so fleißige Bauern gesehen."));
+                    return true;
             }
             return false;
         }
@@ -153,7 +179,8 @@ namespace PixelKingdom
             if (p == null) { v.Text = Loc.T("Die Tafel ist verschwunden."); v.Opt(Loc.T("Gut so")); return false; }
             var rd = Riddles[p.seed % Riddles.Length];
             v.Text = Loc.T("Moos überwuchert einen mannshohen Stein. Darauf glimmen Runen, die eure Gelehrten mühsam entziffern:") + "\n\n'" + Loc.T(rd[0]) + "'\n\n"
-                   + Loc.F("Gelöste Rätsel: {0}/{1}. Man erzählt, wer drei löst, erfährt, wo der letzte Drache seinen Hort verbarg.", Math.Min(S.runesSolved, RunesForHoard), RunesForHoard);
+                   + Loc.F("Gelöste Rätsel: {0}/{1}. Man erzählt, wer drei löst, erfährt, wo der letzte Drache seinen Hort verbarg.", Math.Min(S.runesSolved, RunesForHoard), RunesForHoard)
+                   + (Map.cont[WorldMap.Idx(p.x, p.y)] == 5 ? "\n" + Loc.F("Eine Sternentafel der Smaragdinsel ({0}/{1}). Beide zusammen weisen den Weg zum Sternenschrein.", S.starRunes, StarRunesForShrine) : "");
             foreach (int k in RiddleOrder(p)) v.Opt(Loc.T(rd[k]));
             v.Opt(Loc.T("Weitergehen, ohne zu antworten"));
             return true;
@@ -183,6 +210,21 @@ namespace PixelKingdom
             }
             Notify(Loc.T("Richtig! ") + reward, 1);
             if (S.runesSolved == RunesForHoard) RevealHoard();
+            if (Map.cont[WorldMap.Idx(p.x, p.y)] == 5)
+            {
+                S.starRunes++;
+                if (S.starRunes == StarRunesForShrine) RevealShrine();
+            }
+        }
+
+        void RevealShrine()
+        {
+            if (S.shrineX < 0 || S.pois.Any(q => q.type == PoiShrine)) return;
+            S.pois.Add(new PoiData { id = NewId(), type = PoiShrine, x = S.shrineX, y = S.shrineY, seed = 2 });
+            PoisVersion++;
+            Reveal(S.shrineX, S.shrineY, 6);
+            RebuildOccupancy();
+            Say(Aldo, "advisor", Loc.T("Die beiden Tafeln der Smaragdinsel sprechen von einem Kreis aus Sternensteinen im Herzen der Insel. Ich habe die Stelle auf der Karte markiert. Kein Wächter, kein Schatz – sagen die Runen. Nur Licht."));
         }
 
         void RevealHoard()
@@ -218,6 +260,13 @@ namespace PixelKingdom
                     v.Opt(Loc.T("Den Lichtern folgen lassen (Wagnis)"));
                     v.Opt(Loc.T("Die Leute vom Moor fernhalten"));
                     return true;
+                case "ghostship":
+                    v.Title = Loc.T("Das Geisterschiff"); v.Icon = "skull";
+                    v.Text = Loc.T("Eure Seeleute schwören bei allen Heiligen: Im Nebel trieb ein Schiff mit zerfetzten Segeln, ohne Mannschaft, und doch brannte an Deck eine grüne Laterne. Im Rumpf soll Gold glänzen.");
+                    v.Opt(S.warShips > 0 ? Loc.T("Mit Kriegsschiffen entern (Wagnis)") : Loc.T("Mit Kriegsschiffen entern (ihr habt keine)"), S.warShips > 0);
+                    v.Opt(Loc.T("Die Seeleute beten lassen und Abstand halten (+Zufriedenheit)"));
+                    v.Opt(Loc.T("Für Seemannsgarn halten"));
+                    return true;
                 case "comet":
                     v.Title = Loc.T("Ein Schweifstern"); v.Icon = "sun";
                     v.Text = Loc.T("Ein Komet mit feurigem Schweif steht am Himmel. Die einen sehen darin ein Zeichen des Glücks, die anderen ein böses Omen. Alle schauen auf euch.");
@@ -240,6 +289,14 @@ namespace PixelKingdom
                         if (Rng.NextDouble() < 0.5) { int g = 80 + Rng.Next(120); p.res[(int)Res.Gold] += g; Notify(Loc.F("Die Irrlichter führten zu einer alten Truhe: {0} Gold!", g), 1); }
                         else { if (s != null) s.pop = Math.Max(5, s.pop - 3); Notify(Loc.T("Die Irrlichter lockten drei Leute ins Moor. Man sah sie nie wieder."), 2); }
                     }
+                    return true;
+                case "ghostship":
+                    if (option == 0 && S.warShips > 0)
+                    {
+                        if (Rng.NextDouble() < 0.55) { p.res[(int)Res.Gold] += 300; S.relics++; Notify(Loc.T("Im Rumpf des Geisterschiffs: 300 Gold und ein uraltes Relikt! Dann verschwand es im Nebel."), 1); }
+                        else { S.warShips--; Notify(Loc.T("Ein Kriegsschiff folgte dem Geisterschiff in den Nebel – und kehrte nie zurück."), 2); }
+                    }
+                    else if (option == 1) foreach (var x in SettlementsOf(p.id)) x.happiness = Math.Min(100, x.happiness + 3);
                     return true;
                 case "comet":
                     if (option == 0 && p.res[(int)Res.Gold] >= 40) { p.res[(int)Res.Gold] -= 40; foreach (var x in SettlementsOf(p.id)) x.happiness = Math.Min(100, x.happiness + 10); }

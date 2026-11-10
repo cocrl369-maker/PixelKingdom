@@ -80,7 +80,7 @@ namespace PixelKingdom
                 ? (p.done ? Loc.T("Hier wurde schon alles durchsucht.") : Loc.T("Alte Mauern aus vergessener Zeit. Ein Heer oder Späher kann sie erkunden – Gold, Waffen, Relikte oder alte Karten warten. Manchmal auch eine Falle."))
                 : Loc.F("Räuber plündern von hier aus die Gegend und machen den Leuten Angst. Hebt das Lager mit einem Heer aus! __Wachen__: ~{0} Mann.", (Mathf.Max(1, Mathf.RoundToInt(p.guards.Sum() / 5f) * 5)));
             Wrapped(new Rect(x, y, r.xMax - x - 8, 40), desc, Palette.UITextDim);
-            if ((p.type == 0 || p.type == Game.PoiTablet || p.type == Game.PoiHoard) && p.done) return;
+            if ((p.type == 0 || p.type == Game.PoiTablet || p.type == Game.PoiHoard || p.type == Game.PoiShrine) && p.done) return;
             var nearest = G.ArmiesOf(G.PlayerId).Where(a => a.units.Sum() > 0).OrderBy(a => (a.x - p.x) * (a.x - p.x) + (a.y - p.y) * (a.y - p.y)).FirstOrDefault();
             string label = p.type == 1 || p.type == Game.PoiHoard ? Loc.T("Nächstes Heer angreifen lassen") : Loc.T("Nächstes Heer schicken");
             if (Button(new Rect(r.xMax - 168, r.yMax - 19, 160, 14), label, nearest != null, nearest != null ? Loc.T("Schickt ") + nearest.name : Loc.T("Ihr habt kein Heer im Feld. Stellt eines in einer Siedlung auf (Reiter 'Truppen')."), "army"))

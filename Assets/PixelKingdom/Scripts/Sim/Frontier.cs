@@ -61,6 +61,12 @@ namespace PixelKingdom
         public float TechProd(FactionData f, BType t)
         {
             if (f == null || !f.isPlayer) return 1f;
+            float star = S.story.Has("star_blessing") ? 1.1f : 1f;   // Segen der Sterne
+            return star * TechProdBase(t);
+        }
+
+        float TechProdBase(BType t)
+        {
             switch (t)
             {
                 case BType.Holzfaeller: return HasTech(Techs.Doppelaxt) ? 1.25f : 1f;
@@ -290,6 +296,6 @@ namespace PixelKingdom
             PoisVersion++;
         }
 
-        public static string PoiSprite(PoiData p) => p.type == 0 ? "p_ruin" : p.type == 1 ? "p_camp" : p.type == 2 ? "p_nomads" : p.type == PoiTablet ? "p_tablet" : p.type == PoiHoard ? "p_hoard" : "p_spring";
+        public static string PoiSprite(PoiData p) => p.type == 0 ? "p_ruin" : p.type == 1 ? "p_camp" : p.type == 2 ? "p_nomads" : p.type == PoiTablet ? "p_tablet" : p.type == PoiHoard ? "p_hoard" : p.type == PoiShrine ? "p_shrine" : "p_spring";
     }
 }

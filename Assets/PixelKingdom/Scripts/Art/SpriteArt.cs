@@ -1167,6 +1167,25 @@ namespace PixelKingdom
             c.Set(cx - 8, gy - 12, runeL); c.Set(cx + 8, gy - 17, runeGlow); c.Set(cx + 9, gy - 9, runeL);
         }
 
+        static void Sternenschrein(PixelCanvas c, int cx, int gy)
+        {
+            var crystal = H("#9FD8F0"); var crystalL = H("#E8FAFF"); var crystalD = H("#5E9CC0"); var glow = H("#FFF6B0");
+            // Steinboden
+            c.Ellipse(cx, gy - 3, 15, 5, H("#C8C0B0")); c.Ellipse(cx, gy - 3.5f, 12, 3.8f, H("#DED6C6"));
+            // Kreis aus Kristallsäulen (hinten kleiner, vorne größer)
+            int[,] cols = { { -11, 2, 9 }, { 11, 2, 9 }, { -6, 4, 11 }, { 6, 4, 11 }, { -12, -1, 13 }, { 12, -1, 13 }, { 0, 5, 8 } };
+            for (int k = 0; k < cols.GetLength(0); k++)
+            {
+                int x = cx + cols[k, 0], by = gy - 2 - cols[k, 1], h = cols[k, 2];
+                c.Rect(x - 1, by - h, 3, h, crystal);
+                c.VLine(x - 1, by - h, by - 1, crystalL); c.VLine(x + 1, by - h, by - 1, crystalD);
+                c.Set(x, by - h - 1, crystalL);
+            }
+            // Sternenlicht in der Mitte
+            c.Set(cx, gy - 14, glow); c.Set(cx - 1, gy - 13, glow); c.Set(cx + 1, gy - 13, glow); c.Set(cx, gy - 12, glow); c.Set(cx, gy - 13, H("#FFFFFF"));
+            c.Set(cx - 4, gy - 19, crystalL); c.Set(cx + 5, gy - 21, glow); c.Set(cx + 1, gy - 24, crystalL);
+        }
+
         static void Drachenhort(PixelCanvas c, int cx, int gy)
         {
             var rock = H("#6E655E"); var rockL = H("#8E857C"); var rockD = H("#4A433E"); var bone = H("#EDE6D2");
@@ -1459,6 +1478,7 @@ namespace PixelKingdom
             Add("p_tablet", 40, Steintafel);
             Add("p_hoard", 56, Drachenhort);
             Add("p_spring", 40, HeiligeQuelle);
+            Add("p_shrine", 48, Sternenschrein);
             Add("b_Werft", 48, Werft);
             Add("u_banner", 24, (c, x, y) =>
             {

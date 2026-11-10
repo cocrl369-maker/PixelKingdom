@@ -144,11 +144,25 @@ Das Spiel ist für Android ausgelegt und bleibt am PC mit Tastatur und Maus spie
 - **Markt** mit schwankenden Preisen, dazu Lagerkapazität und Handelsabkommen.
 - **Unruhen und Aufstände**: Unzufriedene Städte können sich lossagen.
 
+### Das Volk der Saelaner
+- Auf Eisenfels und der Smaragdinsel lebt ein eigenes Volk mit eigenem Baustil: helle Kalksteinhäuser, grüne Kupferkuppeln, flache Terrassendächer, Rundbögen, Sonnensegel und lange Wimpel. Auch ihre Krieger sehen anders aus (heller Umhang, Federhelm) und ihre Namen klingen fremd („Hohes Haus von Lysora“, „Sternrat Aelis“).
+- Die Saelaner sind Seefahrer: Ihre Flotten kreuzen sichtbar vor den Küsten, und im Krieg überfallen sie Küstenstädte jenseits des Meeres. Eigene Kriegsschiffe helfen bei der Abwehr.
+
+### Komfort
+- **Drei Spielstände** (Hauptmenü → „Spielstände“): laden, neu beginnen, löschen.
+- **Gebäude antippen**: Ertrag und Probleme sehen, **abreißen** (30 % zurück) oder **verlegen** (25 % der Baukosten).
+- **„Was braucht Aufmerksamkeit?“**: Seitenknopf mit Zähler, listet alle Problem-Symbole; Antippen springt zum Ort.
+- **Statistik** (Verlaufskurven für Bevölkerung, Gold, Soldaten, Ansehen) und **22 Erfolge** in der Reich-Übersicht.
+- **Energiesparen** im Menü (30 statt 60 Bilder pro Sekunde, auf Tablets voreingestellt).
+- **Gold sinnvoll ausgeben**: Söldner anheuern (sofort, ohne Bewohner, jedes Mal teurer) und Bauten beschleunigen.
+- **Straßen** zu Außenposten und Nachbarorten: halber Ertragsverlust durch lange Wege, schnellere Heere, Handel zwischen verbundenen Orten. Fuhrwerke fahren sichtbar über die Straßen, Handelsschiffe zwischen den Häfen.
+
 ### Mythen & Geheimnisse
 - **Alte Steintafeln** mit leuchtenden Runen: Darauf steht ein Rätsel mit drei möglichen Antworten. Richtig gelöst gibt es Gold, Relikte, Karten oder Ruhm; falsch, schweigen die Runen einen Monat.
 - Wer **drei Rätsel** löst, erfährt, wo **Vargrimm, der letzte Drache**, seinen Hort verbarg. Steinerne Wächter bewachen ihn – wer sie besiegt, gewinnt einen riesigen Schatz und die **Krone des Drachenkönigs** (+Zufriedenheit in allen Orten).
 - **Heilige Quellen** im Wald: Heere gewinnen volle Moral, der nächste Ort ein gutes Omen.
-- Seltsame Ereignisse: **Irrlichter** über dem Moor, ein **Komet** am Himmel.
+- Die beiden **Sternentafeln der Smaragdinsel** führen zum **Sternenschrein**: Wer ihn betritt, erhält den „Segen der Sterne“ (alle Betriebe dauerhaft +10 %).
+- Seltsame Ereignisse: **Irrlichter** über dem Moor, ein **Komet** am Himmel, ein **Geisterschiff** im Nebel. 12 verschiedene Rätsel.
 
 ### Problem-Symbole
 - Läuft etwas nicht gut, erscheint über dem Gebäude eine kleine Sprechblase mit Symbol: keine Arbeiter, kaum noch Bäume, Rohstoff fehlt, Hunger, Unzufriedenheit, kein Wohnraum, Lager voll, kein Brunnen, Räuber in der Nähe, in fremdem Gebiet. Antippen bzw. mit der Maus darüberfahren erklärt das Problem und was hilft.

@@ -70,6 +70,10 @@ Die Unity-Teile kompilieren gegen das NuGet-Paket `UnityEngine.Modules` (Ziel `n
 
 ## Stand (zuletzt erledigt)
 
+- Volk der Saelaner (Kultur 4) auf den großen Inseln: zweiter Baustil in `SpriteArt` (`Style = 1`, Sprites mit Präfix „i“ bzw. „iu_“), Seefahrer-KI (`IsSeafarer`, Küstenüberfälle), Flotten-Darstellung (`Render/TrafficRenderer.cs`).
+- Komfort: 3 Spielstände (`SaveSystem.Slot`), Abreißen/Verlegen (`Sim/Placement.cs`), Problem-Übersicht, Statistik & Erfolge (`Sim/Progress.cs`), Energiesparen, Söldner, Bau beschleunigen.
+- Straßen (`Sim/Roads.cs`, `WorldMap.road`): Wegverlust halbiert, Bewegungskosten 0,55, Handel zwischen verbundenen Orten, Fuhrwerke.
+- Mythen erweitert: 12 Rätsel, Sternenschrein (2 Tafeln der Smaragdinsel), Geisterschiff.
 - Welt 720 × 450: Eisenfels und Smaragdinsel umschließen Mittland als Bögen (Meeresarm wird erzwungen). Spielstand-Version 6.
 - Problem-Symbole über Gebäuden (`Sim/Problems.cs`, Anzeige in `GameUI.DrawProblemIcons`, abschaltbar).
 - Mythen (`Sim/Myth.cs`): Steintafeln mit Rätseln, Drachenhort nach 3 Rätseln, Heilige Quellen, Irrlichter, Komet.

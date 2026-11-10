@@ -41,6 +41,7 @@ namespace PixelKingdom
         public float researchLeft;
         public int relics;
         public int runesSolved, hoardX = -1, hoardY = -1;   // Steintafeln & Drachenhort
+        public int starRunes, shrineX = -1, shrineY = -1;     // Sternentafeln der Smaragdinsel & Sternenschrein
         public int mercsHired;
         public List<int> roadPaths = new List<int>();   // Straßenfelder, Strecken durch -1 getrennt
         public List<int> roadLinks = new List<int>();   // per Straße verbundene Ortspaare
