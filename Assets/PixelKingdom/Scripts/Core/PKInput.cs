@@ -218,9 +218,10 @@ namespace PixelKingdom
                 if (e == null) return;
                 // Mit Einheitsmatrix ist mousePosition in Bildschirmpunkten (oben links = 0,0)
                 var m = GUI.matrix;
-                if (!m.isIdentity) GUI.matrix = Matrix4x4.identity;
-                var mp = e.mousePosition * GUIUtility.pixelsPerPoint;
-                if (!m.isIdentity) GUI.matrix = m;
+                bool reset = m != Matrix4x4.identity;
+                if (reset) GUI.matrix = Matrix4x4.identity;
+                Vector2 mp = e.mousePosition;
+                if (reset) GUI.matrix = m;
                 if (e.isMouse || e.type == EventType.ScrollWheel || e.type == EventType.Repaint)
                     pos = new Vector2(mp.x, Screen.height - mp.y);
                 int b = Mathf.Clamp(e.button, 0, 2);
