@@ -49,7 +49,14 @@ namespace PixelKingdom
         }
 
         /// <summary>Welche Quelle gerade für Maus/Tastatur benutzt wird (nur zur Anzeige/Fehlersuche).</summary>
-        public static string Backend => NewSys.HasMouse ? "InputSystem" : LegacyOk ? "InputManager" : "GUI";
+        public static string Backend => (DesktopGui ? "GUI-Maus" : NewSys.HasMouse ? "InputSystem" : LegacyOk ? "InputManager" : "GUI")
+                                        + " / " + (NewSys.HasKeyboard ? "InputSystem" : LegacyOk ? "InputManager" : "GUI");
+
+        /// <summary>
+        /// Am PC kommt die Maus aus Unitys GUI-Ereignissen, sobald welche eintreffen: Dieselben Koordinaten
+        /// benutzt Unity zum Zeichnen der Oberfläche – Klicks treffen also garantiert.
+        /// </summary>
+        static bool DesktopGui => !Application.isMobilePlatform && !TouchSim && Gui.lastGuiInput > -50f;
 
         static KeyCode Map(PKKey k)
         {
@@ -132,6 +139,7 @@ namespace PixelKingdom
         {
             get
             {
+                if (DesktopGui) return Gui.Pos;
                 if (NewSys.HasMouse && NewSys.MousePos(out var p)) return p;
                 if (LegacyOk) { try { return Input.mousePosition; } catch (InvalidOperationException) { LegacyFailed(); } }
                 return Gui.Pos;
@@ -141,6 +149,7 @@ namespace PixelKingdom
         /// <summary>mode: 0 gehalten, 1 gerade gedrückt, 2 gerade losgelassen</summary>
         static bool MouseQuery(int b, int mode)
         {
+            if (DesktopGui) return Gui.Button(b, mode);
             if (NewSys.HasMouse) return NewSys.MouseButton(b, mode);
             if (LegacyOk) return Legacy(() => mode == 0 ? Input.GetMouseButton(b) : mode == 1 ? Input.GetMouseButtonDown(b) : Input.GetMouseButtonUp(b));
             return Gui.Button(b, mode);
@@ -154,6 +163,7 @@ namespace PixelKingdom
         {
             get
             {
+                if (DesktopGui) return Gui.ScrollY;
                 if (NewSys.HasMouse) return NewSys.ScrollY() / 120f;
                 if (LegacyOk) { try { return Input.mouseScrollDelta.y; } catch (InvalidOperationException) { LegacyFailed(); } }
                 return Gui.ScrollY;
@@ -206,8 +216,11 @@ namespace PixelKingdom
             public static void Feed(Event e)
             {
                 if (e == null) return;
-                // Ohne gesetzte GUI.matrix ist mousePosition in Bildschirmpunkten (oben links = 0,0)
-                var mp = e.mousePosition;
+                // Mit Einheitsmatrix ist mousePosition in Bildschirmpunkten (oben links = 0,0)
+                var m = GUI.matrix;
+                if (!m.isIdentity) GUI.matrix = Matrix4x4.identity;
+                var mp = e.mousePosition * GUIUtility.pixelsPerPoint;
+                if (!m.isIdentity) GUI.matrix = m;
                 if (e.isMouse || e.type == EventType.ScrollWheel || e.type == EventType.Repaint)
                     pos = new Vector2(mp.x, Screen.height - mp.y);
                 int b = Mathf.Clamp(e.button, 0, 2);

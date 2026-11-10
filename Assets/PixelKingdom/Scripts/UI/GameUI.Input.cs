@@ -21,6 +21,33 @@ namespace PixelKingdom
         float lastDeviceInput = -100f;        // wann zuletzt Maus/Finger direkt gelesen wurden
         bool clickFromGui; float clickTime;   // Ersatz-Klick aus Unitys GUI-Ereignissen
         int hitFrame = -1;
+        // Am PC: Maus direkt aus Unitys GUI-Ereignissen (gleiche Koordinaten wie die gezeichneten Knöpfe)
+        Vector2 gPtr, gPressPos, gReleasePos;
+        bool gDown, gPendPress, gPendRelease, gSeen;
+        float gWheel;
+
+        /// <summary>Am PC mit Maus: Oberfläche nutzt die GUI-Ereignisse (sobald welche angekommen sind).</summary>
+        bool DesktopGuiPointer => !Application.isMobilePlatform && !PKInput.TouchSim && !PKInput.UsingTouch && gSeen;
+
+        /// <summary>Wird in OnGUI nach dem Setzen von GUI.matrix aufgerufen – Positionen sind dann virtuelle Koordinaten.</summary>
+        void CaptureGuiPointer(Event e)
+        {
+            switch (e.type)
+            {
+                case EventType.MouseDown:
+                    gSeen = true;
+                    if (e.button == 0) { gPendPress = true; gPressPos = e.mousePosition; gDown = true; }
+                    gPtr = e.mousePosition; break;
+                case EventType.MouseUp:
+                    gSeen = true;
+                    if (e.button == 0) { if (gDown || gPendPress) { gPendRelease = true; gReleasePos = e.mousePosition; } gDown = false; }
+                    gPtr = e.mousePosition; break;
+                case EventType.MouseDrag: case EventType.MouseMove: case EventType.Repaint: case EventType.Layout:
+                    gPtr = e.mousePosition; break;
+                case EventType.ScrollWheel:
+                    gSeen = true; gWheel += -e.delta.y / 3f; gPtr = e.mousePosition; break;
+            }
+        }
         readonly List<Vector2> groupStack = new List<Vector2>();
         Vector2 groupOffset;
 
@@ -34,6 +61,33 @@ namespace PixelKingdom
             clickUsed = false; dragDelta = Vector2.zero;
             wheel = PKInput.UsingTouch ? 0f : PKInput.Scroll;
             bool pressed, released, down; Vector2 sp;
+            if (DesktopGuiPointer)
+            {
+                // Ereignisse aus OnGUI des letzten Bildes übernehmen
+                pressed = gPendPress; released = gPendRelease; down = gDown || pressed;
+                gPendPress = gPendRelease = false;
+                if (gWheel != 0f) wheel = gWheel;
+                gWheel = 0f;
+                multiTouch = false;
+                lastDeviceInput = Time.unscaledTime;
+                if (keepGuiClick) { clickPending = false; clickFromGui = false; }
+                ptrPrev = ptr;
+                if (pressed)
+                {
+                    ptr = gPressPos; ptrPrev = ptr; pressStart = ptr; dragging = false; ptrDown = true;
+                    if (IsOverVirtual(ptr) || IsBlocking) LastUIPress = Time.unscaledTime;
+                }
+                ptr = released ? gReleasePos : gPtr;
+                if (ptrDown && !dragging && (ptr - pressStart).magnitude > DragThresholdVirtual) dragging = true;
+                if (ptrDown && dragging) dragDelta = ptr - ptrPrev;
+                if (released)
+                {
+                    if (ptrDown && !dragging) { clickPending = true; clickPos = ptr; }
+                    ptrDown = false;
+                }
+                if (!down && !released) ptrDown = false;
+                return;
+            }
             if (PKInput.UsingTouch)
             {
                 int n = PKInput.TouchCount;

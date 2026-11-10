@@ -207,6 +207,8 @@ namespace PixelKingdom
 
             // Unitys eigene Mausereignisse werden nicht benutzt (auf Android teils mit falscher Position).
             var et = Event.current.type;
+            CaptureGuiPointer(Event.current);
+            if (DesktopGuiPointer && (et == EventType.MouseDown || et == EventType.MouseUp || et == EventType.MouseDrag || et == EventType.ScrollWheel)) return;
             if (et == EventType.MouseDown || et == EventType.MouseUp || et == EventType.MouseDrag || et == EventType.ScrollWheel) { GuiEventFallback(Event.current); return; }
 
             // Einmal pro Bild: Treffer-Durchlauf. Die oberste Ebene (Fenster, Dialoge, Ereignisse) bekommt den
