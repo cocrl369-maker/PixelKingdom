@@ -130,6 +130,7 @@ namespace PixelKingdom
             foreach (var p in SettlementLayout.Build(game, s, game.Season, null))
             {
                 var sp = SpriteLib.Get(p.Name);
+                if (sp == null && p.Name.StartsWith("i")) sp = SpriteLib.Get(p.Name.Substring(1));   // kein Insel-Stil vorhanden
                 if (sp == null) continue;
                 float z = p.Flat ? 19.5f : QuadBatch.DepthOf(p.Y);
                 qb.Add(sp, p.X, p.Y, z, white, p.Flip);
@@ -249,9 +250,11 @@ namespace PixelKingdom
             else if (a.settlers > 0 && a.units[0] + a.units[1] + a.units[2] + a.units[3] == 0) { Put("u_cart", 0, -0.1f); Put("u_banner", -0.45f, 0.05f); }
             else
             {
+                var af = game.F(a.faction);
+                bool islandArmy = af != null && af.continent >= 4 && !af.isPlayer;
                 var kinds = new List<string>();
                 for (int u = 0; u < Units.Count && kinds.Count < 3; u++)
-                    if (a.units[u] > 0) kinds.Add("u_" + (UType)u);
+                    if (a.units[u] > 0) kinds.Add((islandArmy ? "iu_" : "u_") + (UType)u);
                 int total = 0; for (int u = 0; u < Units.Count; u++) total += a.units[u];
                 while (kinds.Count < Mathf.Min(3, total)) kinds.Add(kinds[0]);
                 float[] ox = { 0f, -0.42f, 0.42f };

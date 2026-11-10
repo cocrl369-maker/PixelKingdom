@@ -129,7 +129,7 @@ namespace PixelKingdom
             for (int cont = 1; cont < WorldMap.ContinentCount; cont++)
             {
                 // Kultur (Namen): die beiden großen Inseln im Osten ähneln den Nordlanden bzw. dem Inselbund
-                int cul = cont == 4 ? 1 : cont == 5 ? 3 : cont;
+                int cul = cont >= 4 ? 4 : cont;   // die großen Inseln: das Volk der Saelaner
                 bool island = cont >= 4;
                 int lords = cont == 3 ? 2 : island ? 5 : 4;
                 for (int k = 0; k < lords; k++)

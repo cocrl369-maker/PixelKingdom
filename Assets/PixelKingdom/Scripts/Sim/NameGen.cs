@@ -11,6 +11,7 @@ namespace PixelKingdom
             new[] { "Skag", "Hrafn", "Thor", "Ulf", "Sig", "Dal", "Fjell", "Is", "Kol", "Rand", "Snø", "Vind", "Bjør", "Grim", "Hald", "Jarl", "Stav" },
             new[] { "Qas", "Sah", "Mar", "Zar", "Kha", "Nur", "Tal", "Am", "Baz", "Dar", "Fer", "Jas", "Ras", "Sul", "Yaz", "Ham" },
             new[] { "Kor", "Mel", "San", "Ilo", "Pera", "Tir", "Vel", "Coral", "Del", "Aru", "Lumi" },
+            new[] { "Ael", "Vas", "Tirr", "Oru", "Sael", "Imm", "Qir", "Lys", "Esh", "Nau", "Vey", "Ory", "Ith", "Saer" },
         };
         static readonly string[][] Suf =
         {
@@ -18,6 +19,7 @@ namespace PixelKingdom
             new[] { "vik", "heim", "gard", "fjord", "stad", "holm", "dal", "by", "nes", "berg" },
             new[] { "abad", "ir", "an", "esh", "ara", "un", "iya", "ad", "oum", "ar" },
             new[] { "a", "os", "ia", "ana", "ea", "is", "or", "ella" },
+            new[] { "anor", "ith", "ume", "avar", "esse", "ora", "iel", "enn", "ul", "aris", "ond", "aleth" },
         };
         static readonly string[][] First =
         {
@@ -25,6 +27,7 @@ namespace PixelKingdom
             new[] { "Ragnhild", "Sigurd", "Astrid", "Harald", "Ingrid", "Bjarne", "Sigrun", "Leif", "Thyra", "Erik" },
             new[] { "Zahir", "Amira", "Karim", "Layla", "Rashid", "Samira", "Tariq", "Yasmin", "Malik", "Nadia" },
             new[] { "Melis", "Taro", "Ilana", "Koa", "Sera", "Davo", "Lumi", "Pelan" },
+            new[] { "Aelis", "Vorin", "Saeth", "Iolan", "Meriva", "Taunis", "Orvan", "Lysa", "Kaelon", "Yseth", "Nerith", "Ossia" },
         };
         static readonly string[][] Titles =
         {
@@ -32,11 +35,12 @@ namespace PixelKingdom
             new[] { "Jarl", "Jarl", "Königin", "König" },
             new[] { "Emir", "Emira", "Sultan", "Sultana" },
             new[] { "Kapitän", "Admiralin", "Ratsherr", "Ratsfrau" },
+            new[] { "Hochherr", "Hochherrin", "Sternrat", "Seefürstin" },
         };
 
         public static string Place(Random r, int culture, HashSet<string> used)
         {
-            culture = Math.Max(0, Math.Min(3, culture));
+            culture = Math.Max(0, Math.Min(4, culture));
             for (int t = 0; t < 50; t++)
             {
                 string n = Pre[culture][r.Next(Pre[culture].Length)] + Suf[culture][r.Next(Suf[culture].Length)];
@@ -48,7 +52,7 @@ namespace PixelKingdom
 
         public static string Leader(Random r, int culture)
         {
-            culture = Math.Max(0, Math.Min(3, culture));
+            culture = Math.Max(0, Math.Min(4, culture));
             int ti = r.Next(Titles[culture].Length);
             string title = Titles[culture][ti];
             return title + " " + First[culture][r.Next(First[culture].Length)];
@@ -61,6 +65,7 @@ namespace PixelKingdom
                 case 1: return "Jarltum " + capital;
                 case 2: return "Emirat " + capital;
                 case 3: return "Bund von " + capital;
+                case 4: return Loc.T("Hohes Haus von ") + capital;
                 default: return "Haus " + capital;
             }
         }

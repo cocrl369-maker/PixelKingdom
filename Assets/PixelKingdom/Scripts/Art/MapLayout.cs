@@ -128,9 +128,11 @@ namespace PixelKingdom
             for (int dy = 0; dy <= 1; dy++) for (int dx = -1; dx <= 1; dx++) Use(cx + dx, cy + dy);
             if (WorldMap.In(cx, cy)) bld.Add(WorldMap.Idx(cx, cy));
             int lvl = CenterLevel(g, s);
+            // Orte auf den großen Inseln (Eisenfels, Smaragdinsel) baut das Volk der Saelaner – eigener Baustil ("i"-Sprites)
+            string pre = map.cont[WorldMap.Idx(cx, cy)] >= 4 ? "i" : "";
             string center = s.buildings[(int)BType.Burg] > 0 && !s.isCapitalOfEmperor ? "b_Burg"
                 : lvl >= 4 ? "c_palace" : lvl >= 2 ? "c_keep" : lvl == 1 ? "c_rathaus" : "c_dorf";
-            res.Add(new Placed(center, cx + 0.5f, cy + 0.25f, false, true));
+            res.Add(new Placed(pre + center, cx + 0.5f, cy + 0.25f, false, true));
 
             // Mauern
             if (walls > 0)
@@ -144,7 +146,7 @@ namespace PixelKingdom
                         Use(x, y);
                         bool corner = x == cx - WR || x == cx + WR;
                         string n = corner ? "w_" + k + "_tower" : (y == cy - WR && x == cx) ? "w_" + k + "_gate" : "w_" + k + "_h";
-                        res.Add(new Placed(n, x + 0.5f, y + 0.2f));
+                        res.Add(new Placed(pre + n, x + 0.5f, y + 0.2f));
                     }
                 }
                 for (int y = cy - WR + 1; y <= cy + WR - 1; y++)
@@ -152,7 +154,7 @@ namespace PixelKingdom
                     {
                         if (!WorldMap.In(x, y) || map.IsWater(WorldMap.Idx(x, y)) || map.river[WorldMap.Idx(x, y)]) continue;
                         Use(x, y);
-                        res.Add(new Placed("w_" + k + "_v", x + 0.5f, y + 0.0f));
+                        res.Add(new Placed(pre + "w_" + k + "_v", x + 0.5f, y + 0.0f));
                     }
             }
 
@@ -175,7 +177,7 @@ namespace PixelKingdom
                 string name = bt == BType.Wohnhaus ? "b_Wohnhaus" + (hh % 3) : "b_" + bt;
                 float ox = bt == BType.Wohnhaus ? ((hh >> 6) % 3 - 1) * 0.08f : 0f;
                 bool tinted = bt == BType.Kaserne || bt == BType.Turnierplatz || bt == BType.Wachturm || bt == BType.Feldlager;
-                res.Add(new Placed(name, b.x + 0.5f + ox, b.y + 0.28f, false, tinted));
+                res.Add(new Placed(pre + name, b.x + 0.5f + ox, b.y + 0.28f, false, tinted));
                 if (bt == BType.Bauernhof)
                 {
                     int fields = 0;

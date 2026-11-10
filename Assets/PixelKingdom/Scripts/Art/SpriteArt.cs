@@ -54,11 +54,79 @@ namespace PixelKingdom
 
         enum WallStyle { Plaster, Wood, RedWood, Log, Stone, White, Dark }
 
+        // ------------------------------------------------------------------
+        //  Baustil: 0 = Mittland (Fachwerk, Ziegel), 1 = Saelaner der großen Inseln
+        //  (heller Kalkstein, grüne Kupferkuppeln, flache Terrassendächer, Rundbögen, lange Wimpel)
+        // ------------------------------------------------------------------
+        static int Style;
+        static readonly Px Lime = H("#EFE6D2"), LimeL = H("#FBF6EA"), LimeD = H("#CBBFA4"), LimeDD = H("#A89A7C");
+        static readonly Roof RoofCopper = new Roof("#3E9A8C", "#5CC0AE", "#2A6E64", "#8EE0CE");
+        static readonly Roof RoofCopperDeep = new Roof("#2F7F8C", "#4FA4B2", "#205A64", "#7ECAD6");
+        static readonly Roof RoofOchre = new Roof("#C88A3A", "#E2A858", "#94622A", "#F4C880");
+        static readonly Px Sail = H("#E8C8A0"), SailStripe = H("#B4483C");
+
+        static Roof StyleRoof(Roof r)
+        {
+            if (Style == 0) return r;
+            if (r.Mid.Equals(RoofBlue.Mid) || r.Mid.Equals(RoofSlate.Mid)) return RoofCopperDeep;
+            if (r.Mid.Equals(RoofBrown.Mid) || r.Mid.Equals(RoofThatch.Mid)) return RoofOchre;
+            if (r.Mid.Equals(RoofGold.Mid)) return r;
+            return RoofCopper;
+        }
+
+        /// <summary>Spitzdach eines Turms (Kegel). Im Saelaner-Stil wird daraus eine Kuppel.</summary>
+        static void Spire(PixelCanvas c, float lx, float by, float ax, float ay, float rx, float by2, Roof r)
+        {
+            if (Style == 1)
+            {
+                Dome(c, (int)Math.Round((lx + rx) / 2f), (int)Math.Round(by), Math.Max(2, (int)Math.Round((rx - lx) / 2f)), Math.Max(3, (int)Math.Round((by - ay) * 0.7f)), StyleRoof(r));
+                return;
+            }
+            c.Tri(lx, by, ax, ay, rx, by2, r.Mid);
+            c.Tri(ax, by, ax, ay, rx, by2, r.Dark);
+        }
+
+        /// <summary>Kuppel (Saelaner-Stil): Halbkugel mit Lichtkante und goldener Spitze.</summary>
+        static void Dome(PixelCanvas c, int cx, int baseY, int halfW, int h, Roof r)
+        {
+            for (int j = 0; j < h; j++)
+            {
+                float t = j / (float)h;
+                float half = halfW * (float)Math.Sqrt(Math.Max(0, 1 - t * t));
+                for (int x = (int)Math.Round(cx - half); x <= (int)Math.Round(cx + half); x++)
+                {
+                    float rel = (x - cx) / Math.Max(1f, half);
+                    Px col = rel < -0.35f ? r.Light : rel > 0.45f ? r.Dark : r.Mid;
+                    if (j == 0) col = r.Dark;
+                    c.Set(x, baseY - j, col);
+                }
+            }
+            c.Set(cx - (int)(halfW * 0.4f), baseY - h + 2, r.Ridge);
+            c.VLine(cx, baseY - h - 2, baseY - h, Gold); c.Set(cx, baseY - h - 3, GoldL);
+        }
+
         // ==================================================================
         //  Grundbausteine
         // ==================================================================
         static void Wall(PixelCanvas c, int x0, int y0, int w, int h, WallStyle st)
         {
+            if (Style == 1)
+            {
+                // Kalkstein mit feinen Fugen und einem kupfergrünen Zierband
+                bool dark = st == WallStyle.Dark || st == WallStyle.Stone;
+                Px b = dark ? LimeD : Lime, l = dark ? Lime : LimeL, d = dark ? LimeDD : LimeD;
+                c.Rect(x0, y0, w, h, b);
+                for (int y = y0; y < y0 + h; y++)
+                    for (int x = x0; x < x0 + w; x++)
+                    {
+                        int r = y - y0;
+                        if (r % 4 == 3 && (x - x0) % 7 != 0) c.Set(x, y, d.Lerp(b, 0.5f));
+                        else if (PixelCanvas.Rnd(x, y, 13) < 0.08f) c.Set(x, y, l);
+                    }
+                if (h >= 6) c.HLine(x0, x0 + w - 1, y0 + 1, RoofCopper.Mid);
+                c.Recolor(x0 + w - 2, y0, 2, h, p => p.Mul(0.88f));
+                return;
+            }
             switch (st)
             {
                 case WallStyle.Plaster:
@@ -115,7 +183,7 @@ namespace PixelKingdom
         /// <summary>Sichtbare Seitenwand rechts (gibt die räumliche Tiefe).</summary>
         static void SideWall(PixelCanvas c, int x, int wy, int h, WallStyle ws)
         {
-            Px col = ws == WallStyle.Plaster || ws == WallStyle.White ? PlasterD.Mul(0.82f) : ws == WallStyle.Stone ? StoneD : ws == WallStyle.Log ? LogD : PlankDD;
+            Px col = Style == 1 ? LimeDD : ws == WallStyle.Plaster || ws == WallStyle.White ? PlasterD.Mul(0.82f) : ws == WallStyle.Stone ? StoneD : ws == WallStyle.Log ? LogD : PlankDD;
             for (int i = 0; i < 3; i++)
                 for (int y = wy - i; y <= wy + h - 1; y++)
                     c.Set(x + i, y, (y - wy) % 3 == 2 && ws != WallStyle.Plaster ? col.Mul(0.85f) : col);
@@ -124,6 +192,8 @@ namespace PixelKingdom
         /// <summary>Dachkante an der Seite: dunkler, nach hinten geneigt.</summary>
         static void RoofSide(PixelCanvas c, int x, int y0, int h, Roof r)
         {
+            r = StyleRoof(r);
+            if (Style == 1) { for (int j = 0; j < h; j++) for (int i = 0; i < 3; i++) if (j >= h - 3) c.Set(x + i, y0 + j, LimeDD); return; }
             for (int j = 0; j < h; j++)
                 for (int i = 0; i < 3; i++)
                     if (j >= i) c.Set(x + i, y0 + j, j == h - 1 ? r.Dark.Mul(0.8f) : r.Dark.Mul(0.9f));
@@ -131,6 +201,17 @@ namespace PixelKingdom
 
         static void RoofArea(PixelCanvas c, int x0, int y0, int w, int h, Roof r, int pattern = 0)
         {
+            r = StyleRoof(r);
+            if (Style == 1)
+            {
+                // Flaches Terrassendach: Brüstung mit runden Zinnen, darauf eine Kupferkuppel
+                int py = y0 + h - 3;
+                c.Rect(x0 + 1, py, w - 2, 3, LimeD); c.HLine(x0 + 1, x0 + w - 2, py, LimeL);
+                for (int x = x0 + 1; x < x0 + w - 1; x += 3) { c.Set(x, py - 1, Lime); c.Set(x + 1, py - 1, Lime); }
+                if (w >= 10) Dome(c, x0 + w / 2 - 1, py - 1, Math.Max(3, Math.Min(w / 3, 7)), Math.Max(3, Math.Min(h + 1, 8)), r);
+                else for (int x = x0 + 1; x < x0 + w - 1; x++) c.VLine(x, py - 2, py - 1, ((x - x0) / 2) % 2 == 0 ? SailStripe : Sail);   // Sonnensegel
+                return;
+            }
             for (int j = 0; j < h; j++)
             {
                 int inset = j == 0 ? 1 : 0;
@@ -161,6 +242,8 @@ namespace PixelKingdom
         /// <summary>Giebel, der zum Betrachter zeigt (Dreieck mit Dachkanten und Giebelwand).</summary>
         static void Gable(PixelCanvas c, int cx, int baseY, int halfW, int h, Roof r, Px wall)
         {
+            r = StyleRoof(r);
+            if (Style == 1) { Dome(c, cx, baseY, Math.Max(3, halfW - 1), Math.Max(3, h), r); return; }
             for (int j = 0; j < h; j++)
             {
                 int y = baseY - j;
@@ -177,6 +260,14 @@ namespace PixelKingdom
 
         static void Window(PixelCanvas c, int x, int y, int w = 2, int h = 2, bool lit = false)
         {
+            if (Style == 1)
+            {
+                c.Rect(x - 1, y - 1, w + 2, h + 2, LimeDD);
+                c.Rect(x, y - 1, w, h + 1, lit ? Lit : RoofCopperDeep.Dark);
+                c.Set(x - 1, y - 1, Lime); c.Set(x + w, y - 1, Lime);   // Rundbogen
+                if (lit) c.Set(x, y, LitL);
+                return;
+            }
             c.Rect(x - 1, y - 1, w + 2, h + 2, WinFrame);
             c.Rect(x, y, w, h, lit ? Lit : Glass);
             c.Set(x, y, lit ? LitL : GlassL);
@@ -185,6 +276,7 @@ namespace PixelKingdom
 
         static void DoorAt(PixelCanvas c, int x, int y, int w = 3, int h = 4, bool arch = false)
         {
+            if (Style == 1) arch = true;
             c.Rect(x - 1, y - 1, w + 2, h + 1, WinFrame);
             c.Rect(x, y, w, h, Door);
             c.VLine(x + w - 1, y, y + h - 1, DoorD);
@@ -194,6 +286,7 @@ namespace PixelKingdom
 
         static void Chimney(PixelCanvas c, int x, int y, int h = 4)
         {
+            if (Style == 1) return;   // keine Schornsteine: warmes Klima
             c.Rect(x, y, 3, h, StoneD);
             c.HLine(x, x + 2, y, Stone);
             c.Set(x + 1, y, K);
@@ -201,6 +294,18 @@ namespace PixelKingdom
 
         static void Flag(PixelCanvas c, int x, int baseY, int poleH = 9)
         {
+            if (Style == 1)
+            {
+                c.VLine(x, baseY - poleH, baseY, LimeDD);
+                c.Set(x, baseY - poleH - 1, Gold);
+                for (int j = 0; j < 8; j++)   // langer, wehender Wimpel
+                {
+                    int wave = (j / 2) % 2;
+                    c.Set(x + 1 + wave, baseY - poleH + j, j == 7 ? Px.TintDark : Px.Tint);
+                    if (j < 5) c.Set(x + 2 + wave, baseY - poleH + j, Px.Tint);
+                }
+                return;
+            }
             c.VLine(x, baseY - poleH, baseY, Beam);
             c.Set(x, baseY - poleH - 1, Gold);
             for (int j = 0; j < 4; j++)
@@ -429,8 +534,7 @@ namespace PixelKingdom
             // Turm
             int tx = cx - 10, tw = 7, th = wallH + 9;
             Wall(c, tx, gy - th + 1, tw, th, WallStyle.White);
-            c.Tri(tx - 1, gy - th + 1, tx + tw / 2f, gy - th - 10, tx + tw, gy - th + 1, RoofSlate.Mid);
-            c.Tri(tx + tw / 2f, gy - th + 1, tx + tw / 2f, gy - th - 10, tx + tw, gy - th + 1, RoofSlate.Dark);
+            Spire(c, tx - 1, gy - th + 1, tx + tw / 2f, gy - th - 10, tx + tw, gy - th + 1, RoofSlate);
             c.VLine(tx + 3, gy - th - 14, gy - th - 10, Gold); c.HLine(tx + 2, tx + 4, gy - th - 13, Gold);
             c.Rect(tx + 2, gy - th + 3, 3, 3, K); c.Set(tx + 3, gy - th + 5, Gold);
             DoorAt(c, tx + 2, gy - 4, 3, 4, true);
@@ -488,8 +592,7 @@ namespace PixelKingdom
             c.Rect(x0 - 1, gy - 13, 11, 3, Plank); c.HLine(x0 - 1, x0 + 9, gy - 13, PlankL);
             Wall(c, x0, gy - 18, 9, 5, WallStyle.Wood);
             c.Rect(x0 + 3, gy - 17, 3, 2, K);
-            c.Tri(x0 - 2, gy - 18, x0 + 4.5f, gy - 25, x0 + 11, gy - 18, RoofThatch.Mid);
-            c.Tri(x0 + 4.5f, gy - 18, x0 + 4.5f, gy - 25, x0 + 11, gy - 18, RoofThatch.Dark);
+            Spire(c, x0 - 2, gy - 18, x0 + 4.5f, gy - 25, x0 + 11, gy - 18, RoofThatch);
             // Zielscheibe
             int tx = cx + 7;
             c.Line(tx - 2, gy, tx, gy - 5, Beam); c.Line(tx + 3, gy, tx + 1, gy - 5, Beam);
@@ -548,8 +651,7 @@ namespace PixelKingdom
             {
                 int th = wallH + 12;
                 Wall(c, tx, gy - th + 1, 8, th, WallStyle.White);
-                c.Tri(tx - 1, gy - th + 1, tx + 4, gy - th - 12, tx + 9, gy - th + 1, RoofSlate.Mid);
-                c.Tri(tx + 4, gy - th + 1, tx + 4, gy - th - 12, tx + 9, gy - th + 1, RoofSlate.Dark);
+                Spire(c, tx - 1, gy - th + 1, tx + 4, gy - th - 12, tx + 9, gy - th + 1, RoofSlate);
                 c.Set(tx + 4, gy - th - 13, Gold);
                 c.Rect(tx + 3, gy - th + 4, 2, 5, K);
                 c.Rect(tx + 3, gy - th + 13, 2, 4, Glass);
@@ -586,8 +688,7 @@ namespace PixelKingdom
             c.HLine(cx - 6, cx + 6, gy, StoneD);
             DoorAt(c, cx - 1, gy - 4, 3, 4, true);
             Window(c, cx, gy - 11, 1, 2);
-            c.Tri(cx - 6, gy - 16, cx, gy - 23, cx + 6, gy - 16, RoofBrown.Mid);
-            c.Tri(cx, gy - 16, cx, gy - 23, cx + 6, gy - 16, RoofBrown.Dark);
+            Spire(c, cx - 6, gy - 16, cx, gy - 23, cx + 6, gy - 16, RoofBrown);
             // Flügel (X)
             int hx = cx, hy = gy - 18;
             for (int k = -11; k <= 11; k++)
@@ -615,8 +716,7 @@ namespace PixelKingdom
             Wall(c, kx, gy - 20, 16, 10, WallStyle.White);
             RoofArea(c, kx - 1, gy - 26, 18, 6, RoofSlate, 2);
             Wall(c, kx + 13, gy - 30, 6, 20, WallStyle.White);
-            c.Tri(kx + 12, gy - 30, kx + 16, gy - 38, kx + 20, gy - 30, RoofSlate.Mid);
-            c.Tri(kx + 16, gy - 30, kx + 16, gy - 38, kx + 20, gy - 30, RoofSlate.Dark);
+            Spire(c, kx + 12, gy - 30, kx + 16, gy - 38, kx + 20, gy - 30, RoofSlate);
             c.VLine(kx + 16, gy - 42, gy - 38, Gold); c.HLine(kx + 15, kx + 17, gy - 41, Gold);
             c.Ellipse(kx + 7, gy - 16, 2, 2, WinFrame); c.Set(kx + 7, gy - 16, Blue);
             // Klostergarten
@@ -714,8 +814,7 @@ namespace PixelKingdom
             int tx = cx - 4;
             Wall(c, tx, gy - 33, 8, 12, WallStyle.Plaster);
             c.Ellipse(tx + 4, gy - 28, 2.6f, 2.6f, WhiteL); c.Set(tx + 4, gy - 28, K); c.Set(tx + 4, gy - 29, K); c.Set(tx + 5, gy - 28, K);
-            c.Tri(tx - 1, gy - 33, tx + 4, gy - 42, tx + 9, gy - 33, RoofSlate.Mid);
-            c.Tri(tx + 4, gy - 33, tx + 4, gy - 42, tx + 9, gy - 33, RoofSlate.Dark);
+            Spire(c, tx - 1, gy - 33, tx + 4, gy - 42, tx + 9, gy - 33, RoofSlate);
             Flag(c, tx + 4, gy - 42, 5);
         }
 
@@ -742,8 +841,7 @@ namespace PixelKingdom
             foreach (int tx in new[] { x0 - 8, x0 + w })
             {
                 Wall(c, tx, gy - 27, 9, 28, WallStyle.Dark);
-                c.Tri(tx - 1, gy - 27, tx + 4.5f, gy - 39, tx + 10, gy - 27, RoofGold.Mid);
-                c.Tri(tx + 4.5f, gy - 27, tx + 4.5f, gy - 39, tx + 10, gy - 27, RoofGold.Dark);
+                Spire(c, tx - 1, gy - 27, tx + 4.5f, gy - 39, tx + 10, gy - 27, RoofGold);
                 Flag(c, tx + 4, gy - 39, 4);
                 Window(c, tx + 3, gy - 20, 2, 3, true);
             }
@@ -773,8 +871,7 @@ namespace PixelKingdom
             foreach (int tx in new[] { x0 - 5, x0 + w - 4 })
             {
                 Wall(c, tx, gy - 19, 9, 20, WallStyle.Stone);
-                c.Tri(tx - 2, gy - 19, tx + 4.5f, gy - 29, tx + 11, gy - 19, RoofBlue.Mid);
-                c.Tri(tx + 4.5f, gy - 19, tx + 4.5f, gy - 29, tx + 11, gy - 19, RoofBlue.Dark);
+                Spire(c, tx - 2, gy - 19, tx + 4.5f, gy - 29, tx + 11, gy - 19, RoofBlue);
                 c.Rect(tx + 3, gy - 14, 3, 4, K);
             }
         }
@@ -822,8 +919,7 @@ namespace PixelKingdom
             int x0 = cx - 5;
             Wall(c, x0, gy - 17, 10, 18, stone ? WallStyle.Stone : WallStyle.Log);
             var r = stone ? RoofRed : RoofThatch;
-            c.Tri(x0 - 2, gy - 17, cx, gy - 26, x0 + 12, gy - 17, r.Mid);
-            c.Tri(cx, gy - 17, cx, gy - 26, x0 + 12, gy - 17, r.Dark);
+            Spire(c, x0 - 2, gy - 17, cx, gy - 26, x0 + 12, gy - 17, r);
             c.Rect(cx - 1, gy - 13, 2, 3, K);
         }
 
@@ -937,6 +1033,14 @@ namespace PixelKingdom
             c.Rect(cx - 2, gy - 7, 5, 5, body);
             c.VLine(cx + 2, gy - 7, gy - 3, body.Equals(Px.Tint) ? Px.TintDark : body.Mul(0.8f));
             c.Rect(cx - 1, gy - 10, 3, 3, Skin); c.Set(cx + 1, gy - 9, SkinD);
+            if (Style == 1)
+            {
+                // Saelaner: langer heller Umhang, runder Helm mit Federbusch
+                c.VLine(cx - 3, gy - 7, gy - 1, Lime); c.Set(cx - 3, gy, LimeD);
+                c.HLine(cx - 2, cx + 2, gy - 11, RoofCopper.Light); c.HLine(cx - 1, cx + 1, gy - 12, RoofCopper.Mid);
+                c.Set(cx, gy - 13, SailStripe); c.Set(cx - 1, gy - 14, SailStripe);
+                return;
+            }
             if (helmet) { c.HLine(cx - 2, cx + 2, gy - 10, IronL); c.HLine(cx - 1, cx + 1, gy - 11, Iron); }
             else { c.HLine(cx - 1, cx + 1, gy - 11, head); c.Set(cx - 2, gy - 10, head); }
         }
@@ -1226,50 +1330,58 @@ namespace PixelKingdom
                 d[name] = s;
             }
 
-            // Gebäude
-            for (int v = 0; v < 3; v++) { int vv = v; Add("b_Wohnhaus" + v, 40, (c, x, y) => Wohnhaus(c, x, y, vv)); }
-            Add("b_Bauernhof", 48, Bauernhof);
-            Add("b_Fischerhuette", 48, Fischerhuette);
-            Add("b_Holzfaeller", 48, Holzfaeller);
-            Add("b_Steinbruch", 48, Steinbruch);
-            Add("b_Mine", 48, (c, x, y) => Mine(c, x, y, false));
-            Add("b_Goldmine", 48, (c, x, y) => Mine(c, x, y, true));
-            Add("b_Lagerhaus", 48, Lagerhaus);
-            Add("b_Markt", 48, Markt);
-            Add("b_Taverne", 48, Taverne);
-            Add("b_Kapelle", 56, Kapelle);
-            Add("b_Brunnen", 32, Brunnen);
-            Add("b_Schmiede", 48, Schmiede);
-            Add("b_Kaserne", 48, Kaserne);
-            Add("b_Archerie", 48, Archerie);
-            Add("b_Stall", 48, StallBuilding);
-            Add("b_Hafen", 48, Hafen);
-            Add("b_Kathedrale", 72, Kathedrale);
-            Add("b_Werkstatt", 48, Werkstatt);
-            Add("b_Burg", 80, Burg);
-            Add("b_Windmuehle", 48, Windmuehle);
-            Add("p_ruin", 48, Ruine);
-            Add("p_camp", 56, Raeuberlager);
-            Add("b_Kloster", 64, Kloster);
-            Add("b_Turnierplatz", 64, Turnierplatz);
-            Add("b_scaffold", 48, Geruest);
-            Add("b_Wachturm", 48, Wachturm);
-            Add("p_nomads", 56, FahrendesVolk);
-            Add("b_Mauer", 32, (c, x, y) => Tower(c, x, y, true));
-            // Zentren
-            Add("c_dorf", 48, Dorfhaus);
-            Add("c_rathaus", 64, Rathaus);
-            Add("c_keep", 64, Bergfried);
-            Add("c_palace", 80, Palast);
-            // Befestigung
-            foreach (bool st in new[] { false, true })
+            // Gebäude, Ortszentren und Mauern: zweimal – im Mittland-Stil und im Stil der Saelaner ("i"-Präfix)
+            void RegisterTown(string pre)
             {
+                void A(string name, int size, Action<PixelCanvas, int, int> draw) { if (pre.Length == 0 || name.StartsWith("b_") || name.StartsWith("c_") || name.StartsWith("w_")) Add(pre + name, size, draw); }
+                // Gebäude
+                for (int v = 0; v < 3; v++) { int vv = v; A("b_Wohnhaus" + v, 40, (c, x, y) => Wohnhaus(c, x, y, vv)); }
+                A("b_Bauernhof", 48, Bauernhof);
+                A("b_Fischerhuette", 48, Fischerhuette);
+                A("b_Holzfaeller", 48, Holzfaeller);
+                A("b_Steinbruch", 48, Steinbruch);
+                A("b_Mine", 48, (c, x, y) => Mine(c, x, y, false));
+                A("b_Goldmine", 48, (c, x, y) => Mine(c, x, y, true));
+                A("b_Lagerhaus", 48, Lagerhaus);
+                A("b_Markt", 48, Markt);
+                A("b_Taverne", 48, Taverne);
+                A("b_Kapelle", 56, Kapelle);
+                A("b_Brunnen", 32, Brunnen);
+                A("b_Schmiede", 48, Schmiede);
+                A("b_Kaserne", 48, Kaserne);
+                A("b_Archerie", 48, Archerie);
+                A("b_Stall", 48, StallBuilding);
+                A("b_Hafen", 48, Hafen);
+                A("b_Kathedrale", 72, Kathedrale);
+                A("b_Werkstatt", 48, Werkstatt);
+                A("b_Burg", 80, Burg);
+                A("b_Windmuehle", 48, Windmuehle);
+                A("p_ruin", 48, Ruine);
+                A("p_camp", 56, Raeuberlager);
+                A("b_Kloster", 64, Kloster);
+                A("b_Turnierplatz", 64, Turnierplatz);
+                A("b_scaffold", 48, Geruest);
+                A("b_Wachturm", 48, Wachturm);
+                A("p_nomads", 56, FahrendesVolk);
+                A("b_Mauer", 32, (c, x, y) => Tower(c, x, y, true));
+                // Zentren
+                A("c_dorf", 48, Dorfhaus);
+                A("c_rathaus", 64, Rathaus);
+                A("c_keep", 64, Bergfried);
+                A("c_palace", 80, Palast);
+                // Befestigung
+                foreach (bool st in new[] { false, true })
+                {
                 string k = st ? "stone" : "pal"; bool s2 = st;
-                Add("w_" + k + "_h", 32, (c, x, y) => WallH(c, x, y, s2));
-                Add("w_" + k + "_v", 32, (c, x, y) => WallV(c, x, y, s2));
-                Add("w_" + k + "_tower", 40, (c, x, y) => Tower(c, x, y, s2));
-                Add("w_" + k + "_gate", 32, (c, x, y) => Gate(c, x, y, s2));
+                    A("w_" + k + "_h", 32, (c, x, y) => WallH(c, x, y, s2));
+                    A("w_" + k + "_v", 32, (c, x, y) => WallV(c, x, y, s2));
+                    A("w_" + k + "_tower", 40, (c, x, y) => Tower(c, x, y, s2));
+                    A("w_" + k + "_gate", 32, (c, x, y) => Gate(c, x, y, s2));
+                }
             }
+            Style = 0; RegisterTown("");
+            Style = 1; RegisterTown("i");
+            Style = 0;
             // Felder (flach)
             Add("f_wheat", 24, (c, x, y) => FieldSprite(c, x, y, Hay, HayD, Soil), true, false);
             Add("f_green", 24, (c, x, y) => FieldSprite(c, x, y, H("#7FBF4A"), H("#4E8A34"), Soil), true, false);
@@ -1303,6 +1415,9 @@ namespace PixelKingdom
             }, false, false);
             // Truppen
             foreach (UType u in Enum.GetValues(typeof(UType))) { var uu = u; Add("u_" + u, 32, (c, x, y) => Unit(c, x, y, uu)); }
+            Style = 1;
+            foreach (UType u in Enum.GetValues(typeof(UType))) { var uu = u; Add("iu_" + u, 32, (c, x, y) => Unit(c, x, y, uu)); }
+            Style = 0;
             Add("u_cart", 32, (c, x, y) => Unit(c, x, y, (UType)99));
             Add("u_ship", 40, Ship);
             Add("u_ship2", 48, Ship2);
